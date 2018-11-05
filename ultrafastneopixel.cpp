@@ -78,8 +78,8 @@ void UltraFastNeoPixel::setPixelColor(
   if(n < numLEDs) {
     uint8_t *p;
     p = &pixels[n * 3];    // 3 bytes per pixel
-    p[0] = g;         
-    p[1] = r;
+    p[0] = r;         
+    p[1] = g;
     p[2] = b;
   }
 }
@@ -92,8 +92,8 @@ void UltraFastNeoPixel::setPixelColor(uint16_t n, uint32_t c) {
     g = (uint8_t)(c >>  8),
     b = (uint8_t)c;
     p = &pixels[n * 3];
-    p[0] = g;
-    p[1] = r;
+    p[0] = r;
+    p[1] = g;
     p[2] = b;
   }
 }
@@ -112,8 +112,8 @@ uint32_t UltraFastNeoPixel::getPixelColor(uint16_t n) const {
 
   p = &pixels[n * 3];
   // No brightness adjustment has been made -- return 'raw' color
-  return ((uint32_t)p[1] << 16) |
-         ((uint32_t)p[0] <<  8) |
+  return ((uint32_t)p[0] << 16) |
+         ((uint32_t)p[1] <<  8) |
           (uint32_t)p[2];
 }
 
@@ -133,28 +133,50 @@ void UltraFastNeoPixel::clear() {
   memset(pixels, 0, numBytes);
 }
 
-
-
-// Actually send a bit to the string. We turn off optimizations to make sure the compile does
-// not reorder things and make it so the delay happens in the wrong place.
-  
-void UltraFastNeoPixel::sendBit( bool bitVal ) {
+inline void  sendBit( bool bitVal ) {
     if ( bitVal ) {      // 1-bit
-      bitSet( PIXEL_PORT , PIXEL_BIT );
-      DELAY_CYCLES( NS_TO_CYCLES( T1H ) - 2 ); // 1-bit width less overhead for the actual bit setting
-                                               // Note that this delay could be longer and everything would still work
-      bitClear( PIXEL_PORT , PIXEL_BIT );
-      DELAY_CYCLES( NS_TO_CYCLES( T1L ) - 10 ); // 1-bit gap less the overhead of the loop
+      asm volatile (
+        "sbi %[port], %[bit] \n\t"        // Set the output bit
+        ".rept %[onCycles] \n\t"                                // Execute NOPs to delay exactly the specified number of cycles
+        "nop \n\t"
+        ".endr \n\t"
+        "cbi %[port], %[bit] \n\t"                              // Clear the output bit
+        ".rept %[offCycles] \n\t"                               // Execute NOPs to delay exactly the specified number of cycles
+        "nop \n\t"
+        ".endr \n\t"
+        ::
+        [port]    "I" (_SFR_IO_ADDR(PIXEL_PORT)),
+        [bit]   "I" (PIXEL_BIT),
+        [onCycles]  "I" (NS_TO_CYCLES(T1H) - 2),    // 1-bit width less overhead  for the actual bit setting, note that this delay could be longer and everything would still work
+        [offCycles]   "I" (NS_TO_CYCLES(T1L) - 2)     // Minimum interbit delay. Note that we probably don't need this at all since the loop overhead will be enough, but here for correctness
+  
+      );
     } else {             // 0-bit
-      cli();                                   // We need to protect this bit from being made wider by an interrupt 
-      bitSet( PIXEL_PORT , PIXEL_BIT );
-      DELAY_CYCLES( NS_TO_CYCLES( T0H ) - 2 ); // 0-bit width less overhead
-                                               // **************************************************************************
-                                               // This line is really the only tight goldilocks timing in the whole program!
-                                               // **************************************************************************
-      bitClear( PIXEL_PORT , PIXEL_BIT );
+
+      // **************************************************************************
+      // This line is really the only tight goldilocks timing in the whole program!
+      // **************************************************************************
+  
+      cli();
+
+      asm volatile (
+        "sbi %[port], %[bit] \n\t"        // Set the output bit
+        ".rept %[onCycles] \n\t"        // Now timing actually matters. The 0-bit must be long enough to be detected but not too long or it will be a 1-bit
+        "nop \n\t"                                              // Execute NOPs to delay exactly the specified number of cycles
+        ".endr \n\t"
+        "cbi %[port], %[bit] \n\t"                              // Clear the output bit
+        ".rept %[offCycles] \n\t"                               // Execute NOPs to delay exactly the specified number of cycles
+        "nop \n\t"
+        ".endr \n\t"
+        ::
+        [port]    "I" (_SFR_IO_ADDR(PIXEL_PORT)),
+        [bit]   "I" (PIXEL_BIT),
+        [onCycles]  "I" (NS_TO_CYCLES(T0H) - 2),
+        [offCycles] "I" (NS_TO_CYCLES(T0L) - 2)
+  
+      );
       sei();
-      DELAY_CYCLES( NS_TO_CYCLES( T0L ) - 10 ); // 0-bit gap less overhead of the loop
+        
     }
  
     // Note that the inter-bit gap can be as long as you want as long as it doesn't exceed the 5us reset timeout (which is A long time)
@@ -181,9 +203,9 @@ void UltraFastNeoPixel::sendPixel( unsigned char r, unsigned char g , unsigned c
  
 void UltraFastNeoPixel::show() {
   for(unsigned int i = 0; i < numBytes; i += 3) {
-    sendPixel(pixels[i+1], pixels[i], pixels[i+2]);
+    sendPixel(pixels[i], pixels[i+1], pixels[i+2]);
   }
-  DELAY_CYCLES( NS_TO_CYCLES(RES) );
+  _delay_us( (RES / 1000UL) + 1);        // Round up since the delay must be _at_least_ this long (too short might not work, too long not a problem)
 }
 
 /* A PROGMEM (flash mem) table containing 8-bit unsigned sine wave (0-255).

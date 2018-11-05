@@ -14,21 +14,21 @@
  #include <pins_arduino.h>
 #endif
 
-#define PIXEL_PORT PORTB // Port of the pin the pixels are connected to
-#define PIXEL_DDR DDRB // Port of the pin the pixels are connected to
-#define PIXEL_BIT NEOPIXEL_PIN // Bit of the pin the pixels are connected to
+#define PIXEL_PORT PORTD // Port of the pin the pixels are connected to
+#define PIXEL_DDR DDRD // Port of the pin the pixels are connected to
+#define PIXEL_BIT 6    // Bit of the pin the pixels are connected to
  
 
 // These are the timing constraints taken mostly from the WS2812 datasheets
 // These are chosen to be conservative and avoid problems rather than for maximum throughput 
  
-#define T1H  900    // Width of a 1 bit in ns
-#define T1L  600    // Width of a 1 bit in ns
+#define T1H  800    // Width of a 1 bit in ns
+#define T1L  500    // Width of a 1 bit in ns
  
 #define T0H  400    // Width of a 0 bit in ns
-#define T0L  900    // Width of a 0 bit in ns
+#define T0L  800    // Width of a 0 bit in ns
  
-#define RES 7000    // Width of the low gap between bits to cause a frame to latch
+#define RES 6000    // Width of the low gap between bits to cause a frame to latch
  
 // Here are some convenience defines for using nanoseconds specs to generate actual CPU delays
  
@@ -58,7 +58,6 @@ class UltraFastNeoPixel {
     setPixelColor(uint16_t n, uint32_t c),
     clear(),
     updateLength(uint16_t n),
-    sendBit(bool) __attribute__ ((optimize(0))),
     sendByte(unsigned char byte),
     sendPixel(unsigned char, unsigned char, unsigned char);
   uint8_t
