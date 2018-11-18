@@ -34,7 +34,7 @@ ISR(ADC_vect)
   if(sample < 2) sample = 0; // filter DC when there's no sound.
   samples[sample_idx/4] = sample;
   ++sample_idx;
-  sample_idx &= 0xFF; // clamp to 255 (which is 4 * 64)
+  sample_idx &= (SAMP_BUFF_LEN * 4) - 1; // clamp to 255 (which is 4 * 64)
   current_sample = sample_idx;
 }
 

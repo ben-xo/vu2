@@ -36,18 +36,26 @@ void loop() {
   the_strip.begin();
   the_strip.clear();
   the_strip.show();
-  unsigned char i = 0;
+//  unsigned char i = 0;
+  unsigned char sample_ptr = current_sample;
   
   while(true) {
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
       // the +1 and +2 just make it a bit more colourful on the strip…
-      the_strip.setPixelColor(j, samples[j % 32], samples[(j+1) % 32], samples[(j+2) % 32]);
+      the_strip.setPixelColor(j, samples[(sample_ptr + j) % SAMP_BUFF_LEN], samples[(sample_ptr + j -1) % SAMP_BUFF_LEN], samples[(sample_ptr + j -2) % SAMP_BUFF_LEN]);
     }
-    if(i%2==0) {
-      Serial.print("\n");
-      Serial.print((uint8_t)samples[current_sample]);
-    }
-    i++;
+//    i++;
+//    if(i % 10 == 0) {
+//      Serial.print("\n");
+//      Serial.print((uint8_t)samples[sample_ptr % 64]);
+//      Serial.print(" ");
+//      Serial.print((uint8_t)samples[(sample_ptr-1) % 64]);
+//      Serial.print(" ");
+//      Serial.print((uint8_t)samples[(sample_ptr-2) % 64]);
+//      Serial.print(" ");
+//      Serial.print(millis());
+//      i = 0;
+//    }
     the_strip.show();
   }
 }
