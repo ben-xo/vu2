@@ -1,12 +1,14 @@
 #include <Arduino.h>
 #include "config.h"
+#include "sampler.h"
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
-unsigned char samples[32];
-unsigned char current_sample = 0;
+volatile char samples[64] __attribute__((__aligned__(256)));
+volatile unsigned char current_sample = 0;
 
 void setup_sampler() {
 
+  cli();
   ADCSRA = 0;             // clear ADCSRA register
   ADCSRB = 0;             // clear ADCSRB register
   ADMUX |= (0 & 0x07);    // set A0 analog input pin
@@ -22,37 +24,46 @@ void setup_sampler() {
   ADCSRA |= (1 << ADIE);  // enable interrupts when measurement complete
   ADCSRA |= (1 << ADEN);  // enable ADC
   ADCSRA |= (1 << ADSC);  // start ADC measurements
-  
-//  // Set ADC to 77khz, max for 10bit (this is for the beat detector)
-//  bitSet(ADCSRA,ADPS2);
-//  bitClear(ADCSRA,ADPS1);
-//  bitClear(ADCSRA,ADPS0);
-
-  // this sets up the timer1 interrupt for 5kHz.
-  
-//  cli();
-//  //set timer1 interrupt at 5kHz
-//  TCCR1A = 0; // set entire TCCR1A register to 0
-//  TCCR1B = 0; // same for TCCR1B
-//  TCNT1  = 0; //initialize counter value to 0
-//  // set compare match register for 1hz increments
-//  OCR1A = 3199; // = (16*10^6) / (1*5000) - 1 (must be <65536)
-//  // turn on CTC mode
-//  TCCR1B |= (1 << WGM12);
-//  // enable timer compare interrupt
-//  TIMSK1 |= (1 << OCIE1A);
-//  sei();
+  sei();
 }
 
-//ISR(TIMER1_COMPA_vect){
-//  samples[current_sample] = analogRead(AUDIO_INPUT);
-//}
-
+ISR(ADC_vect)
+{
+  unsigned char sample = ADCH;
+  unsigned char sample_idx = current_sample;
+  if(sample < 2) sample = 0; // filter DC when there's no sound.
+  samples[sample_idx/4] = sample;
+  ++sample_idx;
+  sample_idx &= 0xFF; // clamp to 255 (which is 4 * 64)
+  current_sample = sample_idx;
+}
 
 //ISR(ADC_vect)
 //{
-//  samples[current_sample] = ADCH;
-//  current_sample++;
-//  current_sample &= 31; // counter loops back to 0
+//  volatile unsigned char* cs = &current_sample;
+//  
+//  asm volatile (
+//    "push  r24 \n\t"
+//    "push  r25 \n\t"
+//    "push  r30 \n\t"
+//    "push  r31 \n\t"
+//    "lds r24, %[cs] \n\t"
+//    "lds r25, 0x79 \n\t"
+//    "mov r30, r24 \n\t"
+//    "lsr r30 \n\t"
+//    "ldi r31, 0x00 \n\t"
+//    "subi r30, 0x00 \n\t"
+//    "subi r31, 0xFE \n\t"
+//    "st Z, r25 \n\t"
+//    "subi r24, 0xFF \n\t"
+//    "andi r24, 0x3F \n\t"
+//    "sts %[cs], r24 \n\t"
+//    "pop r31 \n\t"
+//    "pop r30 \n\t"
+//    "pop r25 \n\t"
+//    "pop r24 \n\t"
+//    :: [cs] "i" (cs)
+//  );
 //}
+
 

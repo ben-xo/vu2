@@ -26,7 +26,8 @@ void setup() {
 
 //  setup_filter();
 //  setup_render();
-//  setup_sampler();
+  setup_sampler();
+  Serial.begin(2000000);
 }
 
 void loop() {
@@ -35,25 +36,18 @@ void loop() {
   the_strip.begin();
   the_strip.clear();
   the_strip.show();
+  unsigned char i = 0;
+  
   while(true) {
-//  the_strip.setPixelColor(0,255,0,0);
-    the_strip.setPixelColor(3,0,0,255);
-    the_strip.setPixelColor(4,255,0,0);
-    the_strip.setPixelColor(5,0,255,0);
-    the_strip.setPixelColor(6,0,0,0);
-    the_strip.setPixelColor(7,0,0,0);
-    the_strip.setPixelColor(8,0,0,0);
-    the_strip.setPixelColor(50,128,64,0);
+    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+      // the +1 and +2 just make it a bit more colourful on the strip…
+      the_strip.setPixelColor(j, samples[j % 32], samples[(j+1) % 32], samples[(j+2) % 32]);
+    }
+    if(i%2==0) {
+      Serial.print("\n");
+      Serial.print((uint8_t)samples[current_sample]);
+    }
+    i++;
     the_strip.show();
-    delay(5);
-    the_strip.setPixelColor(3,0,0,0);
-    the_strip.setPixelColor(4,0,0,0);
-    the_strip.setPixelColor(5,0,0,0);
-    the_strip.setPixelColor(6,255,0,255);
-    the_strip.setPixelColor(7,255,255,0);
-    the_strip.setPixelColor(8,0,255,255);
-    the_strip.setPixelColor(50,0,64,128);
-    the_strip.show();
-    delay(5);
   }
 }

@@ -133,51 +133,46 @@ void UltraFastNeoPixel::clear() {
   memset(pixels, 0, numBytes);
 }
 
+// NOTES: I have found that almost all of the delays are entirely unnecessary at 16MHz.
+// We DO need T1H delay, and we DO need cli()/sei() on 0 bits.
 inline void  sendBit( bool bitVal ) {
+      
+    cli();
     if ( bitVal ) {      // 1-bit
       asm volatile (
         "sbi %[port], %[bit] \n\t"        // Set the output bit
-        ".rept %[onCycles] \n\t"                                // Execute NOPs to delay exactly the specified number of cycles
-        "nop \n\t"
-        ".endr \n\t"
-        "cbi %[port], %[bit] \n\t"                              // Clear the output bit
-        ".rept %[offCycles] \n\t"                               // Execute NOPs to delay exactly the specified number of cycles
-        "nop \n\t"
-        ".endr \n\t"
+        ::
+        [port]  "I" (_SFR_IO_ADDR(PIXEL_PORT)),
+        [bit]   "I" (PIXEL_BIT)
+      );
+      __builtin_avr_delay_cycles( NS_TO_CYCLES(T1H) - 2 ); // 1-bit width less overhead  for the actual bit setting, note that this delay could be longer and everything would still work
+      asm volatile (
+        "cbi %[port], %[bit] \n\t"        // Clear the output bit
         ::
         [port]    "I" (_SFR_IO_ADDR(PIXEL_PORT)),
-        [bit]   "I" (PIXEL_BIT),
-        [onCycles]  "I" (NS_TO_CYCLES(T1H) - 2),    // 1-bit width less overhead  for the actual bit setting, note that this delay could be longer and everything would still work
-        [offCycles]   "I" (NS_TO_CYCLES(T1L) - 2)     // Minimum interbit delay. Note that we probably don't need this at all since the loop overhead will be enough, but here for correctness
-  
+        [bit]   "I" (PIXEL_BIT)
       );
+
     } else {             // 0-bit
 
       // **************************************************************************
       // This line is really the only tight goldilocks timing in the whole program!
       // **************************************************************************
   
-      cli();
-
       asm volatile (
         "sbi %[port], %[bit] \n\t"        // Set the output bit
-        ".rept %[onCycles] \n\t"        // Now timing actually matters. The 0-bit must be long enough to be detected but not too long or it will be a 1-bit
-        "nop \n\t"                                              // Execute NOPs to delay exactly the specified number of cycles
-        ".endr \n\t"
-        "cbi %[port], %[bit] \n\t"                              // Clear the output bit
-        ".rept %[offCycles] \n\t"                               // Execute NOPs to delay exactly the specified number of cycles
-        "nop \n\t"
-        ".endr \n\t"
+        ::
+        [port]  "I" (_SFR_IO_ADDR(PIXEL_PORT)),
+        [bit]   "I" (PIXEL_BIT)
+      );
+      asm volatile (
+        "cbi %[port], %[bit] \n\t"        // Clear the output bit
         ::
         [port]    "I" (_SFR_IO_ADDR(PIXEL_PORT)),
-        [bit]   "I" (PIXEL_BIT),
-        [onCycles]  "I" (NS_TO_CYCLES(T0H) - 2),
-        [offCycles] "I" (NS_TO_CYCLES(T0L) - 2)
-  
+        [bit]   "I" (PIXEL_BIT)
       );
-      sei();
-        
     }
+    sei();
  
     // Note that the inter-bit gap can be as long as you want as long as it doesn't exceed the 5us reset timeout (which is A long time)
     // Here I have been generous and not tried to squeeze the gap tight but instead erred on the side of lots of extra time.
