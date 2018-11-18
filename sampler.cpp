@@ -3,8 +3,10 @@
 #include "sampler.h"
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
-volatile char samples[64] __attribute__((__aligned__(256)));
+volatile unsigned char samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
 volatile unsigned char current_sample = 0;
+volatile unsigned char max_seen_sample = 0;
+volatile unsigned char min_seen_sample = 255;
 
 void setup_sampler() {
 
@@ -32,9 +34,15 @@ ISR(ADC_vect)
   unsigned char sample = ADCH;
   unsigned char sample_idx = current_sample;
   if(sample < 2) sample = 0; // filter DC when there's no sound.
-  samples[sample_idx/4] = sample;
+
+  // If the sample index is not a multiple of 4, we overwrite the same sample.
+  // Why? Because the slowest we can sample with the builtin ADC interrupt is 9600Hz, but 
+  // We don't really need to sample that fast so instead we throw away 3/4 samples.
+  // I chose to do this rather than setting a separate timer interrupt, because there's no jitter in the ADC this way
+  // Effective sample rate is 2400Hz
+  samples[sample_idx/8] = sample;
   ++sample_idx;
-  sample_idx &= (SAMP_BUFF_LEN * 4) - 1; // clamp to 255 (which is 4 * 64)
+  sample_idx &= (SAMP_BUFF_LEN * 8) - 1; // clamp to the buffer size.
   current_sample = sample_idx;
 }
 
