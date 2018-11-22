@@ -9,7 +9,7 @@
 #define MODE_LED_PIN_3 11
 #define MODE_LED_PIN_4 12
 #define STRIP_LENGTH 60
-#define SAMP_BUFF_LEN 32
+#define SAMP_BUFF_LEN 64 // this needs to be a power of 2.
 
 // This is the beat detect threshold.
 // If you build a box without the pot, you can read the threshold out

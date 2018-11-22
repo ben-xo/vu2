@@ -39,24 +39,28 @@ void loop() {
   the_strip.clear();
   the_strip.show();
 #ifdef DEBUG
-  unsigned char serial_i = 0;
+  uint8_t serial_i = 0;
 #endif
-  unsigned char sample_ptr = current_sample;
-  
+  uint8_t sample_ptr = current_sample;
+
   while(true) {
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
       // the +1 and +2 just make it a bit more colourful on the strip…
-      the_strip.setPixelColor(j, samples[(sample_ptr + j) % SAMP_BUFF_LEN], samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], samples[(sample_ptr + j*5) % SAMP_BUFF_LEN]);
+      the_strip.setPixelColor(j, 
+        samples[(sample_ptr + j) % SAMP_BUFF_LEN], 
+        samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], 
+        samples[(sample_ptr + j*5) % SAMP_BUFF_LEN]
+       );
     }
 #ifdef DEBUG
     i++;
     if(i % 10 == 0) {
       Serial.print("\n");
-      Serial.print((uint8_t)samples[sample_ptr % 64]);
+      Serial.print((uint8_t)samples[sample_ptr % SAMP_BUFF_LEN]);
       Serial.print(" ");
-      Serial.print((uint8_t)samples[(sample_ptr-1) % 64]);
+      Serial.print((uint8_t)samples[(sample_ptr-1) % SAMP_BUFF_LEN]);
       Serial.print(" ");
-      Serial.print((uint8_t)samples[(sample_ptr-2) % 64]);
+      Serial.print((uint8_t)samples[(sample_ptr-2) % SAMP_BUFF_LEN]);
       Serial.print(" ");
       Serial.print(millis());
       i = 0;

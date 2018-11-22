@@ -11,7 +11,7 @@
 #define MAX_AUTO_MODE 8
 
 uint8_t random_table[STRIP_LENGTH];
-int maximum = 110;
+uint8_t maximum = 110;
 
 UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
 
@@ -110,7 +110,7 @@ void stream_pixel(int pixel) {
   uint32_t old_color[4];
   
   if(pixel > 3) {
-    for (char i = 0; i<4; i++) {
+    for (uint8_t i = 0; i<4; i++) {
       old_color[i] = strip.getPixelColor(pixel-i);
       
       // Rotate and mask all colours at once.
@@ -181,7 +181,7 @@ void render_stream_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
 // this effect shifts colours along the strip on the beat.
 void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
     // only VU half the strip; for the effect to work it needs headroom.
-    int led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH >> 1 - 1) - 1;
+    uint8_t led = map(peakToPeak, 0, maximum, -2, (STRIP_LENGTH >> 1) - 1) - 1;
     
     for (int j = STRIP_LENGTH - 1; j >= 0; j--)
     {
@@ -200,9 +200,9 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade, un
 }
 
 void render_vu_plus_beat_interleave(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
-  int led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH - 1) - 1;
-  int beat_brightness = map(peakToPeak, 0, maximum, 0, 255);
-  int bias = lpvu;
+  uint8_t led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH - 1) - 1;
+  uint8_t beat_brightness = map(peakToPeak, 0, maximum, 0, 255);
+  unsigned int bias = lpvu;
 
   for (int j = 0; j < STRIP_LENGTH; j++ ) {
     if(j % 2) {
@@ -210,7 +210,7 @@ void render_vu_plus_beat_interleave(unsigned int peakToPeak, bool is_beat, bool 
       // VU
       if(j <= led && led >= 0) {
         // set VU color up to peak
-        int color = map(j, 0, STRIP_LENGTH, 0, 255);
+        uint8_t color = map(j, 0, STRIP_LENGTH, 0, 255);
         strip.setPixelColor(j, Wheel((color-bias)%256));
       } 
     } else if(is_beat) {
@@ -226,7 +226,7 @@ void render_vu_plus_beat_interleave(unsigned int peakToPeak, bool is_beat, bool 
 
 void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     if(do_fade) {
-      for (int j = 0; j < STRIP_LENGTH; j++)
+      for (uint8_t j = 0; j < STRIP_LENGTH; j++)
       {
         fade_pixel(j);
       }
@@ -234,7 +234,7 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     int index = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/3 );
     if(index >= 0) {
       generate_sparkle_table();
-      for (int j = 0; j <= index; j++) {
+      for (uint8_t j = 0; j <= index; j++) {
         strip.setPixelColor(random_table[j], j%2 ? GOLD : SILVER);
       }
     }
@@ -242,7 +242,7 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
 
 void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     int color = map(peakToPeak, 0, maximum, 0, 255);
-    for (int j = STRIP_LENGTH - 1; j > 0; j--)
+    for (uint8_t j = STRIP_LENGTH - 1; j > 0; j--)
     {
       // shift all the pixels along
       strip.setPixelColor(j, strip.getPixelColor(j-1));
@@ -254,7 +254,7 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     }
 }
 
-long was_beat_recently_time = 0;
+uint32_t was_beat_recently_time = 0;
 uint32_t last_bar_color = 0;
 int bar_segment_pattern=0;
 #define BAR_PATTERN_SIZE 8
@@ -276,7 +276,7 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, un
     uint32_t new_bar_color = Wheel((map(peakToPeak, 0, maximum/2, 0, 255)+(bar_segment_pattern << 4))%256);
     uint32_t color = (((new_bar_color) >> 1) & 0x7F7F7F7F) + ((last_bar_color >> 1) & 0x7F7F7F7F);
     
-    for (int j = STRIP_LENGTH - 1; j > 0; j--)
+    for (uint8_t j = STRIP_LENGTH - 1; j > 0; j--)
     {
       if(_in_current_bar_segment(j)) {
         strip.setPixelColor(j, color);
@@ -300,7 +300,7 @@ void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, char 
     int led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2);
     int bias = lpvu;
     
-    for (int j = 0; j < STRIP_LENGTH/4; j++)
+    for (uint8_t j = 0; j < STRIP_LENGTH/4; j++)
     {
       if(j <= led && led >= 0) {
         
@@ -342,7 +342,7 @@ void render_beat_flash_1_pixel(bool is_beat) {
     } else {
       strip.setPixelColor(0, 0);
     }
-    for (int j = STRIP_LENGTH - 1; j >= 1; j--) {
+    for (uint8_t j = STRIP_LENGTH - 1; j >= 1; j--) {
       strip.setPixelColor(j, 0);
     }  
 }
@@ -350,7 +350,7 @@ void render_beat_flash_1_pixel(bool is_beat) {
 void render_threshold() {
   // THIS BIT DRAWS A NUMBER IN BINARY ON TO THE STRIP
   unsigned int threshold = analogRead(THRESHOLD_INPUT);
-  for(int i = 0; i < STRIP_LENGTH; i++)
+  for(uint8_t i = 0; i < STRIP_LENGTH; i++)
   {
     if (threshold & 0x01) {
       strip.setPixelColor(i, strip.Color(127,127,127));
@@ -368,7 +368,7 @@ void render_black() {
 }
 
 void colorWipe(uint32_t c, uint8_t wait) {
-  for (uint16_t i = 0; i < STRIP_LENGTH; i++) {
+  for (uint8_t i = 0; i < STRIP_LENGTH; i++) {
     strip.setPixelColor(i, c);
     strip.show();
     delay(wait);
