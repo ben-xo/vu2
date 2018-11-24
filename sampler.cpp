@@ -52,7 +52,6 @@ ISR(ADC_vect)
   
   uint8_t sample = ADCH;
   volatile uint8_t* the_sample = samples + (current_sample >> 1);
-  if(sample < 2) sample = 0; // filter DC when there's no sound.
   *the_sample = sample;
 }
 

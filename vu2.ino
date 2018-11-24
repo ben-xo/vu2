@@ -46,10 +46,13 @@ void loop() {
   while(true) {
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
       // the +1 and +2 just make it a bit more colourful on the strip…
+      uint8_t r = samples[(sample_ptr + j) % SAMP_BUFF_LEN];
+      uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
+      uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
       the_strip.setPixelColor(j, 
-        samples[(sample_ptr + j) % SAMP_BUFF_LEN], 
-        samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], 
-        samples[(sample_ptr + j*5) % SAMP_BUFF_LEN]
+        r == 1 ? 0 : r, 
+        g == 1 ? 0 : g, 
+        b == 1 ? 0 : b
        );
     }
 #ifdef DEBUG
