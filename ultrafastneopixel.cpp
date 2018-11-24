@@ -254,11 +254,11 @@ static const uint8_t PROGMEM _gammaTable[256] = {
   182,184,186,188,191,193,195,197,199,202,204,206,209,211,213,215,
   218,220,223,225,227,230,232,235,237,240,242,245,247,250,252,255};
 
-static uint8_t UltraFastNeoPixel::sine8(uint8_t x) const {
+uint8_t UltraFastNeoPixel::sine8(uint8_t x) const {
   return pgm_read_byte(&_sineTable[x]); // 0-255 in, 0-255 out
 }
 
-static uint8_t UltraFastNeoPixel::gamma8(uint8_t x) const {
+uint8_t UltraFastNeoPixel::gamma8(uint8_t x) const {
   return pgm_read_byte(&_gammaTable[x]); // 0-255 in, 0-255 out
 }
 
