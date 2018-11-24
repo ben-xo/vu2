@@ -134,18 +134,22 @@ void UltraFastNeoPixel::clear() {
 }
 
 // NOTES: I have found that almost all of the delays are entirely unnecessary at 16MHz.
-// We DO need T1H delay, and we DO need cli()/sei() on 0 bits.
-inline void  sendBit( bool bitVal ) {
-      
-    cli();
+// We DO need T1H delay, and we DO need cli()/sei() around 0 bits
+inline void sendBit( bool bitVal ) {
+
     if ( bitVal ) {      // 1-bit
+
       asm volatile (
         "sbi %[port], %[bit] \n\t"        // Set the output bit
         ::
         [port]  "I" (_SFR_IO_ADDR(PIXEL_PORT)),
         [bit]   "I" (PIXEL_BIT)
       );
-      __builtin_avr_delay_cycles( NS_TO_CYCLES(T1H) - 2 ); // 1-bit width less overhead  for the actual bit setting, note that this delay could be longer and everything would still work
+
+      // 1-bit width less overhead  for the actual bit setting, note that this delay could be longer and everything would still work
+      // No need to disable interrupts here - if anything, interrupts just make the gap longer.
+      __builtin_avr_delay_cycles( NS_TO_CYCLES(T1H) - 2 ); 
+
       asm volatile (
         "cbi %[port], %[bit] \n\t"        // Clear the output bit
         ::
@@ -155,28 +159,24 @@ inline void  sendBit( bool bitVal ) {
 
     } else {             // 0-bit
 
-      // **************************************************************************
-      // This line is really the only tight goldilocks timing in the whole program!
-      // **************************************************************************
-  
+      // We must disable interrupts here. Otherwise, an interrupt might happen mid-bit
+      // And flip the pixel from a 0 to a 1.
+
+      cli();
       asm volatile (
         "sbi %[port], %[bit] \n\t"        // Set the output bit
+        "cbi %[port], %[bit] \n\t"        // Clear the output bit
         ::
         [port]  "I" (_SFR_IO_ADDR(PIXEL_PORT)),
         [bit]   "I" (PIXEL_BIT)
       );
-      asm volatile (
-        "cbi %[port], %[bit] \n\t"        // Clear the output bit
-        ::
-        [port]    "I" (_SFR_IO_ADDR(PIXEL_PORT)),
-        [bit]   "I" (PIXEL_BIT)
-      );
+      sei();
+
     }
-    sei();
  
     // Note that the inter-bit gap can be as long as you want as long as it doesn't exceed the 5us reset timeout (which is A long time)
     // Here I have been generous and not tried to squeeze the gap tight but instead erred on the side of lots of extra time.
-    // This has thenice side effect of avoid glitches on very long strings becuase
+    // This has the nice side effect of avoid glitches on very long strings
  
 }
  
