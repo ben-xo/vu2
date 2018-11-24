@@ -22,11 +22,10 @@
 // These are the timing constraints taken mostly from the WS2812 datasheets
 // These are chosen to be conservative and avoid problems rather than for maximum throughput 
  
-#define T1H  800    // Width of a 1 bit in ns
-#define T1L  500    // Width of a 1 bit in ns
- 
-#define T0H  400    // Width of a 0 bit in ns
-#define T0L  800    // Width of a 0 bit in ns
+#define T1H  500    // Width of a 1 bit in ns
+//#define T1L  500    // Width of a 1 bit in ns
+//#define T0H  400    // Width of a 0 bit in ns
+//#define T0L  800    // Width of a 0 bit in ns
  
 #define RES 6000    // Width of the low gap between bits to cause a frame to latch
  
