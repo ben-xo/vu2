@@ -8,7 +8,15 @@ volatile uint8_t current_sample = 255; // start at -1, because of the algorithm 
 volatile uint8_t max_seen_sample = 0;
 volatile uint8_t min_seen_sample = 255;
 
+void disable_timer0_interrupt() {
+  TIMSK0 &= ~_BV(TOIE0); // disable timer0 overflow interrupt
+}
+
 void setup_sampler() {
+
+  // we don't want to trigger the default timer interrupt routine.
+  // it's surprisingly heavy, and it would introduce jitter to the sampler.
+  disable_timer0_interrupt();
 
   cli();
   ADCSRA = 0;             // clear ADCSRA register
