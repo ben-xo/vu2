@@ -6,9 +6,7 @@
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 uint8_t samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
-volatile uint8_t current_sample = 255; // start at -1, because of the algorithm in ADC_vect
-volatile uint8_t max_seen_sample = 0;
-volatile uint8_t min_seen_sample = 255;
+volatile uint16_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
 
 void disable_timer0_interrupt() {
@@ -44,7 +42,7 @@ void setup_sampler() {
 //       |  (1 << ADSC)  // start ADC measurements
   ;
 
-  TCCR1B = 0 | (1 << CS10) 
+  TCCR1B = 0 | (1 << CS11) 
              | (1 << WGM12)
   ; // set up TIMER1 with no prescaler, and interrupt on overflow
   

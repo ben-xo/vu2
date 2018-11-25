@@ -9,7 +9,7 @@
 #define MODE_LED_PIN_3 11
 #define MODE_LED_PIN_4 12
 #define STRIP_LENGTH 60
-#define SAMP_BUFF_LEN 64 // this needs to be a power of 2.
+#define SAMP_BUFF_LEN 512 // this needs to be a power of 2.
 #define SAMP_FREQ 5000 // Hz
 
 // This is the beat detect threshold.

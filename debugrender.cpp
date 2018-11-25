@@ -14,7 +14,6 @@ void debug_render_combo(UltraFastNeoPixel the_strip, bool is_beat, uint8_t sampl
         b == 1 ? 0 : is_beat ? 0 : b
        );
     }
-    the_strip.show();
 }
 
 void debug_render_is_beat(UltraFastNeoPixel the_strip, bool is_beat) {
@@ -25,7 +24,6 @@ void debug_render_is_beat(UltraFastNeoPixel the_strip, bool is_beat) {
         is_beat ? 64 : 0
        );
     }
-    the_strip.show();
 }
 
 void debug_render_samples(UltraFastNeoPixel the_strip, uint8_t sample_ptr, bool colourful) {
@@ -40,5 +38,14 @@ void debug_render_samples(UltraFastNeoPixel the_strip, uint8_t sample_ptr, bool 
         b == 1 ? 0 : b
        );
     }
-    the_strip.show();
+}
+
+void debug_render_vu(UltraFastNeoPixel the_strip, uint8_t vu_width) {
+    for (uint8_t j = 0; j < vu_width/4; j++) {
+      the_strip.setPixelColor(j, 32, 32, 32);
+    }
+    for (uint8_t j = vu_width/4; j < STRIP_LENGTH; j++) {
+      uint32_t oldColor = the_strip.getPixelColor(j);
+      the_strip.setPixelColor(j, 0,0,0);
+    }
 }
