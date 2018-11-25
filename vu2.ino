@@ -4,9 +4,7 @@
 #include "filter.h"
 #include "sampler.h"
 #include "ultrafastneopixel.h"
-
-// debugging renderers.
-#include "debugrender.c"
+#include "debugrender.h"
 
 unsigned long time;
 
