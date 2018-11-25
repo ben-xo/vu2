@@ -5,6 +5,9 @@
 #include "sampler.h"
 #include "ultrafastneopixel.h"
 
+// debugging renderers.
+#include "debugrender.c"
+
 unsigned long time;
 
 void setup() {
@@ -25,13 +28,9 @@ void setup() {
 
   time = micros(); // Used to track rate
 
-//  setup_filter();
+  setup_filter();
 //  setup_render();
   setup_sampler();
-#ifdef DEBUG
-  Serial.begin(2000000);
-  Serial.print("Debug on\n");
-#endif
 }
 
 void loop() {
@@ -40,31 +39,48 @@ void loop() {
   the_strip.begin();
   the_strip.clear();
   the_strip.show();
-  uint8_t sample_ptr = current_sample;
+
+  float envelope, value, float_sample, beat;
+  bool is_beat = false;
+  uint8_t beat_detect_iterator = 200;
 
   while(true) {
-    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-      // the +1 and +2 just make it a bit more colourful on the strip…
-      uint8_t r = samples[(sample_ptr + j) % SAMP_BUFF_LEN];
-      uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
-      uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
-      the_strip.setPixelColor(j, 
-        r == 1 ? 0 : r, 
-        g == 1 ? 0 : g, 
-        b == 1 ? 0 : b
-       );
+    
+    // read these as they're volatile
+    cli();
+    uint8_t sample_ptr = current_sample;
+    uint8_t sample_count = new_sample_count;
+    new_sample_count = 0;
+    sei();
+
+    while(sample_count > 0) { 
+      // Read ADC and center to +-128
+      uint16_t int_sample = samples[sample_ptr & ((SAMP_BUFF_LEN * 8) - 1)] * 2;
+      if(int_sample < 2) int_sample = 0;
+      sample_count--;
+      sample_ptr++;
+      
+      float_sample = (float)int_sample - 250.f;
+      
+      // Filter only bass component
+      value = bassFilter(float_sample);
+
+      // Take signal amplitude and filter
+      if(value < 0)value=-value;
+      envelope = envelopeFilter(value);
+
+      beat_detect_iterator--;
+      if(beat_detect_iterator == 0) {
+        // do this only once every 200 samples (25Hz)
+        beat = beatFilter(envelope);
+        is_beat = beat > (0.08f * DEFAULT_THRESHOLD);
+        beat_detect_iterator = 200;
+      }
     }
-#ifdef DEBUG
-      Serial.print("\n");
-      Serial.print((uint8_t)samples[sample_ptr % SAMP_BUFF_LEN]);
-      Serial.print(" ");
-      Serial.print((uint8_t)samples[(sample_ptr-1) % SAMP_BUFF_LEN]);
-      Serial.print(" ");
-      Serial.print((uint8_t)samples[(sample_ptr-2) % SAMP_BUFF_LEN]);
-      Serial.print(" ");
-      Serial.print(millis());
-#endif
-    the_strip.show();
-     __builtin_avr_delay_cycles( 500000 ); 
+
+//    debug_render_is_beat(the_strip, is_beat);
+//    debug_render_samples(the_strip, sample_ptr, true);
+    debug_render_combo(the_strip, is_beat, sample_ptr);
+     __builtin_avr_delay_cycles( 100 ); 
   }
 }
