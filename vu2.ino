@@ -1,3 +1,4 @@
+
 #include "config.h"
 #include "render.h"
 #include "filter.h"
@@ -29,6 +30,7 @@ void setup() {
   setup_sampler();
 #ifdef DEBUG
   Serial.begin(2000000);
+  Serial.print("Debug on\n");
 #endif
 }
 
@@ -38,9 +40,6 @@ void loop() {
   the_strip.begin();
   the_strip.clear();
   the_strip.show();
-#ifdef DEBUG
-  uint8_t serial_i = 0;
-#endif
   uint8_t sample_ptr = current_sample;
 
   while(true) {
@@ -56,8 +55,6 @@ void loop() {
        );
     }
 #ifdef DEBUG
-    i++;
-    if(i % 10 == 0) {
       Serial.print("\n");
       Serial.print((uint8_t)samples[sample_ptr % SAMP_BUFF_LEN]);
       Serial.print(" ");
@@ -66,9 +63,8 @@ void loop() {
       Serial.print((uint8_t)samples[(sample_ptr-2) % SAMP_BUFF_LEN]);
       Serial.print(" ");
       Serial.print(millis());
-      i = 0;
-    }
- #endif
+#endif
     the_strip.show();
+     __builtin_avr_delay_cycles( 500000 ); 
   }
 }
