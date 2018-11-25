@@ -1,5 +1,7 @@
 #include "debugrender.h"
 
+// These are example renderers, really just for visualising what's being sampled.
+
 void debug_render_combo(UltraFastNeoPixel the_strip, bool is_beat, uint8_t sample_ptr) {
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
       // the +1 and +2 just make it a bit more colourful on the strip…
