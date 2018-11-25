@@ -134,7 +134,9 @@ void sendBit( bool bitVal ) {
         [bit]   "I" (PIXEL_BIT)
       );
       shortsei();
-
+      // 1-bit width less overhead  for the actual bit setting, note that this delay could be longer and everything would still work
+      // No need to disable interrupts here - if anything, interrupts just make the gap longer.
+      
     } else {             // 0-bit
 
       // We must disable interrupts here. Otherwise, an interrupt might happen mid-bit
@@ -143,12 +145,15 @@ void sendBit( bool bitVal ) {
       shortcli();
       asm volatile (
         "sbi %[port], %[bit] \n\t"        // Set the output bit
+        "nop \n\t"
+        "nop \n\t"
         "cbi %[port], %[bit] \n\t"        // Clear the output bit
         ::
         [port]  "I" (_SFR_IO_ADDR(PIXEL_PORT)),
         [bit]   "I" (PIXEL_BIT)
       );
       shortsei();
+      __builtin_avr_delay_cycles( NS_TO_CYCLES(T0L) - 2 ); 
 
     }
  
