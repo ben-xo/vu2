@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "config.h"
 #include "filter.h"
-#include <FIR.h>
 
 FIR lowPass = FIR();
 FIR highPass = FIR();
@@ -85,12 +84,7 @@ bool beat_detect(float &envelope) {
     // Filter out repeating bass sounds 100 - 180bpm
     beat = beatFilter(envelope);
 
-    // Threshold is based on potentiometer on AN1
-#if USE_POT_FOR_THRESHOLD
-    thresh = 0.02f * (float)analogRead(THRESHOLD_INPUT);
-#else
     thresh = 0.02f * DEFAULT_THRESHOLD;
-#endif
 
     // If we are above threshold, FOUND A BEAT
     if(beat > thresh) {
