@@ -1,34 +1,10 @@
 /*-------------------------------------------------------------------------
-  Arduino library to control a wide variety of WS2811- and WS2812-based RGB
-  LED devices such as Adafruit FLORA RGB Smart Pixels and NeoPixel strips.
-  Currently handles 400 and 800 KHz bitstreams on 8, 12 and 16 MHz ATmega
-  MCUs, with LEDs wired for various color orders.  Handles most output pins
-  (possible exception with upper PORT registers on the Arduino Mega).
+  This file is a cross between the AdaFruit NeoPixel library, and the code
+  found at https://github.com/bigjosh/SimpleNeoPixelDemo and (Originally
+  https://wp.josh.com/2014/05/13/ws2812-neopixels-are-not-so-finicky-once-you-get-to-know-them/ )
 
-  Written by Phil Burgess / Paint Your Dragon for Adafruit Industries,
-  contributions by PJRC, Michael Miller and other members of the open
-  source community.
-
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing products
-  from Adafruit!
-
-  -------------------------------------------------------------------------
-  This file is part of the Adafruit NeoPixel library.
-
-  NeoPixel is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as
-  published by the Free Software Foundation, either version 3 of
-  the License, or (at your option) any later version.
-
-  NeoPixel is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with NeoPixel.  If not, see
-  <http://www.gnu.org/licenses/>.
+  I took it from there and modified it for my neopixel strips, which are really
+  very relaxed with timing indeed.
   -------------------------------------------------------------------------*/
 
 #include "ultrafastneopixel.h"
@@ -181,15 +157,15 @@ void sendBit( bool bitVal ) {
     // This has the nice side effect of avoid glitches on very long strings
 }
  
-void UltraFastNeoPixel::sendByte( unsigned char byte ) {
-    for( unsigned char bit = 0 ; bit < 8 ; bit++ ) { 
-      sendBit( bitRead( byte , 7 ) ); // Neopixel wants bit in highest-to-lowest order
+void UltraFastNeoPixel::sendByte( uint8_t the_byte ) {
+    for( uint8_t the_bit = 0 ; the_bit < 8 ; the_bit++ ) { 
+      sendBit( bitRead( the_byte , 7 ) ); // Neopixel wants bit in highest-to-lowest order
                                       // so send highest bit (bit #7 in an 8-bit byte since they start at 0)
-      byte <<= 1; // and then shift left so bit 6 moves into 7, 5 moves into 6, etc
+      the_byte <<= 1; // and then shift left so bit 6 moves into 7, 5 moves into 6, etc
     }
 }
 
-void UltraFastNeoPixel::sendPixel( unsigned char r, unsigned char g , unsigned char b ) {
+void UltraFastNeoPixel::sendPixel( uint8_t r, uint8_t g , uint8_t b ) {
   sendByte(g); // Neopixel wants colors in green-then-red-then-blue order
   sendByte(r);
   sendByte(b);
