@@ -10,12 +10,13 @@
 #define MODE_LED_PIN_4 12
 #define STRIP_LENGTH 60
 #define SAMP_BUFF_LEN 64 // this needs to be a power of 2.
+#define SAMP_FREQ 5000 // Hz
 
 // This is the beat detect threshold.
 // If you build a box without the pot, you can read the threshold out
 // from one which has the pot using one of the test modes...
 #define THRESHOLD_INPUT 1
-#define DEFAULT_THRESHOLD 24.0
+#define DEFAULT_THRESHOLD 48.0
 #define USE_POT_FOR_THRESHOLD 0
 
 //#define LONGCLI 1
