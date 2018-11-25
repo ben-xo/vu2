@@ -8,15 +8,15 @@ volatile uint8_t current_sample = 255; // start at -1, because of the algorithm 
 volatile uint8_t max_seen_sample = 0;
 volatile uint8_t min_seen_sample = 255;
 
-void disable_timer0_interrupt() {
-  TIMSK0 &= ~_BV(TOIE0); // disable timer0 overflow interrupt
-}
+//void disable_timer0_interrupt() {
+//  TIMSK0 &= ~_BV(TOIE0); // disable timer0 overflow interrupt. Breaks serial.
+//}
 
 void setup_sampler() {
 
   // we don't want to trigger the default timer interrupt routine.
   // it's surprisingly heavy, and it would introduce jitter to the sampler.
-  disable_timer0_interrupt();
+  //disable_timer0_interrupt();
 
   cli();
   ADCSRA = 0;             // clear ADCSRA register
@@ -55,13 +55,18 @@ ISR(ADC_vect)
   *the_sample = sample;
 }
 
+//// This optimised version saves 12 cycles from the C code above. 
+//// Not sure if it was worth it to save 12 cycles per sample, but it was fun…
+//ISR(ADC_vect) __attribute__((naked));
 //ISR(ADC_vect)
 //{
 //  volatile uint8_t* cs = &current_sample;
 //  uint8_t* ss = samples;
 //  
 //  asm volatile (
-//    "push  r24 \n\t"
+//    "push r24 \n\t"
+//    "in r24, 0x3f \n\t"
+//    "push r24 \n\t"
 //    "push  r30 \n\t"
 //    "push  r31 \n\t"
 //    "lds r30, %[cs] \n\t" // 0x800101 <current_sample>
@@ -69,16 +74,15 @@ ISR(ADC_vect)
 //    "sts current_sample, r30 \n\t" // 0x800101 <current_sample>
 //    "lds r24, 0x0079 \n\t" // 0x800079 <__TEXT_REGION_LENGTH__+0x7e0079>
 //    "ldi r31, 0x00 \n\t"
-//    "asr r31 \n\t"
-//    "ror r30 \n\t"
-//    "sbci  r31, hi8(%[ss]) \n\t" // <samples>
-//    "cpi r24, 0x02 \n\t"
-//    "brcc  .+2 \n\t"
-//    "ldi r24, 0x00 \n\t"
+//    "asr r30 \n\t"
+//    "subi  r31, 0xFD \n\t" // <samples> TOOD: i think this is an address?? careful!
 //    "st  Z, r24 \n\t"
 //    "pop r31 \n\t"
 //    "pop r30 \n\t"
 //    "pop r24 \n\t"
+//    "out  0x3f, r24 \n\t" // restore status register
+//    "pop r24 \n\t"
+//    "reti \n\t"
 //    :: 
 //    [cs] "i" (cs),
 //    [ss] "i" (ss)
