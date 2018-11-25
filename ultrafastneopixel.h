@@ -79,4 +79,30 @@ class UltraFastNeoPixel {
    *pixels;        // Holds LED color values (3 or 4 bytes each)    
 };
 
+// these helpers are for debugging interrupts.
+// short interrupts are the default (i.e. between each bit of each pixel).
+inline void longcli() {
+#ifdef LONGCLI
+  cli();
+#endif
+}
+
+inline void longsei() {
+#ifdef LONGCLI
+  sei();
+#endif
+}
+
+inline void shortcli() {
+#ifndef LONGCLI
+  cli();
+#endif
+}
+
+inline void shortsei() {
+#ifndef LONGCLI
+  sei();
+#endif
+}
+
 #endif // ULTRAFASTNEOPIXEL_H

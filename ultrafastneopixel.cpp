@@ -135,10 +135,11 @@ void UltraFastNeoPixel::clear() {
 
 // NOTES: I have found that almost all of the delays are entirely unnecessary at 16MHz.
 // We DO need T1H delay, and we DO need cli()/sei() around 0 bits
-inline void sendBit( bool bitVal ) {
+void sendBit( bool bitVal ) {
 
     if ( bitVal ) {      // 1-bit
 
+      shortcli();
       asm volatile (
         "sbi %[port], %[bit] \n\t"        // Set the output bit
         ::
@@ -156,13 +157,14 @@ inline void sendBit( bool bitVal ) {
         [port]    "I" (_SFR_IO_ADDR(PIXEL_PORT)),
         [bit]   "I" (PIXEL_BIT)
       );
+      shortsei();
 
     } else {             // 0-bit
 
       // We must disable interrupts here. Otherwise, an interrupt might happen mid-bit
       // And flip the pixel from a 0 to a 1.
 
-      cli();
+      shortcli();
       asm volatile (
         "sbi %[port], %[bit] \n\t"        // Set the output bit
         "cbi %[port], %[bit] \n\t"        // Clear the output bit
@@ -170,14 +172,13 @@ inline void sendBit( bool bitVal ) {
         [port]  "I" (_SFR_IO_ADDR(PIXEL_PORT)),
         [bit]   "I" (PIXEL_BIT)
       );
-      sei();
+      shortsei();
 
     }
  
     // Note that the inter-bit gap can be as long as you want as long as it doesn't exceed the 5us reset timeout (which is A long time)
     // Here I have been generous and not tried to squeeze the gap tight but instead erred on the side of lots of extra time.
     // This has the nice side effect of avoid glitches on very long strings
- 
 }
  
 void UltraFastNeoPixel::sendByte( unsigned char byte ) {
@@ -197,9 +198,11 @@ void UltraFastNeoPixel::sendPixel( unsigned char r, unsigned char g , unsigned c
 // Just wait long enough without sending any bots to cause the pixels to latch and display the last sent frame
  
 void UltraFastNeoPixel::show() {
+  longcli();
   for(unsigned int i = 0; i < numBytes; i += 3) {
     sendPixel(pixels[i], pixels[i+1], pixels[i+2]);
   }
+  longsei();
   _delay_us( (RES / 1000UL) + 1);        // Round up since the delay must be _at_least_ this long (too short might not work, too long not a problem)
 }
 
