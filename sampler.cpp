@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 #include "config.h"
 #include "sampler.h"
 
@@ -7,16 +9,17 @@ uint8_t samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
 volatile uint8_t current_sample = 255; // start at -1, because of the algorithm in ADC_vect
 volatile uint8_t max_seen_sample = 0;
 volatile uint8_t min_seen_sample = 255;
+volatile uint8_t new_sample_count = 0;
 
-//void disable_timer0_interrupt() {
+void disable_timer0_interrupt() {
 //  TIMSK0 &= ~_BV(TOIE0); // disable timer0 overflow interrupt. Breaks serial.
-//}
+}
 
 void setup_sampler() {
 
   // we don't want to trigger the default timer interrupt routine.
   // it's surprisingly heavy, and it would introduce jitter to the sampler.
-  //disable_timer0_interrupt();
+  disable_timer0_interrupt();
 
   cli();
   ADCSRA = 0;             // clear ADCSRA register
@@ -29,30 +32,40 @@ void setup_sampler() {
   // sampling rate is [ADC clock] / [prescaler] / [conversion clock cycles]
   // for Arduino Uno ADC clock is 16 MHz and a conversion takes 13 clock cycles
 
-  ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // 128 prescaler for 9600 Hz, which is the slowest it will do.
+  ADCSRA  = 0
+//         | (1 << ADPS2) 
+         | (1 << ADPS1) 
+         | (1 << ADPS0)
+  ; // 128 prescaler for 9600 Hz, which is the slowest it will do.
 
-  ADCSRA |= (1 << ADATE) // enable auto trigger
-         |  (1 << ADIE)  // enable interrupts when measurement complete
-         |  (1 << ADEN)  // enable ADC
-         |  (1 << ADSC)  // start ADC measurements
+//ADCSRA |= (1 << ADATE) // enable auto trigger
+//ADCSRA |= (1 << ADIE)  // enable interrupts when measurement complete
+  ADCSRA |= (1 << ADEN)  // enable ADC
+//       |  (1 << ADSC)  // start ADC measurements
   ;
+
+  TCCR1B = 0 | (1 << CS10) 
+             | (1 << WGM12)
+  ; // set up TIMER1 with no prescaler, and interrupt on overflow
+  
+  OCR1A = 3199; // overflow value for 5kHz
+  TCNT1 = 0;
+  TIMSK1 |= (1 << OCIE1A); // enable timer1
+  
   sei();
 }
 
-ISR(ADC_vect)
+ISR(TIMER1_COMPA_vect)
 {
-  // If the sample index is not a multiple of 2, we overwrite the same sample.
-  // Why? Because the slowest we can sample with the builtin ADC interrupt is 9600Hz, but 
-  // We don't really need to sample that fast so instead we throw away 1/2 samples.
-  // I chose to do this rather than setting a separate timer interrupt, because there's no jitter in the ADC this way
-  // Effective sample rate is 4800Hz
+  ADCSRA |= (1 << ADSC); // trigger next analog sample.
   
   uint8_t sample_idx = (current_sample + 1) & ((SAMP_BUFF_LEN * 8) - 1); // clamp to the buffer size.
   current_sample = sample_idx;
   
   uint8_t sample = ADCH;
-  volatile uint8_t* the_sample = samples + (current_sample >> 1);
+  volatile uint8_t* the_sample = samples + current_sample;
   *the_sample = sample;
+  new_sample_count++;
 }
 
 //// This optimised version saves 12 cycles from the C code above. 
