@@ -316,13 +316,16 @@ boolean _in_current_bar_segment(int j) {
   return (bar_patterns[offset] >> j) & 0b0000000000000000000000000000000000000000000000000000000000000001;
 }
 void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu) {
-    uint32_t new_bar_color = Wheel((map(peakToPeak, 0, maximum/2, 0, 255)+(bar_segment_pattern << 4))%256);
-    uint32_t color = (((new_bar_color) >> 1) & 0x7F7F7F7F) + ((last_bar_color >> 1) & 0x7F7F7F7F);
+    float brightness = peakToPeak / 4;
     
-    for (uint8_t j = STRIP_LENGTH - 1; j > 0; j--)
+    for (uint8_t j = 0; j < STRIP_LENGTH; j++)
     {
+      uint32_t color = Wheel(j+(bar_segment_pattern*16));
       if(_in_current_bar_segment(j)) {
-        strip.setPixelColor(j, color);
+        uint8_t r = color >> 16;
+        uint8_t g = color >> 8;
+        uint8_t b = color;
+        strip.setPixelColor(j, r/4*3+peakToPeak,g/4*3+peakToPeak,b/4*3+peakToPeak);
         last_bar_color = color;
       } else {
         if(do_fade) {
