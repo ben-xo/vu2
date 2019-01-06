@@ -63,7 +63,7 @@ void fade_pixel(int pixel) {
   uint8_t r = color >> 16;
   uint8_t g = color >> 8;
   uint8_t b = color;
-  strip.setPixelColor(pixel, r*0.8,g*0.8,b*0.8);
+  strip.setPixelColor(pixel, r*0.9,g*0.9,b*0.9);
 }
 
 void fade_pixel_slow(int pixel) {
@@ -72,6 +72,14 @@ void fade_pixel_slow(int pixel) {
   uint8_t g = color >> 8;
   uint8_t b = color;
   strip.setPixelColor(pixel, r*0.95,g*0.95,b*0.95);
+}
+
+void fade_pixel_fast(int pixel) {
+  uint32_t color = strip.getPixelColor(pixel);
+  uint8_t r = color >> 16;
+  uint8_t g = color >> 8;
+  uint8_t b = color;
+  strip.setPixelColor(pixel, r*0.7,g*0.7,b*0.7);
 }
 
 // fades pixels more the closer they are the start, so that peaks stay visible
@@ -242,7 +250,7 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     if(do_fade) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++)
       {
-        is_beat ? fade_pixel_slow(j) : fade_pixel(j);
+        is_beat ? fade_pixel_slow(j) : fade_pixel_fast(j);
       }
     }
     int index = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2 );
