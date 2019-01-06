@@ -12,7 +12,7 @@
 
 
 uint8_t random_table[STRIP_LENGTH];
-uint8_t maximum = 110;
+uint8_t maximum = 255;
 
 void setup_render() {
   // Initialize all pixels to 'off'
@@ -78,9 +78,9 @@ void fade_pixel_slow(int pixel) {
 void fade_pixel_plume(int pixel) {
   float fade_factor;
   if(pixel < STRIP_LENGTH >> 1) {
-    fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 0.5, 1.0);  
+    fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 0.8, 1.0);  
   } else {
-    fade_factor = map(pixel, STRIP_LENGTH >> 1, STRIP_LENGTH, 1.0, 0.5);  
+    fade_factor = map(pixel, STRIP_LENGTH >> 1, STRIP_LENGTH, 1.0, 0.8);  
   }
   uint32_t color = strip.getPixelColor(pixel);
   uint8_t r = color >> 16;
@@ -169,7 +169,7 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
 }
 
 void render_stream_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
-    int led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2 - 1) - 1;
+    int led = map(peakToPeak, 0, 160, -2, STRIP_LENGTH/3*2 - 1) - 1;
     
     for (int j = STRIP_LENGTH-1; j >= 0; j--)
     {
@@ -180,14 +180,17 @@ void render_stream_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
       }
       else {
         stream_pixel(j);
-      }
+         if(!is_beat && do_fade) {
+          fade_pixel_plume(j);
+        }
+     }
     }  
 }
 
 // this effect shifts colours along the strip on the beat.
 void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
     // only VU half the strip; for the effect to work it needs headroom.
-    uint8_t led = map(peakToPeak, 0, maximum, -2, (STRIP_LENGTH >> 1) - 1) - 1;
+    uint8_t led = map(peakToPeak, 0, 128, 0, (STRIP_LENGTH >> 1) - 1);
     
     for (int j = STRIP_LENGTH - 1; j >= 0; j--)
     {
@@ -205,28 +208,33 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade, un
     }  
 }
 
-void render_vu_plus_beat_interleave(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
-  uint8_t led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH - 1) - 1;
-  uint8_t beat_brightness = map(peakToPeak, 0, maximum, 0, 255);
-  unsigned int bias = lpvu;
+void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
+  uint8_t led = map(peakToPeak, 0, 128, 0, STRIP_LENGTH - 1);
+  uint8_t beat_brightness = map(peakToPeak, 0, maximum, 128, 255);
+  unsigned int bias = 30 * (is_beat ? 1 : 0);
 
   for (int j = 0; j < STRIP_LENGTH; j++ ) {
-    if(j % 2) {
-    
+    if(j % 2) {    
       // VU
-      if(j <= led && led >= 0) {
+      if(j <= led) {
         // set VU color up to peak
         uint8_t color = map(j, 0, STRIP_LENGTH, 0, 255);
         strip.setPixelColor(j, Wheel((color-bias)%256));
-      } 
-    } else if(is_beat) {
-    // beats
-      strip.setPixelColor(j, beat_brightness,beat_brightness,beat_brightness);
-    }
-     
-    if(do_fade) {
-      fade_pixel(j);
-    }
+      } else {
+        if(do_fade) {
+          fade_pixel(j);
+        }    
+      }
+    } else {
+      if(is_beat) {
+      // beats
+        strip.setPixelColor(j, beat_brightness,beat_brightness,beat_brightness);
+      } else {
+        if(do_fade) {
+          fade_pixel(j);
+        }    
+      }
+    }     
   }
 }
 
@@ -237,7 +245,7 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
         is_beat ? fade_pixel_slow(j) : fade_pixel(j);
       }
     }
-    int index = map(peakToPeak, 0, 255, -2, STRIP_LENGTH/2 );
+    int index = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2 );
     if(index >= 0) {
       generate_sparkle_table();
       for (uint8_t j = 0; j <= index; j++) {
@@ -246,12 +254,26 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     }
 }
 
+void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
+    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+      // the +1 and +2 just make it a bit more colourful on the strip…
+      uint8_t r = samples[(sample_ptr + j) % SAMP_BUFF_LEN];
+      uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
+      uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
+      strip.setPixelColor(j, 
+        r == 1 ? 0 : is_beat_2 ? r : 0, 
+        g == 1 ? 0 : is_beat ? g : 0, 
+        b == 1 ? 0 : b
+       );
+    }
+}
+
 void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     int color = map(peakToPeak, 0, maximum, 0, 255);
     for (uint8_t j = STRIP_LENGTH - 1; j > 0; j--)
     {
       // shift all the pixels along
-      strip.setPixelColor(j, strip.getPixelColor(j-1));
+      strip.setPixelColor(j, samples[current_sample]);
     }
     if(is_beat) {
       strip.setPixelColor(0, 255, 255, 255);
@@ -333,10 +355,17 @@ void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, char 
         strip.setPixelColor((STRIP_LENGTH)-j-1, color);
       }
       else if(do_fade) {
-        fade_pixel(j);
-        fade_pixel((STRIP_LENGTH/2)+j);
-        fade_pixel((STRIP_LENGTH/2)-j-1);
-        fade_pixel((STRIP_LENGTH  )-j-1);
+        if(is_beat) {
+          fade_pixel(j);
+          fade_pixel_slow((STRIP_LENGTH/2)+j);
+          fade_pixel_slow((STRIP_LENGTH/2)-j-1);
+          fade_pixel((STRIP_LENGTH  )-j-1);
+        } else {
+          fade_pixel(j);
+          fade_pixel((STRIP_LENGTH/2)+j);
+          fade_pixel((STRIP_LENGTH/2)-j-1);
+          fade_pixel((STRIP_LENGTH  )-j-1);          
+        }
       }
     }  
 }
@@ -394,7 +423,7 @@ void rainbowCycle(uint8_t wait) {
   }
 }
 
-void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsigned int lpvu, unsigned int hpvu) {
+void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsigned int lpvu, unsigned int hpvu, bool is_beat_2, uint8_t sample_ptr) {
 
     switch(mode) {
       case 0:
@@ -429,13 +458,9 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
         break;
         
       case 10:
-        render_beat_flash_1_pixel(is_beat);
+        render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
         break;
-      case 11:
-        render_threshold();
-        break;
-      default:
-        render_black();
-        break;
+        
+
     }
 }

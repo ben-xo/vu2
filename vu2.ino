@@ -72,10 +72,10 @@ void reach_target_fps() {
   uint32_t total_time = end_time - start_time;
   
   // frame target is 100fps, or 20k microseconds
-  if(total_time > 10000) {
+  if(total_time > 5000) {
     slow=true;
   } else {
-    delayMicroseconds(10000-total_time);
+    delayMicroseconds(5000-total_time);
     slow=false;
   }
   start_time = end_time;
@@ -116,27 +116,16 @@ void loop() {
     is_beat_1 = PIND & (1 << BEAT_PIN_1);
     is_beat_2 = PIND & (1 << BEAT_PIN_2);
 
-    if(was_button_pressed(PIND & (1 << BUTTON_PIN))) mode++;
-    switch(mode) {
-      case 0:
-        debug_render_is_beat(is_beat_1, is_beat_2);
-        break;
-      case 1:
-        debug_render_combo(is_beat_1, is_beat_2, sample_ptr);
-        break;
-      case 2:
-        debug_render_samples(sample_ptr, true);
-        break;
-      case 3:
-        debug_render_vu(vu_width);
-        break;
-      default: 
-        render(vu_width, is_beat_1, true, mode-4, 0, 0);
+    if(was_button_pressed(PIND & (1 << BUTTON_PIN))) {
+      mode++;
+      if(mode > 10) {
+        mode = 0;
+      }
     }
-    if(mode > 16) mode = 0;
+    render(vu_width, is_beat_2, true, mode, 0, 0, is_beat_1, current_sample);
 
     strip.show();
 
-//    reach_target_fps();
+    reach_target_fps();
   }
 }

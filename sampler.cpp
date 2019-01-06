@@ -47,7 +47,7 @@ void setup_sampler() {
              | (1 << WGM12)
   ; // set up TIMER1 with no prescaler, and interrupt on overflow
   
-  OCR1A = 3199; // overflow value for 5kHz
+  OCR1A = 6399; // overflow value for 5kHz
   TCNT1 = 0;
   TIMSK1 |= (1 << OCIE1A); // enable timer1
   
