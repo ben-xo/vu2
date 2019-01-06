@@ -10,14 +10,14 @@
 #define MAX_MODE 10
 #define MAX_AUTO_MODE 8
 
+
 uint8_t random_table[STRIP_LENGTH];
 uint8_t maximum = 110;
-
-UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
 
 void setup_render() {
   // Initialize all pixels to 'off'
   strip.begin();
+  strip.clear();
   strip.show();
 }
 
@@ -59,13 +59,11 @@ uint32_t Wheel_Purple_Yellow(byte WheelPos) {
 }
 
 void fade_pixel(int pixel) {
-  // The trick here is to halve the brightness of each color by shifting
-  // it 1 place right (which is the same as divide by 2, but cheaper)
-  // of course, we also have to shift Red by 16 and Green by 8 to get 
-  // the current brightness.
   uint32_t color = strip.getPixelColor(pixel);
-  color = (color >> 1) & 0x7F7F7F7F; // shift and mask WRGB all at once.
-  strip.setPixelColor(pixel, color);
+  uint8_t r = color >> 16;
+  uint8_t g = color >> 8;
+  uint8_t b = color;
+  strip.setPixelColor(pixel, r*0.8,g*0.8,b*0.8);
 }
 
 // fades pixels more the closer they are the start, so that peaks stay visible
@@ -127,7 +125,7 @@ void stream_pixel(int pixel) {
 
 // like stream pixel but with a sharper fade
 void shoot_pixel(int pixel) {
-  uint32_t color;
+  uint32_t color = 0;
   
   if(pixel >= 4) {
     color  = (strip.getPixelColor(pixel-2) >> 1) & 0x7F7F7F7F;
@@ -432,6 +430,4 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
         render_black();
         break;
     }
-
-    strip.show();
 }

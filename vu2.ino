@@ -1,10 +1,13 @@
 
 #include "config.h"
-#include "render.h"
 //#include "filter.h"
+
 #include "sampler.h"
 #include "ultrafastneopixel.h"
+#include "render.h"
 #include "debugrender.h"
+
+UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
 
 uint32_t start_time;
 bool slow = false; // track render time
@@ -29,7 +32,7 @@ void setup() {
   pinMode(MODE_LED_PIN_4,OUTPUT);
 
 //  setup_filter();
-//  setup_render();
+  setup_render();
   setup_sampler();
 //  Serial.begin(2000000);
 }
@@ -49,7 +52,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
     if(int_sample < min_val) min_val = int_sample;
 
     vu_iterator++;
-    if(vu_iterator == 20) {
+    if(vu_iterator == 30) {
       last_width = max_val - min_val;
       vu_iterator = 0;
       max_val=0;
@@ -93,11 +96,7 @@ bool was_button_pressed(uint8_t pins) {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  UltraFastNeoPixel the_strip = UltraFastNeoPixel(STRIP_LENGTH);
-  the_strip.begin();
-  the_strip.clear();
-  the_strip.show();
-
+  
   bool is_beat_1 = false;
   bool is_beat_2 = false;
   uint8_t vu_width = 0;
@@ -118,35 +117,25 @@ void loop() {
     is_beat_2 = PIND & (1 << BEAT_PIN_2);
 
     if(was_button_pressed(PIND & (1 << BUTTON_PIN))) mode++;
-    if(mode >= 4) mode = 0;
     switch(mode) {
       case 0:
-        debug_render_is_beat(&the_strip, is_beat_1, is_beat_2);
+        debug_render_is_beat(is_beat_1, is_beat_2);
         break;
       case 1:
-        debug_render_combo(&the_strip, is_beat_1, is_beat_2, sample_ptr);
+        debug_render_combo(is_beat_1, is_beat_2, sample_ptr);
         break;
       case 2:
-        debug_render_samples(&the_strip, sample_ptr, true);
+        debug_render_samples(sample_ptr, true);
         break;
       case 3:
-        debug_render_vu(&the_strip, vu_width);
+        debug_render_vu(vu_width);
         break;
+      default: 
+        render(vu_width, is_beat_1, true, mode-4, 0, 0);
     }
+    if(mode > 16) mode = 0;
 
-//    if(slow) {
-//      the_strip.setPixelColor(0, 255,0,0);
-//    } else {
-//      the_strip.setPixelColor(0, 0,255,0);
-//    }
-//    int i = 0;
-//    for (; i < sample_count; i++) {
-//      the_strip.setPixelColor(i, 0,0,32);
-//    }
-//    for (; i < STRIP_LENGTH; i++) {
-//      the_strip.setPixelColor(i, 0,0,0);
-//    }
-    the_strip.show();
+    strip.show();
 
 //    reach_target_fps();
   }
