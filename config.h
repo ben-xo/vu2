@@ -3,6 +3,8 @@
 #define AUDIO_INPUT_HP 3
 #define NEOPIXEL_PIN 6
 #define BUTTON_PIN 2
+#define BEAT_PIN_1 3
+#define BEAT_PIN_2 4
 #define BUTTON_LED_PIN 13
 #define MODE_LED_PIN_1 9
 #define MODE_LED_PIN_2 10
@@ -19,4 +21,4 @@
 #define DEFAULT_THRESHOLD 48.0
 #define USE_POT_FOR_THRESHOLD 0
 
-//#define LONGCLI 1
+#define LONGCLI 1
