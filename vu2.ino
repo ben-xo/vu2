@@ -49,7 +49,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
     if(int_sample < min_val) min_val = int_sample;
 
     vu_iterator++;
-    if(vu_iterator == 30) {
+    if(vu_iterator == 20) {
       last_width = max_val - min_val;
       vu_iterator = 0;
       max_val=0;
@@ -78,6 +78,19 @@ void reach_target_fps() {
   start_time = end_time;
 }
 
+// returns true on the rising edge of a button push
+bool was_button_pressed(uint8_t pins) {
+  static bool is_down = false;
+  if(is_down && !pins) {
+    is_down = false;
+    return true;
+  }
+  if(!is_down && pins) {
+    is_down = true;
+  }
+  return false;
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
   UltraFastNeoPixel the_strip = UltraFastNeoPixel(STRIP_LENGTH);
@@ -88,6 +101,7 @@ void loop() {
   bool is_beat_1 = false;
   bool is_beat_2 = false;
   uint8_t vu_width = 0;
+  uint8_t mode = 0;
 
   start_time = micros();
   while(true) {
@@ -99,14 +113,27 @@ void loop() {
     new_sample_count = 0;
     sei();
 
-// TODO: make these fast enough!
     vu_width = calculate_vu(sample_ptr, sample_count);
     is_beat_1 = PIND & (1 << BEAT_PIN_1);
     is_beat_2 = PIND & (1 << BEAT_PIN_2);
-//    Serial.print(vu_width); Serial.print("\n");
 
-//    debug_render_is_beat(the_strip, is_beat_1, is_beat_2);
-//    debug_render_combo(the_strip, is_beat_1, is_beat_2, sample_ptr);
+    if(was_button_pressed(PIND & (1 << BUTTON_PIN))) mode++;
+    if(mode >= 4) mode = 0;
+    switch(mode) {
+      case 0:
+        debug_render_is_beat(&the_strip, is_beat_1, is_beat_2);
+        break;
+      case 1:
+        debug_render_combo(&the_strip, is_beat_1, is_beat_2, sample_ptr);
+        break;
+      case 2:
+        debug_render_samples(&the_strip, sample_ptr, true);
+        break;
+      case 3:
+        debug_render_vu(&the_strip, vu_width);
+        break;
+    }
+
 //    if(slow) {
 //      the_strip.setPixelColor(0, 255,0,0);
 //    } else {
@@ -119,8 +146,6 @@ void loop() {
 //    for (; i < STRIP_LENGTH; i++) {
 //      the_strip.setPixelColor(i, 0,0,0);
 //    }
-//    debug_render_samples(the_strip, sample_ptr, true);
-    debug_render_vu(&the_strip, vu_width);
     the_strip.show();
 
 //    reach_target_fps();
