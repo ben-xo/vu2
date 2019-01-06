@@ -237,7 +237,7 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
         is_beat ? fade_pixel_slow(j) : fade_pixel(j);
       }
     }
-    int index = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/3 );
+    int index = map(peakToPeak, 0, 255, -2, STRIP_LENGTH/2 );
     if(index >= 0) {
       generate_sparkle_table();
       for (uint8_t j = 0; j <= index; j++) {
