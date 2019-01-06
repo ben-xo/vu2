@@ -13,6 +13,7 @@
 
 uint8_t random_table[STRIP_LENGTH];
 uint8_t maximum = 255;
+uint8_t phase = 0;
 
 void setup_render() {
   // Initialize all pixels to 'off'
@@ -276,17 +277,23 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
     }
 }
 
-void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade) {
-    int color = map(peakToPeak, 0, maximum, 0, 255);
-    for (uint8_t j = STRIP_LENGTH - 1; j > 0; j--)
+void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade, bool is_beat_2) {
+    uint8_t reverse_speed = map(peakToPeak, 0, maximum, 2, 6);
+    for (uint8_t j = 0; j < STRIP_LENGTH; j++)
     {
       // shift all the pixels along
-      strip.setPixelColor(j, samples[current_sample]);
+      uint8_t sine1 = strip.sine8(j*5+phase);
+      uint8_t sine2 = strip.sine8(j*10+phase);
+      uint8_t sine3 = strip.sine8(j*15+phase);
+      strip.setPixelColor(j, sine1, sine2, sine3);
     }
-    if(is_beat) {
-      strip.setPixelColor(0, 255, 255, 255);
+    if(is_beat_2) {
+      phase += reverse_speed;
+      if(is_beat) {
+        phase += reverse_speed;
+      }
     } else {
-      strip.setPixelColor(0, color >> 2, color >> 2, color >> 2);
+      phase--;
     }
 }
 
@@ -330,11 +337,15 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, un
     }
 }
 
-void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, char fade_type, unsigned int lpvu, unsigned int hpvu) {
+void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, byte fade_type, bool is_beat_2) {
     uint32_t color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
     int led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2);
-    int bias = lpvu;
+    int bias = 0;
+    if(is_beat_2) {
+      fade_type++;
+      if (fade_type > 2) fade_type = 0;
+    }
     
     for (uint8_t j = 0; j < STRIP_LENGTH/4; j++)
     {
@@ -441,13 +452,13 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
         render_shoot_pixels(peakToPeak, is_beat, do_fade, lpvu, hpvu);
         break;
       case 2:
-        render_double_vu(peakToPeak, is_beat, do_fade, 0, lpvu, hpvu);
+        render_double_vu(peakToPeak, is_beat, do_fade, 0, is_beat_2);
         break;
       case 3:
         render_vu_plus_beat_interleave(peakToPeak, is_beat, do_fade, lpvu, hpvu);
         break;
       case 4:
-        render_double_vu(peakToPeak, is_beat, do_fade, 1, lpvu, hpvu);
+        render_double_vu(peakToPeak, is_beat, do_fade, 1, is_beat_2);
         break;
       case 5:
         render_stream_pixels(peakToPeak, is_beat, do_fade);
@@ -456,10 +467,10 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
         render_sparkles(peakToPeak, is_beat, do_fade);
         break;
       case 7:
-        render_double_vu(peakToPeak, is_beat, do_fade, 2, lpvu, hpvu);
+        render_double_vu(peakToPeak, is_beat, do_fade, 2, is_beat_2);
         break;
       case 8:
-        render_beat_line(peakToPeak, is_beat, do_fade);
+        render_beat_line(peakToPeak, is_beat, do_fade, is_beat_2);
         break;
       case 9:
         render_bar_segments(peakToPeak, is_beat, do_fade, lpvu);
