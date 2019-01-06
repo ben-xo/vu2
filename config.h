@@ -3,13 +3,15 @@
 #define AUDIO_INPUT_HP 3
 #define NEOPIXEL_PIN 6
 #define BUTTON_PIN 2
+#define BEAT_PIN_1 3
+#define BEAT_PIN_2 4
 #define BUTTON_LED_PIN 13
 #define MODE_LED_PIN_1 9
 #define MODE_LED_PIN_2 10
 #define MODE_LED_PIN_3 11
 #define MODE_LED_PIN_4 12
 #define STRIP_LENGTH 60
-#define SAMP_BUFF_LEN 64 // this needs to be a power of 2.
+#define SAMP_BUFF_LEN 512 // this needs to be a power of 2.
 #define SAMP_FREQ 5000 // Hz
 
 // This is the beat detect threshold.
@@ -19,4 +21,4 @@
 #define DEFAULT_THRESHOLD 48.0
 #define USE_POT_FOR_THRESHOLD 0
 
-//#define LONGCLI 1
+#define LONGCLI 1

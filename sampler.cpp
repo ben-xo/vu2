@@ -5,10 +5,8 @@
 #include "sampler.h"
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
-uint8_t samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
-volatile uint8_t current_sample = 255; // start at -1, because of the algorithm in ADC_vect
-volatile uint8_t max_seen_sample = 0;
-volatile uint8_t min_seen_sample = 255;
+byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
+volatile uint16_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
 
 void disable_timer0_interrupt() {
@@ -25,6 +23,7 @@ void setup_sampler() {
   ADCSRA = 0;             // clear ADCSRA register
   ADCSRB = 0;             // clear ADCSRB register
   ADMUX |= (0 & 0x07)     // set A0 analog input pin
+        |  (1 << REFS0)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (1 << REFS1)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (1 << ADLAR)   // left align ADC value to 8 bits from ADCH register
   ;
@@ -44,7 +43,7 @@ void setup_sampler() {
 //       |  (1 << ADSC)  // start ADC measurements
   ;
 
-  TCCR1B = 0 | (1 << CS10) 
+  TCCR1B = 0 | (1 << CS11) 
              | (1 << WGM12)
   ; // set up TIMER1 with no prescaler, and interrupt on overflow
   
@@ -62,8 +61,8 @@ ISR(TIMER1_COMPA_vect)
   uint8_t sample_idx = (current_sample + 1) & ((SAMP_BUFF_LEN * 8) - 1); // clamp to the buffer size.
   current_sample = sample_idx;
   
-  uint8_t sample = ADCH;
-  volatile uint8_t* the_sample = samples + current_sample;
+  byte sample = ADCH;
+  volatile byte* the_sample = samples + current_sample;
   *the_sample = sample;
   new_sample_count++;
 }
