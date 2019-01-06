@@ -52,7 +52,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
     if(int_sample < min_val) min_val = int_sample;
 
     vu_iterator++;
-    if(vu_iterator == 30) {
+    if(vu_iterator == 20) {
       last_width = max_val - min_val;
       vu_iterator = 0;
       max_val=0;
