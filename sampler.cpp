@@ -58,7 +58,7 @@ ISR(TIMER1_COMPA_vect)
 {
   ADCSRA |= (1 << ADSC); // trigger next analog sample.
   
-  uint8_t sample_idx = (current_sample + 1) & ((SAMP_BUFF_LEN * 8) - 1); // clamp to the buffer size.
+  uint8_t sample_idx = (current_sample + 1);
   current_sample = sample_idx;
   
   byte sample = ADCH;

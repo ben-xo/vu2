@@ -41,7 +41,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
 
   while(sample_count > 0) { 
     // Read ADC and center to +-128
-    uint8_t int_sample = samples[sample_ptr & ((SAMP_BUFF_LEN * 8) - 1)];
+    uint8_t int_sample = samples[sample_ptr];
     sample_count--;
     sample_ptr++;
 
@@ -55,6 +55,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
       max_val=0;
       min_val=255;
     }
+    if(last_width > 0) last_width--;
   }
 
   return last_width;
@@ -102,7 +103,6 @@ void loop() {
     vu_width = calculate_vu(sample_ptr, sample_count);
     is_beat_1 = PIND & (1 << BEAT_PIN_1);
     is_beat_2 = PIND & (1 << BEAT_PIN_2);
-    debug_render_vu(the_strip, vu_width);
 //    Serial.print(vu_width); Serial.print("\n");
 
 //    debug_render_is_beat(the_strip, is_beat_1, is_beat_2);
@@ -112,15 +112,17 @@ void loop() {
 //    } else {
 //      the_strip.setPixelColor(0, 0,255,0);
 //    }
-//    for (int i = 0; i < sample_count; i++) {
-//      the_strip.setPixelColor(i+1, 0,0,255);
+//    int i = 0;
+//    for (; i < sample_count; i++) {
+//      the_strip.setPixelColor(i, 0,0,32);
 //    }
-//    for (int i = sample_count; i < STRIP_LENGTH; i++) {
-//      the_strip.setPixelColor(i+1, 0,0,0);
+//    for (; i < STRIP_LENGTH; i++) {
+//      the_strip.setPixelColor(i, 0,0,0);
 //    }
 //    debug_render_samples(the_strip, sample_ptr, true);
+    debug_render_vu(&the_strip, vu_width);
     the_strip.show();
 
-    reach_target_fps();
+//    reach_target_fps();
   }
 }

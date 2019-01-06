@@ -43,18 +43,20 @@ void debug_render_samples(UltraFastNeoPixel the_strip, uint8_t sample_ptr, bool 
     }
 }
 
-void debug_render_vu(UltraFastNeoPixel the_strip, uint8_t vu_width) {
-    uint8_t j = 0;
-    the_strip.clear();
-    for (; j < vu_width/4; j++) {
-      the_strip.setPixelColor(j, 32, 32, 32);
+void debug_render_vu(UltraFastNeoPixel *the_strip, uint8_t vu_width) {
+    uint16_t j = 0;
+    while (j < vu_width/2) {
+      the_strip->setPixelColor(j, 0, 16, 0);
+      j++;
     }
-    for (; j < STRIP_LENGTH; j++) {
-      uint32_t oldColor = the_strip.getPixelColor(j);
+    j = vu_width/2;
+    while(j < STRIP_LENGTH) {
+      uint32_t oldColor = the_strip->getPixelColor(j);
       uint8_t old_r = (oldColor & 0x00ff0000) >> 16;
       uint8_t old_g = (oldColor & 0x0000ff00) >> 8;
       uint8_t old_b = (oldColor & 0x000000ff);
-      the_strip.setPixelColor(j, old_r * 0.95, old_g * 0.95, old_b * 0.95);
+      the_strip->setPixelColor(j, old_r * 0.95, old_g * 0.95, old_b * 0.95);
 //      the_strip.setPixelColor(j,0,0,0);
+      j++;
     }
 }
