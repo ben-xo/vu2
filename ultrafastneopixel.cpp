@@ -93,6 +93,12 @@ uint32_t UltraFastNeoPixel::getPixelColor(uint16_t n) const {
           (uint32_t)p[2];
 }
 
+uint8_t* UltraFastNeoPixel::getPixelColorRGB(uint16_t n) const {
+  uint8_t* p;
+  p = &pixels[n * 3];
+  return p;
+}
+
 // Returns pointer to pixels[] array.  Pixel data is stored in device-
 // native format and is not translated here.  Application will need to be
 // aware of specific pixel data format and handle colors appropriately.

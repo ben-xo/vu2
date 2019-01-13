@@ -486,3 +486,50 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
 
     }
 }
+
+void do_banner() {
+    // colour test
+    for (uint16_t i = 0; i <= 255; i += 2) {
+      for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+        uint32_t c = Wheel((j + (i/4)) * 255 / STRIP_LENGTH);
+        uint8_t r = c >> 16;
+        uint8_t g = c >> 8;
+        uint8_t b = c;
+        strip.setPixelColor(j, r * i / 255, g * i / 255, b * i / 255);
+      }
+      strip.show();
+    }
+
+    for (int16_t k = 255; k > -1; k -= 2) {
+      for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+        uint32_t c = Wheel((j + (255-k)/4) * 255 / STRIP_LENGTH);
+        uint8_t r = c >> 16;
+        uint8_t g = c >> 8;
+        uint8_t b = c;
+        strip.setPixelColor(j, r * k / 255, g * k / 255, b * k / 255);
+      }
+      strip.show();
+    }
+    delay(100);
+
+    // double flash
+    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+        strip.setPixelColor(j, 255,255,255);
+    }
+    strip.show();
+    delay(50);
+
+    strip.clear();
+    strip.show();
+    delay(50);
+
+    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+        strip.setPixelColor(j, 255,255,255);
+    }
+    strip.show();
+    delay(50);
+
+    strip.clear();
+    strip.show();
+    delay(100);
+}

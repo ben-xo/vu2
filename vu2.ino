@@ -102,6 +102,8 @@ void loop() {
   uint8_t vu_width = 0;
   uint8_t mode = 0;
 
+  do_banner();
+
   start_time = micros();
   while(true) {
     
