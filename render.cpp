@@ -156,7 +156,8 @@ void shoot_pixel(int pixel) {
 }
 
 void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
-    int led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH - 1) - 1;
+    uint8_t adjPeak = strip.gamma8(peakToPeak);
+    int led = map(adjPeak, 0, maximum, -2, STRIP_LENGTH - 1) - 1;
     int beat_brightness = map(peakToPeak, 0, maximum, 0, 255);
     int bias = lpvu;
     
@@ -218,7 +219,8 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade, un
 }
 
 void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
-  uint8_t led = map(peakToPeak, 0, 128, 0, STRIP_LENGTH - 1);
+  uint8_t adjPeak = strip.gamma8(peakToPeak);
+  uint8_t led = map(adjPeak, 0, 128, 0, STRIP_LENGTH - 1);
   uint8_t beat_brightness = map(peakToPeak, 0, maximum, 128, 255);
   unsigned int bias = 30 * (is_beat ? 1 : 0);
 
@@ -282,10 +284,16 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade, bool 
     for (uint8_t j = 0; j < STRIP_LENGTH; j++)
     {
       // shift all the pixels along
-      uint8_t sine1 = strip.sine8(j*5+phase);
-      uint8_t sine2 = strip.sine8(j*10+phase);
-      uint8_t sine3 = strip.sine8(j*15+phase);
-      strip.setPixelColor(j, sine1, sine2, sine3);
+      int16_t sine1 = strip.sine8(j*5+phase);
+      int16_t sine2 = strip.sine8(j*10+phase);
+      int16_t sine3 = strip.sine8(j*15+phase);
+      if(!is_beat && !is_beat_2) {
+        uint8_t adjustment = peakToPeak / 4 * 3;
+        sine1 = adjustment + (sine1 / 4); if(sine1 > j*2) sine1 -= 2*j;
+        sine2 = adjustment + (sine2 / 4); if(sine2 > j*2) sine2 -= 2*j;
+        sine3 = adjustment + (sine3 / 4); if(sine3 > j*2) sine3 -= 2*j;
+      }
+      strip.setPixelColor(j, sine1 < 0 ? 0 : sine1, sine2 < 0 ? 0 : sine2, sine3 < 0 ? 0 : sine3);
     }
     if(is_beat_2) {
       phase += reverse_speed;
@@ -343,7 +351,8 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, un
 void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, byte fade_type, bool is_beat_2) {
     uint32_t color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
-    int led = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2);
+    uint8_t adjPeak = strip.gamma8(peakToPeak);
+    int led = map(adjPeak, 0, maximum, -2, STRIP_LENGTH/2);
     int bias = 0;
     if(is_beat_2) {
       fade_type++;

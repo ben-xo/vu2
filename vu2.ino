@@ -94,6 +94,30 @@ bool was_button_pressed(uint8_t pins) {
   return false;
 }
 
+
+// auto change every 8 bars
+uint32_t last_beat;
+byte beat_count = 0;
+bool auto_mode_change(bool is_beat) {
+  if(!is_beat) return false;
+  uint32_t now = millis();
+  if(now - last_beat > AUTO_BEATS_SILENCE_THRESH) {
+    // mode change anyway if this is the first beat in ages
+    last_beat = now;
+    beat_count = 0;
+    return true;
+  }
+  if(now - last_beat > AUTO_BEATS_MIN_THRESH) {
+    last_beat = now;
+    beat_count++;
+    if(beat_count >= AUTO_BEATS) {
+      beat_count = 0;
+      return true;
+    }
+  }
+  return false;
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
   
@@ -101,6 +125,7 @@ void loop() {
   bool is_beat_2 = false;
   uint8_t vu_width = 0;
   uint8_t mode = 0;
+  bool auto_mode = true;
 
   do_banner();
 
@@ -120,10 +145,19 @@ void loop() {
 
     if(was_button_pressed(PIND & (1 << BUTTON_PIN))) {
       mode++;
+      auto_mode = false;
       if(mode > 10) {
         mode = 0;
       }
     }
+
+    if(auto_mode && auto_mode_change(is_beat_1)) {
+      mode++;
+      if(mode > 10) {
+        mode = 0;
+      }
+    }
+    
     render(vu_width, is_beat_2, true, mode, 0, 0, is_beat_1, current_sample);
 
     strip.show();

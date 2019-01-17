@@ -13,6 +13,9 @@
 #define STRIP_LENGTH 60
 #define SAMP_BUFF_LEN 256 // this needs to be a power of 2.
 #define SAMP_FREQ 5000 // Hz
+#define AUTO_BEATS 64 // beats before change
+#define AUTO_BEATS_MIN_THRESH 300 // ms
+#define AUTO_BEATS_SILENCE_THRESH 5000 // ms
 
 // This is the beat detect threshold.
 // If you build a box without the pot, you can read the threshold out
