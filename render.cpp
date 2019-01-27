@@ -204,7 +204,7 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade, un
     
     for (int j = STRIP_LENGTH - 1; j >= 0; j--)
     {
-      if(j <= led && led >= 0) {
+      if(j <= led) {
         // set VU color up to peak
         int color = map(j, 0, STRIP_LENGTH >> 2, 0, 255);
         strip.setPixelColor(j, Wheel_Purple_Yellow(color));
@@ -281,19 +281,26 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
 
 void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade, bool is_beat_2) {
     uint8_t reverse_speed = map(peakToPeak, 0, maximum, 2, 6);
-    for (uint8_t j = 0; j < STRIP_LENGTH; j++)
+    uint16_t p,j,k,l;
+    p=j=k=l=0;
+    while(p < STRIP_LENGTH)
     {
       // shift all the pixels along
-      int16_t sine1 = strip.sine8(j*5+phase);
-      int16_t sine2 = strip.sine8(j*10+phase);
-      int16_t sine3 = strip.sine8(j*15+phase);
+      uint16_t sine1 = strip.sine8((uint8_t)(j+phase));
+      uint16_t sine2 = strip.sine8((uint8_t)(k+phase));
+      uint16_t sine3 = strip.sine8((uint8_t)(l+phase));
       if(!is_beat && !is_beat_2) {
-        uint8_t adjustment = peakToPeak / 4 * 3;
-        sine1 = adjustment + (sine1 / 4); if(sine1 > j*2) sine1 -= 2*j;
-        sine2 = adjustment + (sine2 / 4); if(sine2 > j*2) sine2 -= 2*j;
-        sine3 = adjustment + (sine3 / 4); if(sine3 > j*2) sine3 -= 2*j;
+        // sine1, 2 and 3 are really RGB values. Adjustment is really a base white.
+        uint16_t adjustment = peakToPeak / 4 * 3;
+        sine1 = adjustment + (sine1 / 4); if(sine1 > 255) sine1 = 255; // saturate
+        sine2 = adjustment + (sine2 / 4); if(sine2 > 255) sine2 = 255; // saturate
+        sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
       }
-      strip.setPixelColor(j, sine1 < 0 ? 0 : sine1, sine2 < 0 ? 0 : sine2, sine3 < 0 ? 0 : sine3);
+      strip.setPixelColor(p, sine1, sine2, sine3);
+      p++;
+      j += 5;
+      k += 10;
+      l += 15;
     }
     if(is_beat_2) {
       phase += reverse_speed;
@@ -307,25 +314,28 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade, bool 
 
 uint32_t was_beat_recently_time = 0;
 uint32_t last_bar_color = 0;
-int bar_segment_pattern=0;
+uint16_t bar_segment_pattern=0;
+#define BAR_PATTERNS 8
 #define BAR_PATTERN_SIZE 8
-long long unsigned bar_patterns[] = {
-  0b1111000011110000111100001111000011110000111100001111000011110000,
-  0b1111111100000000111111110000000011111111000000001111111100000000,
-  0b1111111111111111000000000000000011111111111111110000000000000000,
-  0b1111111111111111111111111111111100000000000000000000000000000000,
-  0b0000111100001111000011110000111100001111000011110000111100001111,
-  0b0000000011111111000000001111111100000000111111110000000011111111,
-  0b0000000000000000111111111111111100000000000000001111111111111111,
-  0b0000000000000000000000000000000011111111111111111111111111111111,
+
+static const uint8_t PROGMEM bar_patterns[] = {
+  0b11110000, 0b11110000, 0b11110000, 0b11110000, 0b11110000, 0b11110000, 0b11110000, 0b11110000,
+  0b11111111, 0b00000000, 0b11111111, 0b00000000, 0b11111111, 0b00000000, 0b11111111, 0b00000000,
+  0b11111111, 0b11111111, 0b00000000, 0b00000000, 0b11111111, 0b11111111, 0b00000000, 0b00000000,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+  0b00001111, 0b00001111, 0b00001111, 0b00001111, 0b00001111, 0b00001111, 0b00001111, 0b00001111,
+  0b00000000, 0b11111111, 0b00000000, 0b11111111, 0b00000000, 0b11111111, 0b00000000, 0b11111111,
+  0b00000000, 0b00000000, 0b11111111, 0b11111111, 0b00000000, 0b00000000, 0b11111111, 0b11111111,
+  0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b11111111, 0b11111111, 0b11111111, 0b11111111,
 };
-boolean _in_current_bar_segment(int j) {
-  int offset = bar_segment_pattern;
-  return (bar_patterns[offset] >> j) & 0b0000000000000000000000000000000000000000000000000000000000000001;
+boolean _in_current_bar_segment(uint8_t j) {
+  uint16_t offset = bar_segment_pattern;
+  return (pgm_read_byte(&bar_patterns[(offset*BAR_PATTERNS) + (j / BAR_PATTERN_SIZE)]) >> (j % BAR_PATTERN_SIZE)) & 1;
 }
 void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu) {
-    float brightness = peakToPeak / 4;
-    
+//    unsigned int brightness = peakToPeak / 4;
+    uint16_t last_pattern;
+        
     for (uint8_t j = 0; j < STRIP_LENGTH; j++)
     {
       uint32_t color = Wheel(j+(bar_segment_pattern*16));
@@ -343,8 +353,11 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, un
      }
     if(is_beat && millis() > was_beat_recently_time + 250) {
       was_beat_recently_time = millis();
-      bar_segment_pattern = random(0,BAR_PATTERN_SIZE);
-      if(bar_segment_pattern > 7) bar_segment_pattern=0;
+      last_pattern = bar_segment_pattern;
+      while(last_pattern == bar_segment_pattern) {
+        bar_segment_pattern = random(0,BAR_PATTERNS);
+      }
+      if(bar_segment_pattern >= BAR_PATTERNS) bar_segment_pattern=0;
     }
 }
 
