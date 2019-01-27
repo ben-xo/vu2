@@ -5,13 +5,13 @@
 #include "sampler.h"
 #include "ultrafastneopixel.h"
 #include "render.h"
-#include "debugrender.h"
+//#include "debugrender.h"
 
 UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
 
 uint32_t static start_time; // time each loop started.
 uint32_t static silent_since; // time we've been silent since.
-bool static slow = false; // track render time
+//bool static slow = false; // track render time
 
 #define SHORT_PUSH 1
 #define LONG_PUSH 2
@@ -71,20 +71,20 @@ static uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
 }
 
 static void reach_target_fps() {
-  uint32_t end_time = micros();
-  if (end_time < start_time) {
-    start_time -= end_time;
-  }
-  uint32_t total_time = end_time - start_time;
-  
-  // frame target is 100fps, or 20k microseconds
-  if(total_time > 5000) {
-    slow=true;
-  } else {
-    delayMicroseconds(5000-total_time);
-    slow=false;
-  }
-  start_time = end_time;
+//  uint32_t end_time = micros();
+//  if (end_time < start_time) {
+//    start_time -= end_time;
+//  }
+//  uint32_t total_time = end_time - start_time;
+//  
+//  // frame target is 100fps, or 20k microseconds
+//  if(total_time > 5000) {
+//    slow=true;
+//  } else {
+//    delayMicroseconds(5000-total_time);
+//    slow=false;
+//  }
+//  start_time = end_time;
 }
 
 // returns true on the falling edge of a button push
@@ -189,7 +189,7 @@ void loop() {
         is_silent = true;
       } else {
         // 2nd+ loop of silence. Long enough for attract mode?
-        if (!is_attract_mode && ((start_time - silent_since)/1000 > ATTRACT_MODE_TIMEOUT)) {
+        if (!is_attract_mode && ((start_time - silent_since) > ATTRACT_MODE_TIMEOUT)) {
           is_attract_mode = true;
         }
       }
@@ -207,7 +207,7 @@ void loop() {
         PORTB = (mode << 1); // writes directly to pins 9-12.
       }
       
-      render(vu_width, is_beat_2, true, mode, 0, 0, is_beat_1, current_sample);
+      render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
     }
 
     strip.show();

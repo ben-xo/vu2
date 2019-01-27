@@ -18,7 +18,7 @@
 #define AUTO_BEATS_MIN_THRESH 300 // ms
 #define AUTO_BEATS_SILENCE_THRESH 5000 // ms
 #define ATTRACT_MODE_THRESHOLD 8 // vu value
-#define ATTRACT_MODE_TIMEOUT 15000 // ms
+#define ATTRACT_MODE_TIMEOUT 15000000 // ns - because the start timer uses ns.
 #define ATTRACT_MODE_DOTS 5
 
 // This is the beat detect threshold.
