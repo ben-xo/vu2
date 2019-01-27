@@ -21,6 +21,7 @@ void setup() {
   pinMode(BEAT_PIN_2, INPUT);
   pinMode(BUTTON_PIN, INPUT);
   pinMode(NEOPIXEL_PIN, OUTPUT);
+  pinMode(DUTY_CYCLE_LED, OUTPUT);
   
   // the pin with the push-button LED
   pinMode(BUTTON_LED_PIN,OUTPUT);  
@@ -121,10 +122,12 @@ bool auto_mode_change(bool is_beat) {
 void loop() {
   // put your main code here, to run repeatedly:
   
-  bool is_beat_1 = false;
-  bool is_beat_2 = false;
+  byte is_beats = 0;
+  bool is_beat_1;
+  bool is_beat_2;
   uint8_t vu_width = 0;
   uint8_t mode = 0;
+  uint8_t last_mode = 0;
   bool auto_mode = true;
 
   do_banner();
@@ -139,23 +142,24 @@ void loop() {
     new_sample_count = 0;
     sei();
 
-    vu_width = calculate_vu(sample_ptr, sample_count);
-    is_beat_1 = PIND & (1 << BEAT_PIN_1);
-    is_beat_2 = PIND & (1 << BEAT_PIN_2);
-
     if(was_button_pressed(PIND & (1 << BUTTON_PIN))) {
       mode++;
       auto_mode = false;
       if(mode > 10) {
         mode = 0;
       }
+      PORTB = (mode << 1); // writes directly to pins 9-12
     }
+    
+    is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
+    vu_width = calculate_vu(sample_ptr, sample_count);
 
+    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
     if(auto_mode && auto_mode_change(is_beat_1)) {
-      mode++;
-      if(mode > 10) {
-        mode = 0;
-      }
+      last_mode = mode;
+      while(mode == last_mode) mode = random(0,10);
+      PORTB = (mode << 1); // writes directly to pins 9-12.
     }
     
     render(vu_width, is_beat_2, true, mode, 0, 0, is_beat_1, current_sample);
