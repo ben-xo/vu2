@@ -13,6 +13,9 @@ uint32_t start_time; // time each loop started.
 uint32_t silent_since; // time we've been silent since.
 bool slow = false; // track render time
 
+#define SHORT_PUSH 1
+#define LONG_PUSH 2
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -83,17 +86,25 @@ void reach_target_fps() {
   start_time = end_time;
 }
 
-// returns true on the rising edge of a button push
-bool was_button_pressed(uint8_t pins) {
+// returns true on the falling edge of a button push
+uint8_t was_button_pressed(uint8_t pins) {
   static bool is_down = false;
+  static uint32_t last_push;
   if(is_down && !pins) {
     is_down = false;
-    return true;
+    if(millis() - last_push > 5000) {
+      // long push
+      return LONG_PUSH;
+    }
+    // short push
+    return SHORT_PUSH;
   }
   if(!is_down && pins) {
     is_down = true;
+    last_push = millis();
   }
-  return false;
+  // no push yet, although one may be in progress.
+  return 0;
 }
 
 
@@ -146,32 +157,39 @@ void loop() {
     new_sample_count = 0;
     sei();
 
-    if(was_button_pressed(PIND & (1 << BUTTON_PIN))) {
+    uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    if(pushed == SHORT_PUSH) {
       mode++;
       auto_mode = false;
+      is_attract_mode = false;
       if(mode > 10) {
         mode = 0;
       }
       PORTB = (mode << 1); // writes directly to pins 9-12
+    } else if(pushed == LONG_PUSH) {
+      auto_mode = true;
+      mode = 0;
     }
     
     is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
     vu_width = calculate_vu(sample_ptr, sample_count);
 
-    if (vu_width > ATTRACT_MODE_THRESHOLD) {
-      // loudness: cancel attract mode.
-      is_silent = false;
-      is_attract_mode = false;
-    } else {
-      // quiet: short or long?
-      if(!is_silent) {
-        // first loop of silence. Record time.
-        silent_since = start_time; // note start time of silence
-        is_silent = true;
+    if(!auto_mode) { // mode change cancels attract.
+      if (vu_width > ATTRACT_MODE_THRESHOLD) {
+        // loudness: cancel attract mode.
+        is_silent = false;
+        is_attract_mode = false;
       } else {
-        // 2nd+ loop of silence. Long enough for attract mode?
-        if (!is_attract_mode && ((start_time - silent_since)/1000 > ATTRACT_MODE_TIMEOUT)) {
-          is_attract_mode = true;
+        // quiet: short or long?
+        if(!is_silent) {
+          // first loop of silence. Record time.
+          silent_since = start_time; // note start time of silence
+          is_silent = true;
+        } else {
+          // 2nd+ loop of silence. Long enough for attract mode?
+          if (!is_attract_mode && ((start_time - silent_since)/1000 > ATTRACT_MODE_TIMEOUT)) {
+            is_attract_mode = true;
+          }
         }
       }
     }
@@ -184,7 +202,7 @@ void loop() {
       is_beat_2 = is_beats & (1 << BEAT_PIN_2);
       if(auto_mode && auto_mode_change(is_beat_1)) {
         last_mode = mode;
-        while(mode == last_mode) mode = random(0,10);
+        while(mode == last_mode) mode = random(0,11); // max is exclusive
         PORTB = (mode << 1); // writes directly to pins 9-12.
       }
       

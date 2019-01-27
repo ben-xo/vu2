@@ -10,15 +10,21 @@
 #define MAX_MODE 10
 #define MAX_AUTO_MODE 8
 
+#define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
+
 uint8_t random_table[STRIP_LENGTH];
 uint8_t maximum = 255;
 uint8_t phase = 0;
+bool dots_defined[ATTRACT_MODE_DOTS];
 
 void setup_render() {
   // Initialize all pixels to 'off'
   strip.begin();
   strip.clear();
   strip.show();
+  for(uint8_t i = 0; i < ATTRACT_MODE_DOTS; i++) {
+    dots_defined[i] = false;
+  }
 }
 
 uint32_t Wheel(byte WheelPos) {
@@ -117,7 +123,7 @@ void generate_sparkle_table() {
   // only 
   for (i = 0; i < STRIP_LENGTH / 2; i++)
   {
-      size_t j = random(0, STRIP_LENGTH - i);
+      size_t j = random(0, STRIP_LENGTH - i + 1);
     
       int t = random_table[i];
       random_table[i] = random_table[j];
@@ -517,19 +523,86 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
 }
 
 void render_attract() {
-  static uint32_t millis_since_last_change;
-  uint8_t pixel;
-  uint8_t wheel;
+  static uint32_t millis_since_last_dot;
+//  static uint32_t millis_since_last_fade;
+  static uint32_t dot_colors[ATTRACT_MODE_DOTS];
+  static uint32_t dot_pos[ATTRACT_MODE_DOTS];
+  static uint16_t dot_speeds[ATTRACT_MODE_DOTS];
+    
+//  uint8_t* pixels;
+//  uint8_t pixel;
+//  uint8_t wheel;
   uint32_t now = millis(); // TODO: use start_time here
-  for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-    fade_pixel_very_slow(j);
+
+  for(uint8_t i = 0; i < STRIP_LENGTH; i++) {
+    fade_pixel_slow(i);
   }
-  if(now - millis_since_last_change > 500) {
-    pixel = random(0,STRIP_LENGTH);
-    wheel = random(0,255);
-    strip.setPixelColor(pixel, Wheel(wheel));
-    millis_since_last_change = now;
+
+  for(uint8_t dot=0; dot < ATTRACT_MODE_DOTS; dot++) {
+    if(!dots_defined[dot]) {
+      dot_colors[dot] = Wheel(random(0,256));
+      dot_pos[dot] = random(0, 29492); // 32768 * 0.8 (so pixels dont start at the very end of the strip)
+      dot_speeds[dot] = random(32768/(STRIP_LENGTH*8),10*(32768/(STRIP_LENGTH*6)));
+      dots_defined[dot] = true;
+    }
+
+    if(now - millis_since_last_dot > 20) {
+      dot_pos[dot] += dot_speeds[dot];
+      millis_since_last_dot = now;
+    }
+    if(dot_pos[dot] >= 32768) {
+      // dot is off the map.
+      dots_defined[dot] = false;
+    } else {
+      // draw adjusted to strip (trying to do anti-aliasing)
+      // ratio of pixel in left or right pixels
+      uint16_t led = dot_pos[dot] / POS_PER_PIXEL;
+      uint16_t led_offset = dot_pos[dot] % POS_PER_PIXEL;
+
+      if(led > 0 && led < STRIP_LENGTH) {
+        strip.setPixelColor(led, 
+          (uint8_t)(dot_colors[dot] >> 16) * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL,
+          (uint8_t)(dot_colors[dot] >> 8)  * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL, 
+          (uint8_t)(dot_colors[dot])       * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL
+        );
+      }
+      if(led + 1 < STRIP_LENGTH) {
+        strip.setPixelColor(led+1, 
+          (uint8_t)(dot_colors[dot] >> 16) * led_offset/POS_PER_PIXEL, 
+          (uint8_t)(dot_colors[dot] >> 8)  * led_offset/POS_PER_PIXEL, 
+          (uint8_t)(dot_colors[dot])       * led_offset/POS_PER_PIXEL
+        );
+      }
+    }
   }
+//  
+//  if(now - millis_since_last_fade > 20) {
+//    pixels = strip.getPixels();
+//    // manipulate pixels directly.
+//
+//    // j = 0
+//    pixels[0] = pixels[0] * 0.9;
+//    pixels[1] = pixels[1] * 0.9;
+//    pixels[2] = pixels[2] * 0.9;
+//
+//    // j = 1
+//    pixels[3] = pixels[3] * 0.6 + pixels[0] * 0.3;
+//    pixels[4] = pixels[4] * 0.6 + pixels[0] * 0.3;
+//    pixels[5] = pixels[5] * 0.6 + pixels[0] * 0.3;
+//
+//    for (uint8_t j = 2; j < STRIP_LENGTH; j++) {
+//      pixels[j*3]   = pixels[j*3]   * 0.5 + pixels[(j-1)*3]   * 0.25 + pixels[(j-2)*3]   * 0.15;
+//      pixels[j*3+1] = pixels[j*3+1] * 0.5 + pixels[(j-1)*3+1] * 0.25 + pixels[(j-2)*3+1] * 0.15;
+//      pixels[j*3+2] = pixels[j*3+2] * 0.5 + pixels[(j-1)*3+2] * 0.25 + pixels[(j-2)*3+2] * 0.15;
+//    }
+//    millis_since_last_fade = now;
+//  }
+//  if(now - millis_since_last_dot > 500) {
+//    pixel = random(0,STRIP_LENGTH);
+//    wheel = random(0,256);
+//    strip.setPixelColor(pixel, Wheel(wheel));
+//    millis_since_last_dot = now;
+//  }
 }
 
 void do_banner() {
