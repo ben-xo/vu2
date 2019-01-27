@@ -9,9 +9,9 @@
 
 UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
 
-uint32_t start_time; // time each loop started.
-uint32_t silent_since; // time we've been silent since.
-bool slow = false; // track render time
+uint32_t static start_time; // time each loop started.
+uint32_t static silent_since; // time we've been silent since.
+bool static slow = false; // track render time
 
 #define SHORT_PUSH 1
 #define LONG_PUSH 2
@@ -40,9 +40,10 @@ void setup() {
   setup_render();
   setup_sampler();
 //  Serial.begin(2000000);
+//  randomSeed(analogRead(2));
 }
 
-uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
+static uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
   static uint8_t max_val=0, min_val=255;
   static uint8_t vu_iterator;
   static uint8_t last_width;
@@ -69,7 +70,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
   return last_width;
 }
 
-void reach_target_fps() {
+static void reach_target_fps() {
   uint32_t end_time = micros();
   if (end_time < start_time) {
     start_time -= end_time;
@@ -87,12 +88,12 @@ void reach_target_fps() {
 }
 
 // returns true on the falling edge of a button push
-uint8_t was_button_pressed(uint8_t pins) {
+static uint8_t was_button_pressed(uint8_t pins) {
   static bool is_down = false;
   static uint32_t last_push;
   if(is_down && !pins) {
     is_down = false;
-    if(millis() - last_push > 5000) {
+    if(millis() - last_push > 3000) {
       // long push
       return LONG_PUSH;
     }
@@ -109,9 +110,9 @@ uint8_t was_button_pressed(uint8_t pins) {
 
 
 // auto change every 8 bars
-uint32_t last_beat;
-byte beat_count = 0;
-bool auto_mode_change(bool is_beat) {
+uint32_t static last_beat;
+byte static beat_count = 0;
+static bool auto_mode_change(bool is_beat) {
   if(!is_beat) return false;
   uint32_t now = millis();
   if(now - last_beat > AUTO_BEATS_SILENCE_THRESH) {
@@ -149,6 +150,7 @@ void loop() {
   start_time = micros();
   silent_since = start_time;
   while(true) {
+    start_time = micros();
     
     // read these as they're volatile
     cli();
@@ -169,27 +171,26 @@ void loop() {
     } else if(pushed == LONG_PUSH) {
       auto_mode = true;
       mode = 0;
+      PORTB = (mode << 1); // writes directly to pins 9-12
     }
     
     is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
     vu_width = calculate_vu(sample_ptr, sample_count);
 
-    if(!auto_mode) { // mode change cancels attract.
-      if (vu_width > ATTRACT_MODE_THRESHOLD) {
-        // loudness: cancel attract mode.
-        is_silent = false;
-        is_attract_mode = false;
+    if (pushed || vu_width > ATTRACT_MODE_THRESHOLD) {
+      // loudness: cancel attract mode, and so does a button press.
+      is_silent = false;
+      is_attract_mode = false;
+    } else {
+      // quiet: short or long?
+      if(!is_silent) {
+        // first loop of silence. Record time.
+        silent_since = start_time; // note start time of silence
+        is_silent = true;
       } else {
-        // quiet: short or long?
-        if(!is_silent) {
-          // first loop of silence. Record time.
-          silent_since = start_time; // note start time of silence
-          is_silent = true;
-        } else {
-          // 2nd+ loop of silence. Long enough for attract mode?
-          if (!is_attract_mode && ((start_time - silent_since)/1000 > ATTRACT_MODE_TIMEOUT)) {
-            is_attract_mode = true;
-          }
+        // 2nd+ loop of silence. Long enough for attract mode?
+        if (!is_attract_mode && ((start_time - silent_since)/1000 > ATTRACT_MODE_TIMEOUT)) {
+          is_attract_mode = true;
         }
       }
     }

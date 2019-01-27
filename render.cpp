@@ -12,20 +12,12 @@
 
 #define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
 
-uint8_t random_table[STRIP_LENGTH];
-uint8_t maximum = 255;
-uint8_t phase = 0;
-bool dots_defined[ATTRACT_MODE_DOTS];
-
-void setup_render() {
-  // Initialize all pixels to 'off'
-  strip.begin();
-  strip.clear();
-  strip.show();
-  for(uint8_t i = 0; i < ATTRACT_MODE_DOTS; i++) {
-    dots_defined[i] = false;
-  }
-}
+uint8_t static random_table[STRIP_LENGTH];
+uint8_t static maximum = 255;
+uint8_t static phase = 0;
+static uint32_t dot_colors[ATTRACT_MODE_DOTS];
+static uint32_t dot_pos[ATTRACT_MODE_DOTS];
+static uint16_t dot_speeds[ATTRACT_MODE_DOTS];
 
 uint32_t Wheel(byte WheelPos) {
   WheelPos = 255 - WheelPos;
@@ -40,6 +32,12 @@ uint32_t Wheel(byte WheelPos) {
   }
 }
 
+static void make_new_dot(uint8_t dot) {
+    dot_colors[dot] = Wheel(random(0,256));
+    dot_pos[dot] = random(0, 29492); // 32768 * 0.8 (so pixels dont start at the very end of the strip)
+    dot_speeds[dot] = random(POS_PER_PIXEL/17,POS_PER_PIXEL/5);
+}
+
 uint32_t Wheel2(byte WheelPos) {
   // 0 is blue (0,0,255)
   // 255 is yellow (255,127,0)
@@ -47,6 +45,16 @@ uint32_t Wheel2(byte WheelPos) {
     WheelPos, 
     WheelPos >> 1, 
     255-WheelPos);
+}
+
+void setup_render() {
+  // Initialize all pixels to 'off'
+  strip.begin();
+  strip.clear();
+  strip.show();
+  for(uint8_t i = 0; i < ATTRACT_MODE_DOTS; i++) {
+    make_new_dot(i);
+  }
 }
 
 uint32_t Wheel3(byte WheelPos) {
@@ -64,7 +72,7 @@ uint32_t Wheel_Purple_Yellow(byte WheelPos) {
   );
 }
 
-void fade_pixel(int pixel) {
+static void fade_pixel(int pixel) {
   uint32_t color = strip.getPixelColor(pixel);
   uint8_t r = color >> 16;
   uint8_t g = color >> 8;
@@ -72,7 +80,7 @@ void fade_pixel(int pixel) {
   strip.setPixelColor(pixel, r*0.9,g*0.9,b*0.9);
 }
 
-void fade_pixel_very_slow(int pixel) {
+static void fade_pixel_very_slow(int pixel) {
   uint32_t color = strip.getPixelColor(pixel);
   uint8_t r = color >> 16;
   uint8_t g = color >> 8;
@@ -80,7 +88,7 @@ void fade_pixel_very_slow(int pixel) {
   strip.setPixelColor(pixel, r*0.995,g*0.995,b*0.995);
 }
 
-void fade_pixel_slow(int pixel) {
+static void fade_pixel_slow(int pixel) {
   uint32_t color = strip.getPixelColor(pixel);
   uint8_t r = color >> 16;
   uint8_t g = color >> 8;
@@ -88,7 +96,7 @@ void fade_pixel_slow(int pixel) {
   strip.setPixelColor(pixel, r*0.95,g*0.95,b*0.95);
 }
 
-void fade_pixel_fast(int pixel) {
+static void fade_pixel_fast(int pixel) {
   uint32_t color = strip.getPixelColor(pixel);
   uint8_t r = color >> 16;
   uint8_t g = color >> 8;
@@ -97,7 +105,7 @@ void fade_pixel_fast(int pixel) {
 }
 
 // fades pixels more the closer they are the start, so that peaks stay visible
-void fade_pixel_plume(int pixel) {
+static void fade_pixel_plume(int pixel) {
   float fade_factor;
   if(pixel < STRIP_LENGTH >> 1) {
     fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 0.8, 1.0);  
@@ -111,7 +119,7 @@ void fade_pixel_plume(int pixel) {
   strip.setPixelColor(pixel, r*fade_factor, g*fade_factor, b*fade_factor);
 }
 
-void generate_sparkle_table() {
+static void generate_sparkle_table() {
   int i;
   
   for (i = 0; i < STRIP_LENGTH; i++) {
@@ -156,7 +164,7 @@ void stream_pixel(int pixel) {
 // like stream pixel but with a sharper fade
 void shoot_pixel(int pixel) {
   uint32_t color = 0;
-  
+
   if(pixel >= 4) {
     color  = (strip.getPixelColor(pixel-2) >> 1) & 0x7F7F7F7F;
     color += (strip.getPixelColor(pixel-3) >> 2) & 0x3F3F3F3F;
@@ -325,9 +333,9 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade, bool 
     }
 }
 
-uint32_t was_beat_recently_time = 0;
-uint32_t last_bar_color = 0;
-uint16_t bar_segment_pattern=0;
+uint32_t static was_beat_recently_time = 0;
+uint32_t static last_bar_color = 0;
+uint16_t static bar_segment_pattern=0;
 #define BAR_PATTERNS 8
 #define BAR_PATTERN_SIZE 8
 
@@ -341,7 +349,7 @@ static const uint8_t PROGMEM bar_patterns[] = {
   0b00000000, 0b00000000, 0b11111111, 0b11111111, 0b00000000, 0b00000000, 0b11111111, 0b11111111,
   0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b11111111, 0b11111111, 0b11111111, 0b11111111,
 };
-boolean _in_current_bar_segment(uint8_t j) {
+static boolean _in_current_bar_segment(uint8_t j) {
   uint16_t offset = bar_segment_pattern;
   return (pgm_read_byte(&bar_patterns[(offset*BAR_PATTERNS) + (j / BAR_PATTERN_SIZE)]) >> (j % BAR_PATTERN_SIZE)) & 1;
 }
@@ -523,57 +531,42 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
 }
 
 void render_attract() {
-  static uint32_t millis_since_last_dot;
+//  static uint32_t millis_since_last_dot;
 //  static uint32_t millis_since_last_fade;
-  static uint32_t dot_colors[ATTRACT_MODE_DOTS];
-  static uint32_t dot_pos[ATTRACT_MODE_DOTS];
-  static uint16_t dot_speeds[ATTRACT_MODE_DOTS];
     
 //  uint8_t* pixels;
 //  uint8_t pixel;
 //  uint8_t wheel;
-  uint32_t now = millis(); // TODO: use start_time here
+//  uint32_t now = millis(); // TODO: use start_time here
 
   for(uint8_t i = 0; i < STRIP_LENGTH; i++) {
-    fade_pixel_slow(i);
+    fade_pixel(i);
   }
 
   for(uint8_t dot=0; dot < ATTRACT_MODE_DOTS; dot++) {
-    if(!dots_defined[dot]) {
-      dot_colors[dot] = Wheel(random(0,256));
-      dot_pos[dot] = random(0, 29492); // 32768 * 0.8 (so pixels dont start at the very end of the strip)
-      dot_speeds[dot] = random(32768/(STRIP_LENGTH*8),10*(32768/(STRIP_LENGTH*6)));
-      dots_defined[dot] = true;
-    }
-
-    if(now - millis_since_last_dot > 20) {
-      dot_pos[dot] += dot_speeds[dot];
-      millis_since_last_dot = now;
-    }
     if(dot_pos[dot] >= 32768) {
-      // dot is off the map.
-      dots_defined[dot] = false;
-    } else {
-      // draw adjusted to strip (trying to do anti-aliasing)
-      // ratio of pixel in left or right pixels
-      uint16_t led = dot_pos[dot] / POS_PER_PIXEL;
-      uint16_t led_offset = dot_pos[dot] % POS_PER_PIXEL;
+      make_new_dot(dot);
+    } 
+    // draw adjusted to strip (trying to do anti-aliasing)
+    // ratio of pixel in left or right pixels
+    uint16_t led = dot_pos[dot] / POS_PER_PIXEL;
+    uint16_t led_offset = dot_pos[dot] % POS_PER_PIXEL;
 
-      if(led > 0 && led < STRIP_LENGTH) {
-        strip.setPixelColor(led, 
-          (uint8_t)(dot_colors[dot] >> 16) * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL,
-          (uint8_t)(dot_colors[dot] >> 8)  * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL, 
-          (uint8_t)(dot_colors[dot])       * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL
-        );
-      }
-      if(led + 1 < STRIP_LENGTH) {
-        strip.setPixelColor(led+1, 
-          (uint8_t)(dot_colors[dot] >> 16) * led_offset/POS_PER_PIXEL, 
-          (uint8_t)(dot_colors[dot] >> 8)  * led_offset/POS_PER_PIXEL, 
-          (uint8_t)(dot_colors[dot])       * led_offset/POS_PER_PIXEL
-        );
-      }
+    if(led+1 < STRIP_LENGTH) {
+      strip.setPixelColor(led+1, 
+        (uint8_t)(dot_colors[dot] >> 16) * led_offset/POS_PER_PIXEL, 
+        (uint8_t)(dot_colors[dot] >> 8)  * led_offset/POS_PER_PIXEL, 
+        (uint8_t)(dot_colors[dot])       * led_offset/POS_PER_PIXEL
+      );
     }
+    if(led < STRIP_LENGTH) {
+      strip.setPixelColor(led, 
+        (uint8_t)(dot_colors[dot] >> 16) * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL,
+        (uint8_t)(dot_colors[dot] >> 8)  * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL, 
+        (uint8_t)(dot_colors[dot])       * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL
+      );
+    }
+    dot_pos[dot] += dot_speeds[dot];
   }
 //  
 //  if(now - millis_since_last_fade > 20) {
