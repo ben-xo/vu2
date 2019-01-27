@@ -10,7 +10,6 @@
 #define MAX_MODE 10
 #define MAX_AUTO_MODE 8
 
-
 uint8_t random_table[STRIP_LENGTH];
 uint8_t maximum = 255;
 uint8_t phase = 0;
@@ -65,6 +64,14 @@ void fade_pixel(int pixel) {
   uint8_t g = color >> 8;
   uint8_t b = color;
   strip.setPixelColor(pixel, r*0.9,g*0.9,b*0.9);
+}
+
+void fade_pixel_very_slow(int pixel) {
+  uint32_t color = strip.getPixelColor(pixel);
+  uint8_t r = color >> 16;
+  uint8_t g = color >> 8;
+  uint8_t b = color;
+  strip.setPixelColor(pixel, r*0.995,g*0.995,b*0.995);
 }
 
 void fade_pixel_slow(int pixel) {
@@ -507,6 +514,22 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
         
 
     }
+}
+
+void render_attract() {
+  static uint32_t millis_since_last_change;
+  uint8_t pixel;
+  uint8_t wheel;
+  uint32_t now = millis(); // TODO: use start_time here
+  for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+    fade_pixel_very_slow(j);
+  }
+  if(now - millis_since_last_change > 500) {
+    pixel = random(0,STRIP_LENGTH);
+    wheel = random(0,255);
+    strip.setPixelColor(pixel, Wheel(wheel));
+    millis_since_last_change = now;
+  }
 }
 
 void do_banner() {

@@ -17,6 +17,8 @@
 #define AUTO_BEATS 64 // beats before change
 #define AUTO_BEATS_MIN_THRESH 300 // ms
 #define AUTO_BEATS_SILENCE_THRESH 5000 // ms
+#define ATTRACT_MODE_THRESHOLD 8 // vu value
+#define ATTRACT_MODE_TIMEOUT 30000 // ms
 
 // This is the beat detect threshold.
 // If you build a box without the pot, you can read the threshold out

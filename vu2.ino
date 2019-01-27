@@ -9,7 +9,8 @@
 
 UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
 
-uint32_t start_time;
+uint32_t start_time; // time each loop started.
+uint32_t silent_since; // time we've been silent since.
 bool slow = false; // track render time
 
 void setup() {
@@ -129,10 +130,13 @@ void loop() {
   uint8_t mode = 0;
   uint8_t last_mode = 0;
   bool auto_mode = true;
+  bool is_silent = false;
+  bool is_attract_mode = false;
 
   do_banner();
 
   start_time = micros();
+  silent_since = start_time;
   while(true) {
     
     // read these as they're volatile
@@ -154,15 +158,38 @@ void loop() {
     is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
     vu_width = calculate_vu(sample_ptr, sample_count);
 
-    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
-    if(auto_mode && auto_mode_change(is_beat_1)) {
-      last_mode = mode;
-      while(mode == last_mode) mode = random(0,10);
-      PORTB = (mode << 1); // writes directly to pins 9-12.
+    if (vu_width > ATTRACT_MODE_THRESHOLD) {
+      // loudness: cancel attract mode.
+      is_silent = false;
+      is_attract_mode = false;
+    } else {
+      // quiet: short or long?
+      if(!is_silent) {
+        // first loop of silence. Record time.
+        silent_since = start_time; // note start time of silence
+        is_silent = true;
+      } else {
+        // 2nd+ loop of silence. Long enough for attract mode?
+        if (!is_attract_mode && ((start_time - silent_since)/1000 > ATTRACT_MODE_TIMEOUT)) {
+          is_attract_mode = true;
+        }
+      }
     }
-    
-    render(vu_width, is_beat_2, true, mode, 0, 0, is_beat_1, current_sample);
+
+    if(is_attract_mode) {
+      render_attract();
+    } else {
+      
+      is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+      is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+      if(auto_mode && auto_mode_change(is_beat_1)) {
+        last_mode = mode;
+        while(mode == last_mode) mode = random(0,10);
+        PORTB = (mode << 1); // writes directly to pins 9-12.
+      }
+      
+      render(vu_width, is_beat_2, true, mode, 0, 0, is_beat_1, current_sample);
+    }
 
     strip.show();
 
