@@ -23,7 +23,6 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT);
   pinMode(BEAT_PIN_1, INPUT);
   pinMode(BEAT_PIN_2, INPUT);
-  pinMode(BUTTON_PIN, INPUT);
   pinMode(NEOPIXEL_PIN, OUTPUT);
   pinMode(DUTY_CYCLE_LED, OUTPUT);
   
