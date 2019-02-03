@@ -12,7 +12,31 @@
 
 #define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
 
-uint8_t static random_table[STRIP_LENGTH];
+struct Sparkles {
+  uint8_t random_table[STRIP_LENGTH];  
+};
+
+void init_sparkles(Sparkles *s) {
+  for (uint16_t i = 0; i < STRIP_LENGTH; i++) {
+    s->random_table[i] = 0;
+  }
+}
+
+struct BarSegment {
+  uint32_t was_beat_recently_time;
+  uint32_t last_bar_color;
+  uint16_t bar_segment_pattern;
+};
+
+void init_barsegment(BarSegment *bs) {
+  bs->was_beat_recently_time = 0;
+  bs->last_bar_color = 0;
+  bs->bar_segment_pattern = 0;
+}
+
+// we reuse the same block of ram between effects
+static byte mode_data[max(sizeof(Sparkles), sizeof(BarSegment))];
+
 uint8_t static maximum = 255;
 uint8_t static phase = 0;
 static uint32_t dot_colors[ATTRACT_MODE_DOTS];
@@ -119,11 +143,11 @@ static void fade_pixel_plume(int pixel) {
   strip.setPixelColor(pixel, r*fade_factor, g*fade_factor, b*fade_factor);
 }
 
-static void generate_sparkle_table() {
+static void generate_sparkle_table(Sparkles *s) {
   int i;
   
   for (i = 0; i < STRIP_LENGTH; i++) {
-    random_table[i] = i;
+    s->random_table[i] = i;
   }
 
   // shuffle!
@@ -133,9 +157,9 @@ static void generate_sparkle_table() {
   {
       size_t j = random(0, STRIP_LENGTH - i + 1);
     
-      int t = random_table[i];
-      random_table[i] = random_table[j];
-      random_table[j] = t;
+      int t = s->random_table[i];
+      s->random_table[i] = s->random_table[j];
+      s->random_table[j] = t;
   }  
 }
 
@@ -270,7 +294,7 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fa
   }
 }
 
-void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
+void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade, Sparkles *s) {
     if(do_fade) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++)
       {
@@ -279,9 +303,9 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     }
     int index = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2 );
     if(index >= 0) {
-      generate_sparkle_table();
+      generate_sparkle_table(s);
       for (uint8_t j = 0; j <= index; j++) {
-        strip.setPixelColor(random_table[j], j%2 ? GOLD : SILVER);
+        strip.setPixelColor(s->random_table[j], j%2 ? GOLD : SILVER);
       }
     }
 }
@@ -333,9 +357,6 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade, bool 
     }
 }
 
-uint32_t static was_beat_recently_time = 0;
-uint32_t static last_bar_color = 0;
-uint16_t static bar_segment_pattern=0;
 #define BAR_PATTERNS 8
 #define BAR_PATTERN_SIZE 8
 
@@ -349,36 +370,36 @@ static const uint8_t PROGMEM bar_patterns[] = {
   0b00000000, 0b00000000, 0b11111111, 0b11111111, 0b00000000, 0b00000000, 0b11111111, 0b11111111,
   0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b11111111, 0b11111111, 0b11111111, 0b11111111,
 };
-static boolean _in_current_bar_segment(uint8_t j) {
-  uint16_t offset = bar_segment_pattern;
+static boolean _in_current_bar_segment(uint8_t j, BarSegment *bs) {
+  uint16_t offset = bs->bar_segment_pattern;
   return (pgm_read_byte(&bar_patterns[(offset*BAR_PATTERNS) + (j / BAR_PATTERN_SIZE)]) >> (j % BAR_PATTERN_SIZE)) & 1;
 }
-void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu) {
+void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, BarSegment *bs) {
 //    unsigned int brightness = peakToPeak / 4;
     uint16_t last_pattern;
         
     for (uint8_t j = 0; j < STRIP_LENGTH; j++)
     {
-      uint32_t color = Wheel(j+(bar_segment_pattern*16));
-      if(_in_current_bar_segment(j)) {
+      uint32_t color = Wheel(j+(bs->bar_segment_pattern*16));
+      if(_in_current_bar_segment(j, bs)) {
         uint8_t r = color >> 16;
         uint8_t g = color >> 8;
         uint8_t b = color;
         strip.setPixelColor(j, r/4*3+peakToPeak,g/4*3+peakToPeak,b/4*3+peakToPeak);
-        last_bar_color = color;
+        bs->last_bar_color = color;
       } else {
         if(do_fade) {
           fade_pixel(j);
         }
       }
      }
-    if(is_beat && millis() > was_beat_recently_time + 250) {
-      was_beat_recently_time = millis();
-      last_pattern = bar_segment_pattern;
-      while(last_pattern == bar_segment_pattern) {
-        bar_segment_pattern = random(0,BAR_PATTERNS);
+    if(is_beat && millis() > bs->was_beat_recently_time + 250) {
+      bs->was_beat_recently_time = millis();
+      last_pattern = bs->bar_segment_pattern;
+      while(last_pattern == bs->bar_segment_pattern) {
+        bs->bar_segment_pattern = random(0,BAR_PATTERNS);
       }
-      if(bar_segment_pattern >= BAR_PATTERNS) bar_segment_pattern=0;
+      if(bs->bar_segment_pattern >= BAR_PATTERNS) bs->bar_segment_pattern=0;
     }
 }
 
@@ -488,46 +509,66 @@ void rainbowCycle(uint8_t wait) {
   }
 }
 
-void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsigned int lpvu, unsigned int hpvu, bool is_beat_2, uint8_t sample_ptr) {
 
-    switch(mode) {
-      case 0:
-        render_vu_plus_beat_end(peakToPeak, is_beat, do_fade, lpvu, hpvu);
-        break;
-      case 1:
-        render_shoot_pixels(peakToPeak, is_beat, do_fade, lpvu, hpvu);
-        break;
-      case 2:
-        render_double_vu(peakToPeak, is_beat, do_fade, 0, is_beat_2);
-        break;
-      case 3:
-        render_vu_plus_beat_interleave(peakToPeak, is_beat, do_fade, lpvu, hpvu);
-        break;
-      case 4:
-        render_double_vu(peakToPeak, is_beat, do_fade, 1, is_beat_2);
-        break;
-      case 5:
-        render_stream_pixels(peakToPeak, is_beat, do_fade);
-        break;
-      case 6:
-        render_sparkles(peakToPeak, is_beat, do_fade);
-        break;
-      case 7:
-        render_double_vu(peakToPeak, is_beat, do_fade, 2, is_beat_2);
-        break;
-      case 8:
-        render_beat_line(peakToPeak, is_beat, do_fade, is_beat_2);
-        break;
-      case 9:
-        render_bar_segments(peakToPeak, is_beat, do_fade, lpvu);
-        break;
-        
-      case 10:
-        render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
-        break;
-        
+void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, unsigned int lpvu, unsigned int hpvu, bool is_beat_2, uint8_t sample_ptr) {
+  static byte last_mode = -1;
+//  if(mode != last_mode) {
+//    // cleanup previous mode, start next.
+//    // TODO: call teardown hook
+//    // TODO: call setup hook
+//    /*
+//     * Should this be object oriented c++?
+//     */
+//    tear_down_mode(last_mode, mode_data);
+//    mode_data = setup_mode(mode);
+//    last_mode = mode;
+//  }
 
-    }
+  switch(mode) {
+    case 0:
+      render_vu_plus_beat_end(peakToPeak, is_beat, do_fade, lpvu, hpvu);
+      break;
+    case 1:
+      render_shoot_pixels(peakToPeak, is_beat, do_fade, lpvu, hpvu);
+      break;
+    case 2:
+      render_double_vu(peakToPeak, is_beat, do_fade, 0, is_beat_2);
+      break;
+    case 3:
+      render_vu_plus_beat_interleave(peakToPeak, is_beat, do_fade, lpvu, hpvu);
+      break;
+    case 4:
+      render_double_vu(peakToPeak, is_beat, do_fade, 1, is_beat_2);
+      break;
+    case 5:
+      render_stream_pixels(peakToPeak, is_beat, do_fade);
+      break;
+    case 6:
+      if(mode != last_mode) {
+        init_sparkles((Sparkles *) mode_data);
+      }
+      render_sparkles(peakToPeak, is_beat, do_fade, (Sparkles *) mode_data);
+      break;
+    case 7:
+      render_double_vu(peakToPeak, is_beat, do_fade, 2, is_beat_2);
+      break;
+    case 8:
+      render_beat_line(peakToPeak, is_beat, do_fade, is_beat_2);
+      break;
+    case 9:
+      if(mode != last_mode) {
+        init_barsegment((BarSegment *) mode_data);
+      }
+      render_bar_segments(peakToPeak, is_beat, do_fade, lpvu, (BarSegment *) mode_data);
+      break;
+      
+    case 10:
+      render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
+      break;
+      
+  }
+
+  last_mode = mode;
 }
 
 void render_attract() {
