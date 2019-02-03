@@ -539,10 +539,9 @@ void render_attract() {
 //  uint8_t wheel;
 //  uint32_t now = millis(); // TODO: use start_time here
 
-  for(uint8_t i = 0; i < STRIP_LENGTH; i++) {
-    fade_pixel(i);
-  }
-
+  int16_t leds_touched[ATTRACT_MODE_DOTS * 2] = {-1};
+  uint16_t leds_offsets[ATTRACT_MODE_DOTS] = {0};
+  
   for(uint8_t dot=0; dot < ATTRACT_MODE_DOTS; dot++) {
     if(dot_pos[dot] >= 32768) {
       make_new_dot(dot);
@@ -550,23 +549,38 @@ void render_attract() {
     // draw adjusted to strip (trying to do anti-aliasing)
     // ratio of pixel in left or right pixels
     uint16_t led = dot_pos[dot] / POS_PER_PIXEL;
-    uint16_t led_offset = dot_pos[dot] % POS_PER_PIXEL;
-
-    if(led+1 < STRIP_LENGTH) {
-      strip.setPixelColor(led+1, 
-        (uint8_t)(dot_colors[dot] >> 16) * led_offset/POS_PER_PIXEL, 
-        (uint8_t)(dot_colors[dot] >> 8)  * led_offset/POS_PER_PIXEL, 
-        (uint8_t)(dot_colors[dot])       * led_offset/POS_PER_PIXEL
-      );
-    }
-    if(led < STRIP_LENGTH) {
-      strip.setPixelColor(led, 
-        (uint8_t)(dot_colors[dot] >> 16) * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL,
-        (uint8_t)(dot_colors[dot] >> 8)  * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL, 
-        (uint8_t)(dot_colors[dot])       * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL
-      );
-    }
+    leds_offsets[dot] = (dot_pos[dot] % (POS_PER_PIXEL));
+    leds_touched[dot*2] = led;
+    leds_touched[dot*2+1] = led+1;
     dot_pos[dot] += dot_speeds[dot];
+  }
+
+  for(uint8_t i = 0; i < STRIP_LENGTH; i++) {
+    fade_pixel(i);
+    for(uint8_t dot=0; dot < ATTRACT_MODE_DOTS; dot++) {
+      if(leds_touched[dot*2] == i) {
+        uint32_t old_color = strip.getPixelColor(i);
+        uint16_t r = (uint8_t)(old_color >> 16) + (uint8_t)(dot_colors[dot] >> 16) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+        uint16_t g = (uint8_t)(old_color >> 8)  + (uint8_t)(dot_colors[dot] >> 8)  * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+        uint16_t b = (uint8_t)(old_color)       + (uint8_t)(dot_colors[dot])       * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+        strip.setPixelColor(i, 
+          min(r, 255),
+          min(g, 255), 
+          min(b, 255)
+        );
+        if(leds_touched[dot*2+1] == i) {
+          uint32_t old_color = strip.getPixelColor(i);
+          uint16_t r = (uint8_t)(old_color >> 16) + (uint8_t)(dot_colors[dot] >> 16) * (leds_offsets[dot])/POS_PER_PIXEL;
+          uint16_t g = (uint8_t)(old_color >> 8)  + (uint8_t)(dot_colors[dot] >> 8)  * (leds_offsets[dot])/POS_PER_PIXEL;
+          uint16_t b = (uint8_t)(old_color)       + (uint8_t)(dot_colors[dot])       * (leds_offsets[dot])/POS_PER_PIXEL;
+          strip.setPixelColor(i, 
+            min(r, 255),
+            min(g, 255), 
+            min(b, 255)
+          );
+        }
+      }
+    }
   }
 }
 
