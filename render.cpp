@@ -568,34 +568,6 @@ void render_attract() {
     }
     dot_pos[dot] += dot_speeds[dot];
   }
-//  
-//  if(now - millis_since_last_fade > 20) {
-//    pixels = strip.getPixels();
-//    // manipulate pixels directly.
-//
-//    // j = 0
-//    pixels[0] = pixels[0] * 0.9;
-//    pixels[1] = pixels[1] * 0.9;
-//    pixels[2] = pixels[2] * 0.9;
-//
-//    // j = 1
-//    pixels[3] = pixels[3] * 0.6 + pixels[0] * 0.3;
-//    pixels[4] = pixels[4] * 0.6 + pixels[0] * 0.3;
-//    pixels[5] = pixels[5] * 0.6 + pixels[0] * 0.3;
-//
-//    for (uint8_t j = 2; j < STRIP_LENGTH; j++) {
-//      pixels[j*3]   = pixels[j*3]   * 0.5 + pixels[(j-1)*3]   * 0.25 + pixels[(j-2)*3]   * 0.15;
-//      pixels[j*3+1] = pixels[j*3+1] * 0.5 + pixels[(j-1)*3+1] * 0.25 + pixels[(j-2)*3+1] * 0.15;
-//      pixels[j*3+2] = pixels[j*3+2] * 0.5 + pixels[(j-1)*3+2] * 0.25 + pixels[(j-2)*3+2] * 0.15;
-//    }
-//    millis_since_last_fade = now;
-//  }
-//  if(now - millis_since_last_dot > 500) {
-//    pixel = random(0,STRIP_LENGTH);
-//    wheel = random(0,256);
-//    strip.setPixelColor(pixel, Wheel(wheel));
-//    millis_since_last_dot = now;
-//  }
 }
 
 void do_banner() {
