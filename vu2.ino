@@ -1,6 +1,4 @@
-
 #include "config.h"
-//#include "filter.h"
 
 #include "sampler.h"
 #include "ultrafastneopixel.h"
