@@ -6,10 +6,6 @@
 #define SILVER 0xFFFFFFFF
 #define GOLD 0xFFFFFF77
 
-// modes 0 to MAX_MODE are effects
-#define MAX_MODE 10
-#define MAX_AUTO_MODE 8
-
 #define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
 
 uint8_t static random_table[STRIP_LENGTH];
@@ -18,6 +14,7 @@ uint8_t static phase = 0;
 static uint32_t dot_colors[ATTRACT_MODE_DOTS];
 static uint32_t dot_pos[ATTRACT_MODE_DOTS];
 static uint16_t dot_speeds[ATTRACT_MODE_DOTS];
+static uint8_t dot_age[ATTRACT_MODE_DOTS];
 
 uint32_t Wheel(byte WheelPos) {
   WheelPos = 255 - WheelPos;
@@ -34,8 +31,9 @@ uint32_t Wheel(byte WheelPos) {
 
 static void make_new_dot(uint8_t dot) {
     dot_colors[dot] = Wheel(random(0,256));
-    dot_pos[dot] = random(0, 29492); // 32768 * 0.8 (so pixels dont start at the very end of the strip)
+    dot_pos[dot] = random(0, 10000); // 32768 * 0.2 (so pixels dont start at the very end of the strip)
     dot_speeds[dot] = random(POS_PER_PIXEL/17,POS_PER_PIXEL/5);
+    dot_age[dot] = 0;
 }
 
 uint32_t Wheel2(byte WheelPos) {
@@ -78,14 +76,6 @@ static void fade_pixel(int pixel) {
   uint8_t g = color >> 8;
   uint8_t b = color;
   strip.setPixelColor(pixel, r*0.9,g*0.9,b*0.9);
-}
-
-static void fade_pixel_very_slow(int pixel) {
-  uint32_t color = strip.getPixelColor(pixel);
-  uint8_t r = color >> 16;
-  uint8_t g = color >> 8;
-  uint8_t b = color;
-  strip.setPixelColor(pixel, r*0.995,g*0.995,b*0.995);
 }
 
 static void fade_pixel_slow(int pixel) {
@@ -176,11 +166,10 @@ void shoot_pixel(int pixel) {
   strip.setPixelColor(pixel, color);  
 }
 
-void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
+void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     uint8_t adjPeak = strip.gamma8(peakToPeak);
     int led = map(adjPeak, 0, maximum, -2, STRIP_LENGTH - 1) - 1;
     int beat_brightness = map(peakToPeak, 0, maximum, 0, 255);
-    int bias = lpvu;
     
     for (int j = STRIP_LENGTH - 1; j >= 0; j--)
     {
@@ -188,7 +177,7 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
         if(j <= led && led >= 0) {
           // set VU color up to peak
           int color = map(j, 0, STRIP_LENGTH, 0, 255);
-          strip.setPixelColor(j, Wheel((color-bias)%256));
+          strip.setPixelColor(j, Wheel((color)%256));
         }
         else if(j >= STRIP_LENGTH/2 && j < STRIP_LENGTH && is_beat) {
           strip.setPixelColor(j, beat_brightness,beat_brightness,beat_brightness);
@@ -219,7 +208,7 @@ void render_stream_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
 }
 
 // this effect shifts colours along the strip on the beat.
-void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
+void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     // only VU half the strip; for the effect to work it needs headroom.
     uint8_t led = map(peakToPeak, 0, 128, 0, (STRIP_LENGTH >> 1) - 1);
     
@@ -239,7 +228,7 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade, un
     }  
 }
 
-void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu, unsigned int hpvu) {
+void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fade) {
   uint8_t adjPeak = strip.gamma8(peakToPeak);
   uint8_t led = map(adjPeak, 0, 128, 0, STRIP_LENGTH - 1);
   uint8_t beat_brightness = map(peakToPeak, 0, maximum, 128, 255);
@@ -300,7 +289,7 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
     }
 }
 
-void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade, bool is_beat_2) {
+void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
     uint8_t reverse_speed = map(peakToPeak, 0, maximum, 2, 6);
     uint16_t p,j,k,l;
     p=j=k=l=0;
@@ -334,8 +323,7 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool do_fade, bool 
 }
 
 uint32_t static was_beat_recently_time = 0;
-uint32_t static last_bar_color = 0;
-uint16_t static bar_segment_pattern=0;
+uint8_t static bar_segment_pattern=0;
 #define BAR_PATTERNS 8
 #define BAR_PATTERN_SIZE 8
 
@@ -353,9 +341,9 @@ static boolean _in_current_bar_segment(uint8_t j) {
   uint16_t offset = bar_segment_pattern;
   return (pgm_read_byte(&bar_patterns[(offset*BAR_PATTERNS) + (j / BAR_PATTERN_SIZE)]) >> (j % BAR_PATTERN_SIZE)) & 1;
 }
-void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, unsigned int lpvu) {
+void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
 //    unsigned int brightness = peakToPeak / 4;
-    uint16_t last_pattern;
+    uint8_t last_pattern;
         
     for (uint8_t j = 0; j < STRIP_LENGTH; j++)
     {
@@ -365,13 +353,12 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade, un
         uint8_t g = color >> 8;
         uint8_t b = color;
         strip.setPixelColor(j, r/4*3+peakToPeak,g/4*3+peakToPeak,b/4*3+peakToPeak);
-        last_bar_color = color;
       } else {
         if(do_fade) {
           fade_pixel(j);
         }
       }
-     }
+    }
     if(is_beat && millis() > was_beat_recently_time + 250) {
       was_beat_recently_time = millis();
       last_pattern = bar_segment_pattern;
@@ -488,20 +475,20 @@ void rainbowCycle(uint8_t wait) {
   }
 }
 
-void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsigned int lpvu, unsigned int hpvu, bool is_beat_2, uint8_t sample_ptr) {
+void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr) {
 
     switch(mode) {
       case 0:
-        render_vu_plus_beat_end(peakToPeak, is_beat, do_fade, lpvu, hpvu);
+        render_vu_plus_beat_end(peakToPeak, is_beat, do_fade);
         break;
       case 1:
-        render_shoot_pixels(peakToPeak, is_beat, do_fade, lpvu, hpvu);
+        render_shoot_pixels(peakToPeak, is_beat, do_fade);
         break;
       case 2:
         render_double_vu(peakToPeak, is_beat, do_fade, 0, is_beat_2);
         break;
       case 3:
-        render_vu_plus_beat_interleave(peakToPeak, is_beat, do_fade, lpvu, hpvu);
+        render_vu_plus_beat_interleave(peakToPeak, is_beat, do_fade);
         break;
       case 4:
         render_double_vu(peakToPeak, is_beat, do_fade, 1, is_beat_2);
@@ -516,10 +503,10 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
         render_double_vu(peakToPeak, is_beat, do_fade, 2, is_beat_2);
         break;
       case 8:
-        render_beat_line(peakToPeak, is_beat, do_fade, is_beat_2);
+        render_beat_line(peakToPeak, is_beat, is_beat_2);
         break;
       case 9:
-        render_bar_segments(peakToPeak, is_beat, do_fade, lpvu);
+        render_bar_segments(peakToPeak, is_beat, do_fade);
         break;
         
       case 10:
@@ -531,18 +518,16 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, char mode, unsi
 }
 
 void render_attract() {
-//  static uint32_t millis_since_last_dot;
-//  static uint32_t millis_since_last_fade;
-    
-//  uint8_t* pixels;
-//  uint8_t pixel;
-//  uint8_t wheel;
-//  uint32_t now = millis(); // TODO: use start_time here
 
+  uint16_t leds_offsets[ATTRACT_MODE_DOTS] = {0};
+
+  // fade out (trails, but also between non-attract modes and this mode)
   for(uint8_t i = 0; i < STRIP_LENGTH; i++) {
     fade_pixel(i);
   }
 
+  // this loop scales the dots from their "native res" (0-32768) antialiased to the LED strip (0-60)
+  // and keeps track of which LED pixels have actually been rendered to (which is 2x number of dots)
   for(uint8_t dot=0; dot < ATTRACT_MODE_DOTS; dot++) {
     if(dot_pos[dot] >= 32768) {
       make_new_dot(dot);
@@ -550,23 +535,28 @@ void render_attract() {
     // draw adjusted to strip (trying to do anti-aliasing)
     // ratio of pixel in left or right pixels
     uint16_t led = dot_pos[dot] / POS_PER_PIXEL;
-    uint16_t led_offset = dot_pos[dot] % POS_PER_PIXEL;
-
-    if(led+1 < STRIP_LENGTH) {
-      strip.setPixelColor(led+1, 
-        (uint8_t)(dot_colors[dot] >> 16) * led_offset/POS_PER_PIXEL, 
-        (uint8_t)(dot_colors[dot] >> 8)  * led_offset/POS_PER_PIXEL, 
-        (uint8_t)(dot_colors[dot])       * led_offset/POS_PER_PIXEL
-      );
-    }
-    if(led < STRIP_LENGTH) {
-      strip.setPixelColor(led, 
-        (uint8_t)(dot_colors[dot] >> 16) * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL,
-        (uint8_t)(dot_colors[dot] >> 8)  * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL, 
-        (uint8_t)(dot_colors[dot])       * (POS_PER_PIXEL - led_offset)/POS_PER_PIXEL
-      );
-    }
+    leds_offsets[dot] = (dot_pos[dot] % (POS_PER_PIXEL));
     dot_pos[dot] += dot_speeds[dot];
+    if(dot_age[dot] < 255) dot_age[dot]++;
+
+    uint32_t old_color = strip.getPixelColor(led);
+    uint16_t r = (uint8_t)(old_color >> 16) + (uint8_t)(dot_colors[dot] >> 16) * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+    uint16_t g = (uint8_t)(old_color >> 8)  + (uint8_t)(dot_colors[dot] >> 8)  * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+    uint16_t b = (uint8_t)(old_color)       + (uint8_t)(dot_colors[dot])       * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+    strip.setPixelColor(led+1, 
+      min(r, 255),
+      min(g, 255), 
+      min(b, 255)
+    );
+    old_color = strip.getPixelColor(led+1);
+    r = (uint8_t)(old_color >> 16) + (uint8_t)(dot_colors[dot] >> 16) * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    g = (uint8_t)(old_color >> 8)  + (uint8_t)(dot_colors[dot] >> 8)  * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    b = (uint8_t)(old_color)       + (uint8_t)(dot_colors[dot])       * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    strip.setPixelColor(led+1, 
+      min(r, 255),
+      min(g, 255), 
+      min(b, 255)
+    ); 
   }
 }
 
