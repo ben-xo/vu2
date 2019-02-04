@@ -307,7 +307,7 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
 }
 
 void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
-    uint8_t reverse_speed = map(peakToPeak, 0, maximum, 2, 6);
+    uint8_t reverse_speed = (peakToPeak >> 6) + 2; // range 2 to 5
     uint16_t p,j,k,l;
     p=j=k=l=0;
     while(p < STRIP_LENGTH)
