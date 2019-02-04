@@ -70,12 +70,23 @@ uint32_t Wheel_Purple_Yellow(byte WheelPos) {
   );
 }
 
+static inline uint8_t ssub8(uint8_t a, uint8_t b) {
+  uint8_t c = a - b;
+  if (c > a) 
+    return 0;
+  return c;
+}
+
 static void fade_pixel(int pixel) {
   uint32_t color = strip.getPixelColor(pixel);
+  
   uint8_t r = color >> 16;
   uint8_t g = color >> 8;
   uint8_t b = color;
-  strip.setPixelColor(pixel, r*0.9,g*0.9,b*0.9);
+  // this is equivalent to r*0.875
+  strip.setPixelColor(pixel, 
+    ssub8(r, (r>>3)+1), ssub8(g, (g>>3)+1), ssub8(b, (b>>3)+1)
+  );
 }
 
 static void fade_pixel_slow(int pixel) {
@@ -83,7 +94,10 @@ static void fade_pixel_slow(int pixel) {
   uint8_t r = color >> 16;
   uint8_t g = color >> 8;
   uint8_t b = color;
-  strip.setPixelColor(pixel, r*0.95,g*0.95,b*0.95);
+  // this is equivalent to r*0.9375
+  strip.setPixelColor(pixel, 
+    ssub8(r, (r>>4)+1), ssub8(g, (g>>4)+1), ssub8(b, (b>>4)+1)
+  );
 }
 
 static void fade_pixel_fast(int pixel) {
@@ -91,7 +105,10 @@ static void fade_pixel_fast(int pixel) {
   uint8_t r = color >> 16;
   uint8_t g = color >> 8;
   uint8_t b = color;
-  strip.setPixelColor(pixel, r*0.7,g*0.7,b*0.7);
+  // this is equivalent to r*0.75
+  strip.setPixelColor(pixel, 
+    ssub8(r, (r>>2)+1), ssub8(g, (g>>2)+1), ssub8(b, (b>>2)+1)
+  );
 }
 
 // fades pixels more the closer they are the start, so that peaks stay visible
