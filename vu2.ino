@@ -1,9 +1,9 @@
 #include "config.h"
 
-#include "sampler.h"
-#include "ultrafastneopixel.h"
 #include "render.h"
-#include "debugrender.h"
+#include "ultrafastneopixel.h"
+#include "sampler.h"
+//#include "debugrender.h"
 
 UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
 
@@ -200,11 +200,11 @@ void loop() {
       is_beat_2 = is_beats & (1 << BEAT_PIN_2);
       if(auto_mode && auto_mode_change(is_beat_1)) {
         last_mode = mode;
-        while(mode == last_mode) mode = random(0,11); // max is exclusive
+        while(mode == last_mode) mode = random(0,MAX_MODE+1); // max is exclusive
         PORTB = (mode << 1); // writes directly to pins 9-12.
       }
       
-      render(vu_width, is_beat_2, true, mode, 0, 0, is_beat_1, current_sample);
+      render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
     }
 
     strip.show();
