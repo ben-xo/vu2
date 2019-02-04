@@ -3,7 +3,7 @@
 #include "render.h"
 #include "ultrafastneopixel.h"
 #include "sampler.h"
-//#include "debugrender.h"
+#include "debugrender.h"
 
 UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
 
@@ -141,8 +141,14 @@ void loop() {
   bool auto_mode = true;
   bool is_silent = false;
   bool is_attract_mode = false;
+  bool is_debug_mode = false;
 
   do_banner();
+
+  // hold down button at startup
+  if(PIND & (1 << BUTTON_PIN)) {
+    is_debug_mode=true;
+  }
 
   start_time = micros();
   silent_since = start_time;
@@ -203,8 +209,12 @@ void loop() {
         while(mode == last_mode) mode = random(0,MAX_MODE+1); // max is exclusive
         PORTB = (mode << 1); // writes directly to pins 9-12.
       }
-      
-      render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
+
+      if(is_debug_mode) {
+        debug_render_combo(is_beat_2, is_beat_1, current_sample);
+      } else {
+        render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
+      }
     }
 
     strip.show();
