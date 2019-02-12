@@ -129,8 +129,66 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
+void __attribute__((__noinline__)) debug_loop() {
+  byte is_beats = 0;
+  bool is_beat_1;
+  bool is_beat_2;
+  uint8_t vu_width = 0;
+  uint8_t mode = 0;
+
+  start_time = micros();
+  silent_since = start_time;
+  while(true) {
+    start_time = micros();
+    
+    // read these as they're volatile
+    cli();
+    uint8_t sample_ptr = current_sample;
+    uint8_t sample_count = new_sample_count;
+    new_sample_count = 0;
+    sei();
+
+    uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    if(pushed == SHORT_PUSH) {
+      mode++;
+      if(mode > 1) {
+        mode = 0;
+      }
+    }
+    
+    is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
+    vu_width = calculate_vu(sample_ptr, sample_count);
+      
+    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+
+    switch(mode) {
+      case 0: // show that beats are working
+        PORTB = (is_beat_1 << 1) | (is_beat_2 << 2);
+        break;
+      case 1: // show that sampling is working
+        PORTB = 0;
+        if (vu_width > 128) PORTB |= 32;
+        if (vu_width > 64)  PORTB |= 16;
+        if (vu_width > 32)  PORTB |= 8;
+        if (vu_width > 16)  PORTB |= 4;
+        if (vu_width > 8)   PORTB |= 2;
+        break;
+    }
+
+    debug_render_combo(is_beat_2, is_beat_1, current_sample);
+
+    strip.show();
+  }  
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
+
+  // hold down button at startup
+  if(PIND & (1 << BUTTON_PIN)) {
+    debug_loop();
+  }
   
   byte is_beats = 0;
   bool is_beat_1;
@@ -141,14 +199,8 @@ void loop() {
   bool auto_mode = true;
   bool is_silent = false;
   bool is_attract_mode = false;
-  bool is_debug_mode = false;
 
   do_banner();
-
-  // hold down button at startup
-  if(PIND & (1 << BUTTON_PIN)) {
-    is_debug_mode=true;
-  }
 
   start_time = micros();
   silent_since = start_time;
@@ -210,11 +262,7 @@ void loop() {
         PORTB = (mode << 1); // writes directly to pins 9-12.
       }
 
-      if(is_debug_mode) {
-        debug_render_combo(is_beat_2, is_beat_1, current_sample);
-      } else {
-        render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
-      }
+      render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
     }
 
     strip.show();
@@ -222,3 +270,5 @@ void loop() {
     reach_target_fps();
   }
 }
+
+
