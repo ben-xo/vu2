@@ -8,7 +8,13 @@
 
 #define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
 
-uint8_t static random_table[STRIP_LENGTH];
+// pointer to current mode's data
+void *mode_data;
+
+struct sparkles {
+  uint8_t random_table[STRIP_LENGTH];
+};
+
 uint8_t static maximum = 255;
 uint8_t static phase = 0;
 static uint32_t dot_colors[ATTRACT_MODE_DOTS];
@@ -128,9 +134,10 @@ static void fade_pixel_plume(int pixel) {
 
 static void generate_sparkle_table() {
   int i;
+  sparkles *s = (sparkles *)mode_data;
   
   for (i = 0; i < STRIP_LENGTH; i++) {
-    random_table[i] = i;
+    s->random_table[i] = i;
   }
 
   // shuffle!
@@ -140,9 +147,9 @@ static void generate_sparkle_table() {
   {
       size_t j = random(0, STRIP_LENGTH - i + 1);
     
-      int t = random_table[i];
-      random_table[i] = random_table[j];
-      random_table[j] = t;
+      int t = s->random_table[i];
+      s->random_table[i] = s->random_table[j];
+      s->random_table[j] = t;
   }  
 }
 
@@ -277,6 +284,7 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fa
 }
 
 void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
+  sparkles *s = (sparkles *)mode_data;
     if(do_fade) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++)
       {
@@ -287,7 +295,7 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     if(index >= 0) {
       generate_sparkle_table();
       for (uint8_t j = 0; j <= index; j++) {
-        strip.setPixelColor(random_table[j], j%2 ? GOLD : SILVER);
+        strip.setPixelColor(s->random_table[j], j%2 ? GOLD : SILVER);
       }
     }
 }
@@ -492,7 +500,21 @@ void rainbowCycle(uint8_t wait) {
   }
 }
 
+void render_mode_change(byte new_mode) {
+  if(mode_data) free(mode_data);
+  if(new_mode == 6) {
+    // render sparkles
+    mode_data = malloc(sizeof(sparkles));
+  }
+}
+
 void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr) {
+  static byte last_mode = -1; // 
+
+  if(mode != last_mode) {
+    render_mode_change(mode);
+    last_mode = mode;
+  }
 
     switch(mode) {
       case 0:

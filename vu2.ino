@@ -129,7 +129,7 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
-void __attribute__((__noinline__)) debug_loop() {
+void debug_loop() {
   byte is_beats = 0;
   bool is_beat_1;
   bool is_beat_2;
@@ -191,8 +191,8 @@ void loop() {
   }
   
   byte is_beats = 0;
-  bool is_beat_1;
-  bool is_beat_2;
+  bool is_beat_1 = false;
+  bool is_beat_2 = false;
   uint8_t vu_width = 0;
   uint8_t mode = 0;
   uint8_t last_mode = 0;
@@ -215,17 +215,18 @@ void loop() {
     sei();
 
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    
     if(pushed == SHORT_PUSH) {
       mode++;
       auto_mode = false;
       is_attract_mode = false;
-      if(mode > 10) {
-        mode = 0;
-      }
-      PORTB = (mode << 1); // writes directly to pins 9-12
+      if(mode > MAX_MODE) mode = 0;
     } else if(pushed == LONG_PUSH) {
       auto_mode = true;
       mode = 0;
+    }
+
+    if(pushed) {
       PORTB = (mode << 1); // writes directly to pins 9-12
     }
     
