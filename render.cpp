@@ -356,7 +356,7 @@ static const uint8_t PROGMEM bar_patterns[] = {
 };
 static boolean _in_current_bar_segment(uint8_t j) {
   uint16_t offset = bar_segment_pattern;
-  return (pgm_read_byte(&bar_patterns[(offset*BAR_PATTERNS) + (j / BAR_PATTERN_SIZE)]) >> (j % BAR_PATTERN_SIZE)) & 1;
+  return (pgm_read_byte(&bar_patterns[(offset*BAR_PATTERNS) + ((j / BAR_PATTERN_SIZE) % BAR_PATTERN_SIZE)]) >> (j % BAR_PATTERN_SIZE)) & 1;
 }
 void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
 //    unsigned int brightness = peakToPeak / 4;
