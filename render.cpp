@@ -534,6 +534,19 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
     }
 }
 
+void calculate_overtakes(uint8_t dot) {
+  for(uint8_t i = 0; i < ATTRACT_MODE_DOTS; i++) {
+    if((dot_pos[dot] < dot_pos[i]) && (dot_pos[dot] + dot_speeds[dot]) >= dot_pos[i]) {
+      // i will overtake j on next render. Let's make them collide!
+      uint8_t r = ((uint8_t)(dot_colors[i] >> 16) + (uint8_t)(dot_colors[dot] >> 16)) >> 1;
+      uint8_t g = ((uint8_t)(dot_colors[i] >> 8 ) + (uint8_t)(dot_colors[dot] >> 8 )) >> 1;
+      uint8_t b = ((uint8_t)(dot_colors[i]      ) + (uint8_t)(dot_colors[dot]      )) >> 1;
+      dot_colors[i] = ((uint32_t)r << 16) | ((uint32_t)g << 8) | (b);
+      dot_colors[dot] = dot_colors[i];
+    }
+  }
+}
+
 void render_attract() {
 
   uint16_t leds_offsets[ATTRACT_MODE_DOTS] = {0};
@@ -553,22 +566,33 @@ void render_attract() {
     // ratio of pixel in left or right pixels
     uint16_t led = dot_pos[dot] / POS_PER_PIXEL;
     leds_offsets[dot] = (dot_pos[dot] % (POS_PER_PIXEL));
+    calculate_overtakes(dot);
     dot_pos[dot] += dot_speeds[dot];
     if(dot_age[dot] < 255) dot_age[dot]++;
 
     uint32_t old_color = strip.getPixelColor(led);
-    uint16_t r = (uint8_t)(old_color >> 16) + (uint8_t)(dot_colors[dot] >> 16) * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-    uint16_t g = (uint8_t)(old_color >> 8)  + (uint8_t)(dot_colors[dot] >> 8)  * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-    uint16_t b = (uint8_t)(old_color)       + (uint8_t)(dot_colors[dot])       * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+    uint8_t old_r = (uint8_t)(old_color >> 16);
+    uint8_t old_g = (uint8_t)(old_color >> 8 );
+    uint8_t old_b = (uint8_t)(old_color      );
+    uint8_t dot_r = (uint8_t)(dot_colors[dot] >> 16);
+    uint8_t dot_g = (uint8_t)(dot_colors[dot] >> 8);
+    uint8_t dot_b = (uint8_t)(dot_colors[dot]);
+    
+    uint16_t r = old_r + dot_r * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+    uint16_t g = old_g + dot_g * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+    uint16_t b = old_b + dot_b * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
     strip.setPixelColor(led+1, 
       min(r, 255),
       min(g, 255), 
       min(b, 255)
     );
     old_color = strip.getPixelColor(led+1);
-    r = (uint8_t)(old_color >> 16) + (uint8_t)(dot_colors[dot] >> 16) * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-    g = (uint8_t)(old_color >> 8)  + (uint8_t)(dot_colors[dot] >> 8)  * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-    b = (uint8_t)(old_color)       + (uint8_t)(dot_colors[dot])       * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    old_r = (uint8_t)(old_color >> 16);
+    old_g = (uint8_t)(old_color >> 8 );
+    old_b = (uint8_t)(old_color      );
+    r = old_r + dot_r * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    g = old_g + dot_g * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    b = old_b + dot_b * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
     strip.setPixelColor(led+1, 
       min(r, 255),
       min(g, 255), 
@@ -579,7 +603,7 @@ void render_attract() {
 
 void do_banner() {
     // colour test
-    for (uint16_t i = 0; i <= 255; i += 2) {
+    for (uint16_t i = 0; i <= 255; i += STRIP_LENGTH/30) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
         uint32_t c = Wheel((j + (i/4)) * 255 / STRIP_LENGTH);
         uint8_t r = c >> 16;
@@ -590,9 +614,9 @@ void do_banner() {
       strip.show();
     }
 
-    for (int16_t k = 255; k > -1; k -= 2) {
+    for (int16_t k = 255; k > -1; k -= STRIP_LENGTH/30) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        uint32_t c = Wheel((j + (255-k)/4) * 255 / STRIP_LENGTH);
+        uint32_t c = Wheel((j + (STRIP_LENGTH-k)/4) * 255 / STRIP_LENGTH);
         uint8_t r = c >> 16;
         uint8_t g = c >> 8;
         uint8_t b = c;
