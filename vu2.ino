@@ -40,31 +40,15 @@ void setup() {
 //  randomSeed(analogRead(2));
 }
 
-static uint8_t calculate_vu(uint8_t sample_ptr, uint8_t sample_count) {
-  static uint8_t max_val=0, min_val=255;
-  static uint8_t vu_iterator;
-  static uint8_t last_width;
-
-  while(sample_count > 0) { 
-    // Read ADC and center to +-128
-    uint8_t int_sample = samples[sample_ptr];
-    sample_count--;
-    sample_ptr++;
-
+static uint8_t calculate_vu(uint8_t sample_ptr) {
+  // VU is always width of last 20 samples, wherever we happen to be right now.
+  uint8_t max_val=0, min_val=255;
+  for (uint8_t i = 0; i < VU_LOOKBEHIND; i++) {
+    uint8_t int_sample = samples[(sample_ptr-i)%SAMP_BUFF_LEN];
     if(int_sample > max_val) max_val = int_sample;
     if(int_sample < min_val) min_val = int_sample;
-
-    vu_iterator++;
-    if(vu_iterator == 20) {
-      last_width = max_val - min_val;
-      vu_iterator = 0;
-      max_val=0;
-      min_val=255;
-    }
-    if(last_width > 0) last_width--;
   }
-
-  return last_width;
+  return max_val - min_val;
 }
 
 static void reach_target_fps() {
@@ -129,7 +113,7 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
-void __attribute__((__noinline__)) debug_loop() {
+void debug_loop() {
   byte is_beats = 0;
   bool is_beat_1;
   bool is_beat_2;
@@ -144,8 +128,6 @@ void __attribute__((__noinline__)) debug_loop() {
     // read these as they're volatile
     cli();
     uint8_t sample_ptr = current_sample;
-    uint8_t sample_count = new_sample_count;
-    new_sample_count = 0;
     sei();
 
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
@@ -157,7 +139,7 @@ void __attribute__((__noinline__)) debug_loop() {
     }
     
     is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
-    vu_width = calculate_vu(sample_ptr, sample_count);
+    vu_width = calculate_vu(sample_ptr);
       
     is_beat_1 = is_beats & (1 << BEAT_PIN_1);
     is_beat_2 = is_beats & (1 << BEAT_PIN_2);
@@ -191,8 +173,8 @@ void loop() {
   }
   
   byte is_beats = 0;
-  bool is_beat_1;
-  bool is_beat_2;
+  bool is_beat_1 = false;
+  bool is_beat_2 = false;
   uint8_t vu_width = 0;
   uint8_t mode = 0;
   uint8_t last_mode = 0;
@@ -210,27 +192,26 @@ void loop() {
     // read these as they're volatile
     cli();
     uint8_t sample_ptr = current_sample;
-    uint8_t sample_count = new_sample_count;
-    new_sample_count = 0;
     sei();
 
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    
     if(pushed == SHORT_PUSH) {
       mode++;
       auto_mode = false;
       is_attract_mode = false;
-      if(mode > 10) {
-        mode = 0;
-      }
-      PORTB = (mode << 1); // writes directly to pins 9-12
+      if(mode > MAX_MODE) mode = 0;
     } else if(pushed == LONG_PUSH) {
       auto_mode = true;
       mode = 0;
+    }
+
+    if(pushed) {
       PORTB = (mode << 1); // writes directly to pins 9-12
     }
     
     is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
-    vu_width = calculate_vu(sample_ptr, sample_count);
+    vu_width = calculate_vu(sample_ptr);
 
     if (pushed || vu_width > ATTRACT_MODE_THRESHOLD) {
       // loudness: cancel attract mode, and so does a button press.
