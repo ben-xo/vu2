@@ -251,3 +251,4 @@ uint8_t UltraFastNeoPixel::gamma8(uint8_t x) const {
   return pgm_read_byte(&_gammaTable[x]); // 0-255 in, 0-255 out
 }
 
+

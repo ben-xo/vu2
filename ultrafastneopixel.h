@@ -108,3 +108,4 @@ inline void shortsei() {
 }
 
 #endif // ULTRAFASTNEOPIXEL_H
+

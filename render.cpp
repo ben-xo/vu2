@@ -280,13 +280,13 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     if(do_fade) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++)
       {
-        is_beat ? fade_pixel_slow(j) : fade_pixel_fast(j);
+        fade_pixel_fast(j);
       }
     }
     int index = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2 );
     if(index >= 0) {
       generate_sparkle_table();
-      for (uint8_t j = 0; j <= index; j++) {
+      for (uint8_t j = is_beat?0:(index/4); j <= index; j++) {
         strip.setPixelColor(random_table[j], j%2 ? GOLD : SILVER);
       }
     }
@@ -316,22 +316,22 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
       uint16_t sine1 = strip.sine8((uint8_t)(j+phase));
       uint16_t sine2 = strip.sine8((uint8_t)(k+phase));
       uint16_t sine3 = strip.sine8((uint8_t)(l+phase));
-      if(!is_beat && !is_beat_2) {
+//      if(!is_beat && !is_beat_2) {
         // sine1, 2 and 3 are really RGB values. Adjustment is really a base white.
         uint16_t adjustment = peakToPeak / 4 * 3;
         sine1 = adjustment + (sine1 / 4); if(sine1 > 255) sine1 = 255; // saturate
         sine2 = adjustment + (sine2 / 4); if(sine2 > 255) sine2 = 255; // saturate
         sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
-      }
+//      }
       strip.setPixelColor(p, sine1, sine2, sine3);
       p++;
       j += 5;
       k += 10;
       l += 15;
     }
-    if(is_beat_2) {
+    if(is_beat) {
       phase += reverse_speed;
-      if(is_beat) {
+      if(is_beat_2) {
         phase += reverse_speed;
       }
     } else {
@@ -647,3 +647,4 @@ void do_banner() {
     strip.show();
     delay(100);
 }
+
