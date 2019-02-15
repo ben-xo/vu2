@@ -1,3 +1,5 @@
+#define STRIP_LENGTH 100
+
 #define AUDIO_INPUT 0
 #define AUDIO_INPUT_LP 2
 #define AUDIO_INPUT_HP 3
@@ -11,7 +13,6 @@
 #define MODE_LED_PIN_2 10
 #define MODE_LED_PIN_3 11
 #define MODE_LED_PIN_4 12
-#define STRIP_LENGTH 100
 #define SAMP_BUFF_LEN 256 // this needs to be a power of 2.
 #define SAMP_FREQ 5000 // Hz
 #define AUTO_BEATS 64 // beats before change
