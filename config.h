@@ -18,7 +18,7 @@
 #define AUTO_BEATS_MIN_THRESH 300 // ms
 #define AUTO_BEATS_SILENCE_THRESH 5000 // ms
 #define ATTRACT_MODE_THRESHOLD 8 // vu value
-#define ATTRACT_MODE_TIMEOUT 15000 // ms
+#define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
 #define VU_LOOKBEHIND 10
 

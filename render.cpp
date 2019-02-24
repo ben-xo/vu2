@@ -386,15 +386,25 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     }
 }
 
-void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, byte fade_type, bool is_beat_2) {
+void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, bool is_beat_2) {
     uint32_t color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
     uint8_t adjPeak = strip.gamma8(peakToPeak);
     int led = map(adjPeak, 0, maximum, -2, STRIP_LENGTH/2);
     int bias = 0;
+
+    static bool was_beat_2 = false;
+    static byte fade_type = 0;
+    
     if(is_beat_2) {
-      fade_type++;
-      if (fade_type > 2) fade_type = 0;
+      if(!was_beat_2) {
+        // new fade type on each beat_2
+        fade_type++;
+        if (fade_type > 2) fade_type = 0;
+      }
+      was_beat_2 = true;
+    } else {
+      was_beat_2 = false;
     }
     
     for (uint8_t j = 0; j < STRIP_LENGTH/4; j++)
@@ -495,6 +505,7 @@ void rainbowCycle(uint8_t wait) {
 void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr) {
 
     switch(mode) {
+      default:
       case 0:
         render_vu_plus_beat_end(peakToPeak, is_beat, do_fade);
         break;
@@ -502,35 +513,26 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
         render_shoot_pixels(peakToPeak, is_beat, do_fade);
         break;
       case 2:
-        render_double_vu(peakToPeak, is_beat, do_fade, 0, is_beat_2);
+        render_double_vu(peakToPeak, is_beat, do_fade, is_beat_2);
         break;
       case 3:
         render_vu_plus_beat_interleave(peakToPeak, is_beat, do_fade);
         break;
       case 4:
-        render_double_vu(peakToPeak, is_beat, do_fade, 1, is_beat_2);
-        break;
-      case 5:
         render_stream_pixels(peakToPeak, is_beat, do_fade);
         break;
-      case 6:
+      case 5:
         render_sparkles(peakToPeak, is_beat, do_fade);
         break;
-      case 7:
-        render_double_vu(peakToPeak, is_beat, do_fade, 2, is_beat_2);
-        break;
-      case 8:
+      case 6:
         render_beat_line(peakToPeak, is_beat, is_beat_2);
         break;
-      case 9:
+      case 7:
         render_bar_segments(peakToPeak, is_beat, do_fade);
         break;
-        
-      case 10:
+      case 8:
         render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
         break;
-        
-
     }
 }
 

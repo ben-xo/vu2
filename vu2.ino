@@ -53,10 +53,12 @@ static uint8_t calculate_vu(uint8_t sample_ptr) {
 
 static void reach_target_fps() {
   uint32_t end_time = micros();
+  uint32_t total_time;
   if (end_time < start_time) {
-    start_time -= end_time;
+    total_time = -end_time + start_time;
+  } else {
+    total_time = end_time - start_time;
   }
-  uint32_t total_time = end_time - start_time;
   
   // frame target is 100fps, or 20k microseconds
   if(total_time > 5000) {
@@ -221,7 +223,7 @@ void loop() {
         is_silent = true;
       } else {
         // 2nd+ loop of silence. Long enough for attract mode?
-        if (!is_attract_mode && ((start_time - silent_since)/1000 > ATTRACT_MODE_TIMEOUT)) {
+        if (!is_attract_mode && ((start_time - silent_since)/1024 > ATTRACT_MODE_TIMEOUT)) {
           is_attract_mode = true;
         }
       }
