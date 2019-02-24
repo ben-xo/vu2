@@ -133,7 +133,7 @@ void debug_loop() {
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     if(pushed == SHORT_PUSH) {
       mode++;
-      if(mode > 1) {
+      if(mode > MAX_MODE) {
         mode = 0;
       }
     }
@@ -184,16 +184,12 @@ void loop() {
 
   do_banner();
 
-  start_time = micros();
-  silent_since = start_time;
+  silent_since = micros();
   while(true) {
     start_time = micros();
     
     // read these as they're volatile
-    cli();
     uint8_t sample_ptr = current_sample;
-    sei();
-
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     
     if(pushed == SHORT_PUSH) {
