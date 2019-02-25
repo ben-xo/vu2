@@ -502,6 +502,61 @@ void rainbowCycle(uint8_t wait) {
   }
 }
 
+static uint8_t current_pos = STRIP_LENGTH/2; // start in center
+void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t sample_ptr) {  
+  static bool top = true; // which half?
+  static bool was_beat = false; // which half?
+  uint8_t target_pos;
+  uint8_t new_pos;
+  if (STRIP_LENGTH >= 64) {
+    target_pos = peakToPeak /2; // range 0 to 31
+  }
+  else if (STRIP_LENGTH >= 48 && STRIP_LENGTH < 64) {
+    target_pos = (peakToPeak /2) + (peakToPeak /4); // range 0 to 23
+  }
+  else if (STRIP_LENGTH >= 32 && STRIP_LENGTH < 48) {
+    target_pos = (peakToPeak /4); // range 0 to 15
+  }
+
+  if(is_beat) {
+    if(!was_beat) {
+      top = !top;
+    }
+    was_beat = true;
+  } else {
+    was_beat = false;
+  }
+
+  // flip sides
+  if(top) {
+    target_pos = STRIP_LENGTH - target_pos;
+  }
+
+  // home in
+  if(target_pos > current_pos) {
+    new_pos = (target_pos - current_pos)/8 + current_pos + 1;
+    for(uint8_t i = 0; i < STRIP_LENGTH; i++)
+    {
+      if( i <= new_pos && i >= current_pos ) {
+        strip.setPixelColor(i, Wheel(0-i+peakToPeak));
+      } else {
+        fade_pixel_fast(i);
+      }
+    }
+  } else {
+    new_pos = ssub8(current_pos - (current_pos - target_pos)/8, 1);
+    for(uint8_t i = 0; i < STRIP_LENGTH; i++)
+    {
+      if( i >= new_pos && i <= current_pos ) {
+        strip.setPixelColor(i, Wheel(i+peakToPeak));
+      } else {
+        fade_pixel_fast(i);
+      }
+    }
+  }
+  current_pos = new_pos;
+}
+ 
 void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr) {
 
     switch(mode) {
@@ -532,6 +587,9 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
         break;
       case 8:
         render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
+        break;
+      case 9:
+        render_beat_bounce_flip(is_beat, peakToPeak, sample_ptr);
         break;
     }
 }

@@ -9,9 +9,9 @@
 #define BUTTON_LED_PIN 13
 #define MODE_LED_PIN_1 9
 #define MODE_LED_PIN_2 10
-#define MODE_LED_PIN_3 11
+#define MODE_LED_PIN_3 11 
 #define MODE_LED_PIN_4 12
-#define STRIP_LENGTH 100
+#define STRIP_LENGTH 60
 #define SAMP_BUFF_LEN 256 // this needs to be a power of 2.
 #define SAMP_FREQ 5000 // Hz
 #define AUTO_BEATS 64 // beats before change

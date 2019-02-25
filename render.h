@@ -8,6 +8,6 @@ void do_banner();
 void render_attract();
 
 // modes 0 to MAX_MODE are effects
-#define MAX_MODE 8
+#define MAX_MODE 9
 
 
