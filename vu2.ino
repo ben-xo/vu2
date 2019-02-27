@@ -51,6 +51,7 @@ static uint8_t calculate_vu(uint8_t sample_ptr) {
   return max_val - min_val;
 }
 
+#ifdef FRAME_RATE_LIMIT
 static void reach_target_fps() {
   uint32_t end_time = micros();
   uint32_t total_time;
@@ -69,6 +70,7 @@ static void reach_target_fps() {
   }
   start_time = end_time;
 }
+#endif
 
 // returns true on the falling edge of a button push
 static uint8_t was_button_pressed(uint8_t pins) {
@@ -246,7 +248,9 @@ void loop() {
 
     strip.show();
 
+#ifdef FRAME_RATE_LIMIT
     reach_target_fps();
+#endif
   }
 }
 
