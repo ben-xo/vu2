@@ -38,8 +38,8 @@ void UltraFastNeoPixel::updateLength(uint16_t n) {
   if(pixels) free(pixels); // Free existing data (if any)
 
   // Allocate new data -- note: ALL PIXELS ARE CLEARED
-  numBytes = n * 3;
-  if((pixels = (uint8_t *)malloc(numBytes))) {
+  numBytes = sizeof(RGB8[n]);
+  if((pixels = (Pixel *)malloc(numBytes))) {
     memset(pixels, 0, numBytes);
     numLEDs = n;
   } else {
@@ -52,25 +52,22 @@ void UltraFastNeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
 
   if(n < numLEDs) {
-    uint8_t *p;
-    p = &pixels[n * 3];    // 3 bytes per pixel
-    p[0] = r;         
-    p[1] = g;
-    p[2] = b;
+    Pixel *p;
+    p = &pixels[n];    // 3 bytes per pixel
+    p->color.r = r;         
+    p->color.g = g;
+    p->color.b = b;
   }
 }
 
 // Set pixel color from 'packed' 32-bit RGB color:
 void UltraFastNeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   if(n < numLEDs) {
-    uint8_t *p,
-    r = (uint8_t)(c >> 16),
-    g = (uint8_t)(c >>  8),
-    b = (uint8_t)c;
-    p = &pixels[n * 3];
-    p[0] = r;
-    p[1] = g;
-    p[2] = b;
+    Pixel *p;
+    p = &pixels[n];
+    p->color.r = (uint8_t)(c >> 16),
+    p->color.g = (uint8_t)(c >>  8),
+    p->color.b = (uint8_t)c;
   }
 }
 
@@ -84,25 +81,25 @@ uint32_t UltraFastNeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
 uint32_t UltraFastNeoPixel::getPixelColor(uint16_t n) const {
   if(n >= numLEDs) return 0; // Out of bounds, return no color.
 
-  uint8_t *p;
+  Pixel *p;
 
-  p = &pixels[n * 3];
+  p = &pixels[n];
   // No brightness adjustment has been made -- return 'raw' color
-  return ((uint32_t)p[0] << 16) |
-         ((uint32_t)p[1] <<  8) |
-          (uint32_t)p[2];
+  return ((uint32_t)p->color.r << 16) |
+         ((uint32_t)p->color.g <<  8) |
+          (uint32_t)p->color.b;
 }
 
 uint8_t* UltraFastNeoPixel::getPixelColorRGB(uint16_t n) const {
-  uint8_t* p;
-  p = &pixels[n * 3];
-  return p;
+  Pixel* p;
+  p = &pixels[n];
+  return p->rgb;
 }
 
 // Returns pointer to pixels[] array.  Pixel data is stored in device-
 // native format and is not translated here.  Application will need to be
 // aware of specific pixel data format and handle colors appropriately.
-uint8_t *UltraFastNeoPixel::getPixels(void) const {
+Pixel *UltraFastNeoPixel::getPixels(void) const {
   return pixels;
 }
 
@@ -175,10 +172,10 @@ void UltraFastNeoPixel::sendByte( uint8_t the_byte ) {
     }
 }
 
-void UltraFastNeoPixel::sendPixel( uint8_t r, uint8_t g , uint8_t b ) {
-  sendByte(g); // Neopixel wants colors in green-then-red-then-blue order
-  sendByte(r);
-  sendByte(b);
+void UltraFastNeoPixel::sendPixel( Pixel p ) {
+  sendByte(p.color.g); // Neopixel wants colors in green-then-red-then-blue order
+  sendByte(p.color.r);
+  sendByte(p.color.b);
 }
  
 // Just wait long enough without sending any bots to cause the pixels to latch and display the last sent frame
@@ -186,7 +183,7 @@ void UltraFastNeoPixel::sendPixel( uint8_t r, uint8_t g , uint8_t b ) {
 void UltraFastNeoPixel::show() {
   longcli();
   for(unsigned int i = 0; i < numBytes; i += 3) {
-    sendPixel(pixels[i], pixels[i+1], pixels[i+2]);
+    sendPixel(pixels[i]);
   }
   longsei();
   _delay_us( (RES / 1000UL) + 1);        // Round up since the delay must be _at_least_ this long (too short might not work, too long not a problem)

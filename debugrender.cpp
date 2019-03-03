@@ -18,7 +18,7 @@ void debug_render_combo(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
 
 void debug_render_is_beat(bool is_beat_2, bool is_beat_1) {
     strip.clear();
-    strip.setPixelColor(1, 
+    strip.setPixelColor((uint8_t)1, 
       is_beat_1 ? 64 : 0, 
       is_beat_2 ? 64 : 0,
       is_beat_2 ? 64 : 0

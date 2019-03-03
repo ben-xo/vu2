@@ -41,6 +41,17 @@
  
 #define DELAY_CYCLES(n) ( ((n)>0) ? __builtin_avr_delay_cycles( n ) : __builtin_avr_delay_cycles( 0 ) ) // Make sure we never have a delay less than zero
 
+typedef struct {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+} RGB8;
+
+typedef union {
+    RGB8 color;
+    uint8_t rgb[3];
+} Pixel;
+
 class UltraFastNeoPixel {
 
  public:
@@ -55,12 +66,18 @@ class UltraFastNeoPixel {
     show(void),
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
     setPixelColor(uint16_t n, uint32_t c),
+    setPixelColor(uint16_t n, Pixel c),
+//    setPixelColor(uint8_t n, uint8_t r, uint8_t g, uint8_t b),
+//    setPixelColor(uint8_t n, uint32_t c),
+//    setPixelColor(uint8_t n, Pixel c),
     clear(),
     updateLength(uint16_t n),
     sendByte(unsigned char byte),
+    sendPixel(Pixel),
     sendPixel(unsigned char, unsigned char, unsigned char);
+  Pixel
+   *getPixels(void) const;
   uint8_t
-   *getPixels(void) const,
     sine8(uint8_t) const,
     gamma8(uint8_t) const;
   uint16_t
@@ -77,7 +94,7 @@ class UltraFastNeoPixel {
   uint16_t
     numLEDs,       // Number of RGB LEDs in strip
     numBytes;      // Size of 'pixels' buffer below (3 or 4 bytes/pixel)
-  uint8_t
+  Pixel
    *pixels;        // Holds LED color values (3 or 4 bytes each)    
 };
 
