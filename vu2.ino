@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include "ledpwm.h"
 #include "render.h"
 #include "ultrafastneopixel.h"
 #include "sampler.h"
@@ -36,6 +37,7 @@ void setup() {
 //  setup_filter();
   setup_render();
   setup_sampler();
+  setup_ledpwm();
 //  Serial.begin(2000000);
 //  randomSeed(analogRead(2));
 }
@@ -207,7 +209,7 @@ void loop() {
     }
 
     if(pushed) {
-      PORTB = (mode << 1); // writes directly to pins 9-12
+      portb_val = (mode << 1); // writes directly to pins 9-12
     }
     
     is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
@@ -253,6 +255,3 @@ void loop() {
 #endif
   }
 }
-
-
-
