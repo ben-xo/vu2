@@ -10,7 +10,7 @@
 
 // when 0, leds should be lit.
 uint8_t pwm_duty = PWM_DUTY_CYCLE;
-uint8_t portb_val = 0;
+uint8_t volatile portb_val = 0;
 
 void setup_ledpwm() {
   cli();
@@ -32,13 +32,11 @@ void setup_ledpwm() {
 
 ISR(TIMER2_COMPA_vect) {
   if(pwm_duty == 0) {
-    PORTB = 0;    
-  }
-  pwm_duty--;
-  if(pwm_duty == 0) {
-    PORTB = portb_val;    
-  }
-  if(pwm_duty == 255) {
     pwm_duty = PWM_DUTY_CYCLE;
+    PORTB = portb_val;
+  }
+  else {
+    pwm_duty--;   
+    PORTB = 0;
   }
 }
