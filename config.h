@@ -21,7 +21,7 @@
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
 #define VU_LOOKBEHIND 10
-#define PWM_DUTY_CYCLE 10 // 1/10 duty cycle for LEDs without resistors at 10Khz PWM
+#define PWM_DUTY_CYCLE 20 // 1/10 duty cycle for LEDs without resistors at 10Khz PWM
 //#define FRAME_RATE_LIMIT 1
 
 
