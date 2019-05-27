@@ -9,69 +9,37 @@
 
 #include "ultrafastneopixel.h"
 
-// Constructor when length, pin and type are known at compile-time:
-UltraFastNeoPixel::UltraFastNeoPixel(uint16_t n) :
-  pixels(NULL) 
-{
-  updateLength(n);
-}
-
-// via Michael Vogt/neophob: empty constructor is used when strand length
-// isn't known at compile-time; situations where program config might be
-// read from internal flash memory or an SD card, or arrive via serial
-// command.  If using this constructor, MUST follow up with updateType(),
-// updateLength(), etc. to establish the strand type, length and pin number!
-UltraFastNeoPixel::UltraFastNeoPixel() :
-  numLEDs(0), numBytes(0), pixels(NULL)
-{
+UltraFastNeoPixel::UltraFastNeoPixel() {
 }
 
 UltraFastNeoPixel::~UltraFastNeoPixel() {
-  if(pixels)   free(pixels);
 }
 
 void UltraFastNeoPixel::begin(void) {
   bitSet( PIXEL_DDR , PIXEL_BIT );
 }
 
-void UltraFastNeoPixel::updateLength(uint16_t n) {
-  if(pixels) free(pixels); // Free existing data (if any)
-
-  // Allocate new data -- note: ALL PIXELS ARE CLEARED
-  numBytes = n * 3;
-  if((pixels = (uint8_t *)malloc(numBytes))) {
-    memset(pixels, 0, numBytes);
-    numLEDs = n;
-  } else {
-    numLEDs = numBytes = 0;
-  }
-}
 
 // Set pixel color from separate R,G,B components:
 void UltraFastNeoPixel::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
-
-  if(n < numLEDs) {
-    uint8_t *p;
-    p = &pixels[n * 3];    // 3 bytes per pixel
-    p[0] = r;         
-    p[1] = g;
-    p[2] = b;
-  }
+  uint8_t *p;
+  p = &pixels[n * 3];    // 3 bytes per pixel
+  p[0] = r;         
+  p[1] = g;
+  p[2] = b;
 }
 
 // Set pixel color from 'packed' 32-bit RGB color:
 void UltraFastNeoPixel::setPixelColor(uint16_t n, uint32_t c) {
-  if(n < numLEDs) {
-    uint8_t *p,
-    r = (uint8_t)(c >> 16),
-    g = (uint8_t)(c >>  8),
-    b = (uint8_t)c;
-    p = &pixels[n * 3];
-    p[0] = r;
-    p[1] = g;
-    p[2] = b;
-  }
+  uint8_t *p,
+  r = (uint8_t)(c >> 16),
+  g = (uint8_t)(c >>  8),
+  b = (uint8_t)c;
+  p = &pixels[n * 3];
+  p[0] = r;
+  p[1] = g;
+  p[2] = b;
 }
 
 // Convert separate R,G,B into packed 32-bit RGB color.
@@ -82,7 +50,7 @@ uint32_t UltraFastNeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
 
 // Query color from previously-set pixel (returns packed 32-bit RGB value)
 uint32_t UltraFastNeoPixel::getPixelColor(uint16_t n) const {
-  if(n >= numLEDs) return 0; // Out of bounds, return no color.
+//  if(n >= STRIP_LENGTH) return 0; // Out of bounds, return no color.
 
   uint8_t *p;
 
@@ -107,12 +75,12 @@ uint8_t *UltraFastNeoPixel::getPixels(void) const {
 }
 
 uint16_t UltraFastNeoPixel::numPixels(void) const {
-  return numLEDs;
+  return STRIP_LENGTH;
 }
 
 
 void UltraFastNeoPixel::clear() {
-  memset(pixels, 0, numBytes);
+  memset(pixels, 0, (STRIP_LENGTH*3));
 }
 
 // NOTES: I have found that almost all of the delays are entirely unnecessary at 16MHz.
@@ -185,7 +153,7 @@ void UltraFastNeoPixel::sendPixel( uint8_t r, uint8_t g , uint8_t b ) {
  
 void UltraFastNeoPixel::show() {
   longcli();
-  for(unsigned int i = 0; i < numBytes; i += 3) {
+  for(unsigned int i = 0; i < (STRIP_LENGTH*3); i += 3) {
     sendPixel(pixels[i], pixels[i+1], pixels[i+2]);
   }
   longsei();

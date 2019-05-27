@@ -6,7 +6,7 @@
 #include "sampler.h"
 #include "debugrender.h"
 
-UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
+UltraFastNeoPixel strip = UltraFastNeoPixel();
 
 uint32_t static start_time; // time each loop started.
 uint32_t static silent_since; // time we've been silent since.

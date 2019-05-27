@@ -42,6 +42,7 @@ void setup_ledpwm() {
 //}
 
 
+// This version should take 16 cycles off and 18 cycles on.
 ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t");
   asm volatile( "in      r24, __SREG__                   \n\t");
@@ -49,13 +50,13 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "lds     r24, %0     ; pwm_duty          \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(pwm_duty)));
   asm volatile( "cpi     r24, 0x00                       \n\t");
   asm volatile( "breq    .+10                            \n\t");
-asm volatile( "subi    r24, 0x01   ; 1                 \n\t");
-asm volatile( "sts     %0, r24     ; pwm_duty          \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(pwm_duty)));
-asm volatile( "eor     r24,r24                         \n\t");
+  asm volatile( "subi    r24, 0x01   ; 1                 \n\t");
+  asm volatile( "sts     %0, r24     ; pwm_duty          \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(pwm_duty)));
+  asm volatile( "eor     r24,r24                         \n\t");
   asm volatile( "rjmp    .+10                            \n\t");
-    asm volatile( "ldi     r24, %0     ; PWM_DUTY_CYCLE    \n\t" :: "M" (PWM_DUTY_CYCLE));
-    asm volatile( "sts     %0, r24     ; pwm_duty          \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(pwm_duty)));
-    asm volatile( "lds     r24, %0     ; portb_val         \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(portb_val)));
+  asm volatile( "ldi     r24, %0     ; PWM_DUTY_CYCLE    \n\t" :: "M" (PWM_DUTY_CYCLE));
+  asm volatile( "sts     %0, r24     ; pwm_duty          \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(pwm_duty)));
+  asm volatile( "lds     r24, %0     ; portb_val         \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(portb_val)));
   asm volatile( "out     %0, r24     ; PORTB             \n\t" :: "I" (_SFR_IO_ADDR(PORTB)));
   asm volatile( "pop     r24                             \n\t");
   asm volatile( "out     __SREG__, r24                   \n\t");

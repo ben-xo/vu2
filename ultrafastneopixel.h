@@ -46,7 +46,6 @@ class UltraFastNeoPixel {
  public:
 
   // Constructor: number of LEDs
-  UltraFastNeoPixel(uint16_t n);
   UltraFastNeoPixel(void);
   ~UltraFastNeoPixel();
 
@@ -56,7 +55,6 @@ class UltraFastNeoPixel {
     setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
     setPixelColor(uint16_t n, uint32_t c),
     clear(),
-    updateLength(uint16_t n),
     sendByte(unsigned char byte),
     sendPixel(unsigned char, unsigned char, unsigned char);
   uint8_t
@@ -73,12 +71,8 @@ class UltraFastNeoPixel {
     getPixelColorRGB(uint16_t n) const;
 
  protected:
-
-  uint16_t
-    numLEDs,       // Number of RGB LEDs in strip
-    numBytes;      // Size of 'pixels' buffer below (3 or 4 bytes/pixel)
   uint8_t
-   *pixels;        // Holds LED color values (3 or 4 bytes each)    
+   pixels[(STRIP_LENGTH*3)];        // Holds LED color values
 };
 
 // these helpers are for debugging interrupts.
