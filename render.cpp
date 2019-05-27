@@ -1,31 +1,56 @@
+
 #include <Arduino.h>
 #include "config.h"
 #include "render.h"
-#include "ultrafastneopixel.h"
 
-#define SILVER 0xFFFFFFFF
-#define GOLD 0xFFFFFF77
+#ifndef DEBUG_ONLY
+
+#define SILVER CRGB(0xFF, 0xFF, 0xFF)
+#define GOLD CRGB(0xFF, 0xFF, 0x77)
 
 #define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
 
 uint8_t static random_table[STRIP_LENGTH];
 uint8_t static maximum = 255;
 uint8_t static phase = 0;
-static uint32_t dot_colors[ATTRACT_MODE_DOTS];
+static CRGB dot_colors[ATTRACT_MODE_DOTS];
 static uint32_t dot_pos[ATTRACT_MODE_DOTS];
 static uint16_t dot_speeds[ATTRACT_MODE_DOTS];
 static uint8_t dot_age[ATTRACT_MODE_DOTS];
 
-uint32_t Wheel(byte WheelPos) {
+static const uint8_t PROGMEM _gammaTable[256] = {
+  0,   3,   5,   7,   9,  11,  13,  14,  16,  18,  19,  21,  22,  24,  25,  26,
+ 28,  29,  31,  32,  33,  35,  36,  37,  39,  40,  41,  42,  44,  45,  46,  47,
+ 48,  50,  51,  52,  53,  54,  56,  57,  58,  59,  60,  61,  63,  64,  65,  66,
+ 67,  68,  69,  70,  71,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,
+ 84,  85,  86,  88,  89,  90,  91,  92,  93,  94,  95,  96,  97,  98,  99, 100,
+101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+117, 118, 119, 120, 121, 122, 123, 123, 124, 125, 126, 127, 128, 129, 130, 131,
+132, 133, 134, 135, 136, 137, 138, 139, 140, 140, 141, 142, 143, 144, 145, 146,
+147, 148, 149, 150, 151, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161,
+161, 162, 163, 164, 165, 166, 167, 168, 169, 169, 170, 171, 172, 173, 174, 175,
+176, 177, 177, 178, 179, 180, 181, 182, 183, 183, 184, 185, 186, 187, 188, 189,
+190, 190, 191, 192, 193, 194, 195, 196, 196, 197, 198, 199, 200, 201, 202, 202,
+203, 204, 205, 206, 207, 207, 208, 209, 210, 211, 212, 212, 213, 214, 215, 216,
+217, 217, 218, 219, 220, 221, 222, 222, 223, 224, 225, 226, 227, 227, 228, 229,
+230, 231, 232, 232, 233, 234, 235, 236, 236, 237, 238, 239, 240, 240, 241, 242,
+243, 244, 245, 245, 246, 247, 248, 249, 249, 250, 251, 252, 253, 253, 254, 255};
+
+uint8_t static gamma8(uint8_t x)  {
+  return pgm_read_byte(&_gammaTable[x]); // 0-255 in, 0-255 out
+}
+
+
+CRGB Wheel(byte WheelPos) {
   WheelPos = 255 - WheelPos;
   if (WheelPos < 85) {
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+    return CRGB(255 - WheelPos * 3, 0, WheelPos * 3);
   } else if (WheelPos < 170) {
     WheelPos -= 85;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+    return CRGB(0, WheelPos * 3, 255 - WheelPos * 3);
   } else {
     WheelPos -= 170;
-    return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+    return CRGB(WheelPos * 3, 255 - WheelPos * 3, 0);
   }
 }
 
@@ -39,35 +64,38 @@ static void make_new_dot(uint8_t dot) {
 uint32_t Wheel2(byte WheelPos) {
   // 0 is blue (0,0,255)
   // 255 is yellow (255,127,0)
-  return strip.Color(
-    WheelPos, 
-    WheelPos >> 1, 
-    255-WheelPos);
+  CRGB col;
+  col.r = WheelPos;
+  col.g = WheelPos >> 1;
+  col.b = 255-WheelPos;
+  return col;
 }
 
 void setup_render() {
   // Initialize all pixels to 'off'
-  strip.begin();
-  strip.clear();
-  strip.show();
+  FastLED.clear();
+  FastLED.show();
   for(uint8_t i = 0; i < ATTRACT_MODE_DOTS; i++) {
     make_new_dot(i);
   }
 }
 
-uint32_t Wheel3(byte WheelPos) {
-  return strip.Color(0, 128-WheelPos > 0 ? 128-WheelPos : 0, WheelPos > 128 ? 128 : WheelPos);
+CRGB Wheel3(byte WheelPos) {
+  CRGB col;
+  col.r = 0;
+  col.g = 128-WheelPos > 0 ? 128-WheelPos : 0;
+  col.b = WheelPos > 128 ? 128 : WheelPos;
+  return col;
 }
 
-uint32_t Wheel_Purple_Yellow(byte WheelPos) {
+CRGB Wheel_Purple_Yellow(byte WheelPos) {
   // 0 is purple (63,0,255)
   // 255 is yellow (255,127,0)
-  
-  return strip.Color(
-    map(WheelPos,0,255,63,255),
-    WheelPos >> 2,
-    255-WheelPos
-  );
+  CRGB col;
+  col.r = map(WheelPos,0,255,63,255);
+  col.g = WheelPos >> 2;
+  col.b = 255-WheelPos;
+  return col;
 }
 
 static inline uint8_t ssub8(uint8_t a, uint8_t b) {
@@ -78,52 +106,38 @@ static inline uint8_t ssub8(uint8_t a, uint8_t b) {
 }
 
 static void fade_pixel(int pixel) {
-  uint32_t color = strip.getPixelColor(pixel);
-  
-  uint8_t r = color >> 16;
-  uint8_t g = color >> 8;
-  uint8_t b = color;
+  uint8_t r = leds[pixel].r;
+  uint8_t g = leds[pixel].g;
+  uint8_t b = leds[pixel].b;
   // this is equivalent to r*0.875
-  strip.setPixelColor(pixel, 
-    ssub8(r, (r>>3)+1), ssub8(g, (g>>3)+1), ssub8(b, (b>>3)+1)
-  );
+  leds[pixel] = CRGB(ssub8(r, (r>>3)+1), ssub8(g, (g>>3)+1), ssub8(b, (b>>3)+1));
 }
 
 static void fade_pixel_slow(int pixel) {
-  uint32_t color = strip.getPixelColor(pixel);
-  uint8_t r = color >> 16;
-  uint8_t g = color >> 8;
-  uint8_t b = color;
+  uint8_t r = leds[pixel].r;
+  uint8_t g = leds[pixel].g;
+  uint8_t b = leds[pixel].b;
   // this is equivalent to r*0.9375
-  strip.setPixelColor(pixel, 
-    ssub8(r, (r>>4)+1), ssub8(g, (g>>4)+1), ssub8(b, (b>>4)+1)
-  );
+  leds[pixel] = CRGB(ssub8(r, (r>>4)+1), ssub8(g, (g>>4)+1), ssub8(b, (b>>4)+1));
 }
 
 static void fade_pixel_fast(int pixel) {
-  uint32_t color = strip.getPixelColor(pixel);
-  uint8_t r = color >> 16;
-  uint8_t g = color >> 8;
-  uint8_t b = color;
+  uint8_t r = leds[pixel].r;
+  uint8_t g = leds[pixel].g;
+  uint8_t b = leds[pixel].b;
+  leds[pixel] = CRGB(ssub8(r, (r>>2)+1), ssub8(g, (g>>2)+1), ssub8(b, (b>>2)+1));
   // this is equivalent to r*0.75
-  strip.setPixelColor(pixel, 
-    ssub8(r, (r>>2)+1), ssub8(g, (g>>2)+1), ssub8(b, (b>>2)+1)
-  );
 }
 
 // fades pixels more the closer they are the start, so that peaks stay visible
 static void fade_pixel_plume(int pixel) {
-  float fade_factor;
+  uint8_t fade_factor;
   if(pixel < STRIP_LENGTH >> 1) {
-    fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 0.8, 1.0);  
+    fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 51, 0);  
   } else {
-    fade_factor = map(pixel, STRIP_LENGTH >> 1, STRIP_LENGTH, 1.0, 0.8);  
+    fade_factor = map(pixel, STRIP_LENGTH >> 1, STRIP_LENGTH, 0, 51);  
   }
-  uint32_t color = strip.getPixelColor(pixel);
-  uint8_t r = color >> 16;
-  uint8_t g = color >> 8;
-  uint8_t b = color;
-  strip.setPixelColor(pixel, r*fade_factor, g*fade_factor, b*fade_factor);
+  leds[pixel].fadeLightBy(fade_factor);
 }
 
 static void generate_sparkle_table() {
@@ -150,19 +164,24 @@ static void generate_sparkle_table() {
 
 // this effect needs to be rendered from the end of the strip backwards
 void stream_pixel(int pixel) {
-  uint32_t old_color[4];
+  CRGB old_color[4];
   
   if(pixel > 3) {
     for (uint8_t i = 0; i<4; i++) {
-      old_color[i] = strip.getPixelColor(pixel-i);
+      old_color[i] = leds[pixel-i];
       
       // Rotate and mask all colours at once.
       // Each of the 4 previous pixels contributes 1/4 brightness
       // so we divide each colour by 2.
-      old_color[i] = (old_color[i] >> 2) & 0x3F3F3F3F;
+      old_color[i].r = (old_color[i].r >> 2);
+      old_color[i].g = (old_color[i].g >> 2);
+      old_color[i].b = (old_color[i].b >> 2);
+      old_color[i].r &= 0x3F;
+      old_color[i].g &= 0x3F;
+      old_color[i].b &= 0x3F;
     }
 
-    strip.setPixelColor(pixel, old_color[0] + old_color[1] + old_color[2] + old_color[3]);  
+    leds[pixel] = old_color[0] + old_color[1] + old_color[2] + old_color[3];  
   } else {
     fade_pixel(pixel);
   }
@@ -170,23 +189,30 @@ void stream_pixel(int pixel) {
 
 // like stream pixel but with a sharper fade
 void shoot_pixel(int pixel) {
-  uint32_t color = 0;
+  CRGB color = CRGB(0,0,0);
 
   if(pixel >= 4) {
-    color  = (strip.getPixelColor(pixel-2) >> 1) & 0x7F7F7F7F;
-    color += (strip.getPixelColor(pixel-3) >> 2) & 0x3F3F3F3F;
-    color += (strip.getPixelColor(pixel-4) >> 3) & 0x1F1F1F1F;    
+    color.r  = ((leds[pixel-2].r >> 1) & 0x7F);
+    color.r += ((leds[pixel-3].r >> 2) & 0x3F);
+    color.r += ((leds[pixel-4].r >> 3) & 0x1F);
+    color.g  = ((leds[pixel-2].g >> 1) & 0x7F);
+    color.g += ((leds[pixel-3].g >> 2) & 0x3F);
+    color.g += ((leds[pixel-4].g >> 3) & 0x1F);    
+    color.b  = ((leds[pixel-2].b >> 1) & 0x7F);
+    color.b += ((leds[pixel-3].b >> 2) & 0x3F);
+    color.b += ((leds[pixel-4].b >> 3) & 0x1F);    
   } else {
     fade_pixel(pixel);
   }
 
-  strip.setPixelColor(pixel, color);  
+  leds[pixel] = color;  
 }
 
 void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade) {
-    uint8_t adjPeak = strip.gamma8(peakToPeak);
+    static uint8_t beat_brightness;
+    uint8_t adjPeak = gamma8(peakToPeak);
     int led = map(adjPeak, 0, maximum, -2, STRIP_LENGTH - 1) - 1;
-    int beat_brightness = map(peakToPeak, 0, maximum, 0, 255);
+    beat_brightness = qadd8(beat_brightness/2, adjPeak);
     
     for (int j = STRIP_LENGTH - 1; j >= 0; j--)
     {
@@ -194,13 +220,17 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
         if(j <= led && led >= 0) {
           // set VU color up to peak
           int color = map(j, 0, STRIP_LENGTH, 0, 255);
-          strip.setPixelColor(j, Wheel((color)%256));
+          leds[j] = Wheel((color)%256);
         }
         else if(j >= STRIP_LENGTH/2 && j < STRIP_LENGTH && is_beat) {
-          strip.setPixelColor(j, beat_brightness,beat_brightness,beat_brightness);
+          leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
         }
         else if(do_fade) {
-          fade_pixel(j);
+          if( j >= STRIP_LENGTH/2 ) {
+            fade_pixel_slow(j);
+          } else {
+            fade_pixel_fast(j);
+          }
         }
     }  
 }
@@ -213,7 +243,7 @@ void render_stream_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
       if(j <= led && led >= 0) {
         // set VU color up to peak
         int color = map(j, 0, STRIP_LENGTH, 0, 255);
-        strip.setPixelColor(j, Wheel(color));
+        leds[j] = Wheel(color);
       }
       else {
         stream_pixel(j);
@@ -234,7 +264,7 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
       if(j <= led) {
         // set VU color up to peak
         int color = map(j, 0, STRIP_LENGTH >> 2, 0, 255);
-        strip.setPixelColor(j, Wheel_Purple_Yellow(color));
+        leds[j] = Wheel_Purple_Yellow(color);
       }
       else {
         shoot_pixel(j);
@@ -246,7 +276,7 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
 }
 
 void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fade) {
-  uint8_t adjPeak = strip.gamma8(peakToPeak);
+  uint8_t adjPeak = gamma8(peakToPeak);
   uint8_t led = map(adjPeak, 0, 128, 0, STRIP_LENGTH - 1);
   uint8_t beat_brightness = map(peakToPeak, 0, maximum, 128, 255);
   unsigned int bias = 30 * (is_beat ? 1 : 0);
@@ -257,7 +287,7 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fa
       if(j <= led) {
         // set VU color up to peak
         uint8_t color = map(j, 0, STRIP_LENGTH, 0, 255);
-        strip.setPixelColor(j, Wheel((color-bias)%256));
+        leds[j] = Wheel((color-bias)%256);
       } else {
         if(do_fade) {
           fade_pixel(j);
@@ -266,7 +296,7 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fa
     } else {
       if(is_beat) {
       // beats
-        strip.setPixelColor(j, beat_brightness,beat_brightness,beat_brightness);
+        leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
       } else {
         if(do_fade) {
           fade_pixel(j);
@@ -280,14 +310,14 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     if(do_fade) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++)
       {
-        fade_pixel_fast(j);
+        fade_pixel(j);
       }
     }
     int index = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2 );
     if(index >= 0) {
       generate_sparkle_table();
       for (uint8_t j = is_beat?0:(index/4); j <= index; j++) {
-        strip.setPixelColor(random_table[j], j%2 ? GOLD : SILVER);
+        leds[random_table[j]] = j%2 ? GOLD : SILVER;
       }
     }
 }
@@ -300,16 +330,16 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
     uint8_t b = samples[(uint8_t)(sample_ptr + j*5) % SAMP_BUFF_LEN];
     if(is_beat && is_beat_2) {
       // V1
-      strip.setPixelColor(j,r,g,b);
+      leds[j].setRGB(r,g,b);
     } else if(is_beat) {
     // V2
-      strip.setPixelColor(j,0,g,b);
+      leds[j].setRGB(0,g,b);
     } else if(is_beat_2) {
     // V3
-      strip.setPixelColor(j,r,0,b);
+      leds[j].setRGB(r,0,b);
     } else {
     // V4
-      strip.setPixelColor(j,r,0,0);
+      leds[j].setRGB(0,0,b);
     }
   }
 }
@@ -321,9 +351,9 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
     while(p < STRIP_LENGTH)
     {
       // shift all the pixels along
-      uint16_t sine1 = strip.sine8((uint8_t)(j+phase));
-      uint16_t sine2 = strip.sine8((uint8_t)(k+phase));
-      uint16_t sine3 = strip.sine8((uint8_t)(l+phase));
+      uint16_t sine1 = sin8((uint8_t)(j+phase));
+      uint16_t sine2 = sin8((uint8_t)(k+phase));
+      uint16_t sine3 = sin8((uint8_t)(l+phase));
 //      if(!is_beat && !is_beat_2) {
         // sine1, 2 and 3 are really RGB values. Adjustment is really a base white.
         uint16_t adjustment = peakToPeak / 4 * 3;
@@ -331,7 +361,7 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
         sine2 = adjustment + (sine2 / 4); if(sine2 > 255) sine2 = 255; // saturate
         sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
 //      }
-      strip.setPixelColor(p, sine1, sine2, sine3);
+      leds[p].setRGB(sine1, sine2, sine3);
       p++;
       j += 5;
       k += 10;
@@ -372,12 +402,9 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
         
     for (uint8_t j = 0; j < STRIP_LENGTH; j++)
     {
-      uint32_t color = Wheel(j+(bar_segment_pattern*16));
+      CRGB color = Wheel(j+(bar_segment_pattern*16));
       if(_in_current_bar_segment(j)) {
-        uint8_t r = color >> 16;
-        uint8_t g = color >> 8;
-        uint8_t b = color;
-        strip.setPixelColor(j, r/4*3+peakToPeak,g/4*3+peakToPeak,b/4*3+peakToPeak);
+        leds[j].setRGB(color.r/4*3+peakToPeak,color.g/4*3+peakToPeak,color.b/4*3+peakToPeak);
       } else {
         if(do_fade) {
           fade_pixel(j);
@@ -396,9 +423,10 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
 
 void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, bool is_beat_2) {
     uint32_t color;
+    CRGB crgb_color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
-    uint8_t adjPeak = strip.gamma8(peakToPeak);
-    int led = map(adjPeak, 0, maximum, -2, STRIP_LENGTH/2);
+    uint8_t adjPeak = gamma8(peakToPeak);
+    int led = map(adjPeak, 0, maximum, 0, STRIP_LENGTH/2);
     int bias = 0;
 
     static bool was_beat_2 = false;
@@ -423,23 +451,23 @@ void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, bool 
         color = map(j, 0, STRIP_LENGTH/4, 0, 255);
         switch(fade_type) {
           default:
-          case 0: color = Wheel((color+bias)%256); break;
-          case 1: color = Wheel2((color+bias)%256); break;
-          case 2: color = Wheel3((color+bias)%256); break;
+          case 0: crgb_color = Wheel((color+bias)%256); break;
+          case 1: crgb_color = Wheel2((color+bias)%256); break;
+          case 2: crgb_color = Wheel3((color+bias)%256); break;
         }
-        strip.setPixelColor(j, color);
-        strip.setPixelColor((STRIP_LENGTH/2)+j, color);
+        leds[j] = crgb_color;
+        leds[(STRIP_LENGTH/2)+j] = crgb_color;
         
         // set VU color up to peak
         color = map(j, 0, STRIP_LENGTH/4, 255, 0);
         switch(fade_type) {
           default:
-          case 0: color = Wheel((color+bias)%256); break;
-          case 1: color = Wheel2((color+bias)%256); break;
-          case 2: color = Wheel3((color+bias)%256); break;
+          case 0: crgb_color = Wheel((color+bias)%256); break;
+          case 1: crgb_color = Wheel2((color+bias)%256); break;
+          case 2: crgb_color = Wheel3((color+bias)%256); break;
         }
-        strip.setPixelColor((STRIP_LENGTH/2)-j-1, color);
-        strip.setPixelColor((STRIP_LENGTH)-j-1, color);
+        leds[(STRIP_LENGTH/2)-j-1] = crgb_color;
+        leds[(STRIP_LENGTH)-j-1] = crgb_color;
       }
       else if(do_fade) {
         if(is_beat) {
@@ -460,12 +488,12 @@ void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, bool 
 void render_beat_flash_1_pixel(bool is_beat) {
     // THIS BIT FLASHES ONE LED SO YOU CAN SEE THE BEATS
     if(is_beat) {
-      strip.setPixelColor(0, strip.Color(127,127,127));
+      leds[0] = CRGB(127,127,127);
     } else {
-      strip.setPixelColor(0, 0);
+      leds[0] = CRGB::Black;
     }
     for (uint8_t j = STRIP_LENGTH - 1; j >= 1; j--) {
-      strip.setPixelColor(j, 0);
+      leds[j] = CRGB::Black;
     }  
 }
 
@@ -475,9 +503,9 @@ void render_threshold() {
   for(uint8_t i = 0; i < STRIP_LENGTH; i++)
   {
     if (threshold & 0x01) {
-      strip.setPixelColor(i, strip.Color(127,127,127));
+      leds[i].setRGB(127,127,127);
     } else {
-      strip.setPixelColor(i, 0);
+      leds[i].setRGB(0,0,0);
     }
     threshold = threshold >> 1;
   }
@@ -485,14 +513,14 @@ void render_threshold() {
 
 void render_black() {
     for (int j = STRIP_LENGTH - 1; j >= 0; j--) {
-      strip.setPixelColor(j, 0);
+      leds[j].setRGB(0,0,0);
     }  
 }
 
-void colorWipe(uint32_t c, uint8_t wait) {
+void colorWipe(CRGB c, uint8_t wait) {
   for (uint8_t i = 0; i < STRIP_LENGTH; i++) {
-    strip.setPixelColor(i, c);
-    strip.show();
+    leds[i] = c;
+    FastLED.show();
     delay(wait);
   }
 }
@@ -503,9 +531,9 @@ void rainbowCycle(uint8_t wait) {
 
   for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
     for(i=0; i< STRIP_LENGTH; i++) {
-      strip.setPixelColor(i, Wheel(((i * 256 / STRIP_LENGTH) + j) & 255));
+      leds[i] = Wheel(((i * 256 / STRIP_LENGTH) + j) & 255);
     }
-    strip.show();
+    FastLED.show();
     delay(wait);
   }
 }
@@ -546,7 +574,7 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
     for(uint8_t i = 0; i < STRIP_LENGTH; i++)
     {
       if( i <= new_pos && i >= current_pos ) {
-        strip.setPixelColor(i, Wheel(0-i+peakToPeak));
+        leds[i] = Wheel(0-i+peakToPeak);
       } else {
         fade_pixel_fast(i);
       }
@@ -556,7 +584,7 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
     for(uint8_t i = 0; i < STRIP_LENGTH; i++)
     {
       if( i >= new_pos && i <= current_pos ) {
-        strip.setPixelColor(i, Wheel(i+peakToPeak));
+        leds[i] = Wheel(i+peakToPeak);
       } else {
         fade_pixel_fast(i);
       }
@@ -606,15 +634,16 @@ void calculate_overtakes(uint8_t dot) {
   for(uint8_t i = 0; i < ATTRACT_MODE_DOTS; i++) {
     if((dot_pos[dot] < dot_pos[i]) && (dot_pos[dot] + dot_speeds[dot]) >= dot_pos[i]) {
       // i will overtake j on next render. Let's make them collide!
-      uint8_t r = ((uint8_t)(dot_colors[i] >> 16) + (uint8_t)(dot_colors[dot] >> 16)) >> 1;
-      uint8_t g = ((uint8_t)(dot_colors[i] >> 8 ) + (uint8_t)(dot_colors[dot] >> 8 )) >> 1;
-      uint8_t b = ((uint8_t)(dot_colors[i]      ) + (uint8_t)(dot_colors[dot]      )) >> 1;
-      dot_colors[i] = ((uint32_t)r << 16) | ((uint32_t)g << 8) | (b);
+      uint8_t r = ((uint8_t)(dot_colors[i].r) + (uint8_t)(dot_colors[dot].r)) >> 1;
+      uint8_t g = ((uint8_t)(dot_colors[i].g) + (uint8_t)(dot_colors[dot].g)) >> 1;
+      uint8_t b = ((uint8_t)(dot_colors[i].b) + (uint8_t)(dot_colors[dot].b)) >> 1;
+      dot_colors[i] = CRGB(r,g,b);
       dot_colors[dot] = dot_colors[i];
     }
   }
 }
 
+// TODO: optimise for FastLED
 void render_attract() {
 
   uint16_t leds_offsets[ATTRACT_MODE_DOTS] = {0};
@@ -638,34 +667,28 @@ void render_attract() {
     dot_pos[dot] += dot_speeds[dot];
     if(dot_age[dot] < 255) dot_age[dot]++;
 
-    uint32_t old_color = strip.getPixelColor(led);
-    uint8_t old_r = (uint8_t)(old_color >> 16);
-    uint8_t old_g = (uint8_t)(old_color >> 8 );
-    uint8_t old_b = (uint8_t)(old_color      );
-    uint8_t dot_r = (uint8_t)(dot_colors[dot] >> 16);
-    uint8_t dot_g = (uint8_t)(dot_colors[dot] >> 8);
-    uint8_t dot_b = (uint8_t)(dot_colors[dot]);
+    uint8_t dot_r = (uint8_t)(dot_colors[dot].r);
+    uint8_t dot_g = (uint8_t)(dot_colors[dot].g);
+    uint8_t dot_b = (uint8_t)(dot_colors[dot].b);
     
-    uint16_t r = old_r + dot_r * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-    uint16_t g = old_g + dot_g * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-    uint16_t b = old_b + dot_b * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-    strip.setPixelColor(led+1, 
-      min(r, 255),
-      min(g, 255), 
-      min(b, 255)
-    );
-    old_color = strip.getPixelColor(led+1);
-    old_r = (uint8_t)(old_color >> 16);
-    old_g = (uint8_t)(old_color >> 8 );
-    old_b = (uint8_t)(old_color      );
-    r = old_r + dot_r * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-    g = old_g + dot_g * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-    b = old_b + dot_b * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-    strip.setPixelColor(led+1, 
-      min(r, 255),
-      min(g, 255), 
-      min(b, 255)
-    ); 
+    uint16_t r = leds[led].r + dot_r * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+    uint16_t g = leds[led].g + dot_g * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+    uint16_t b = leds[led].b + dot_b * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+
+    if(led+1 < STRIP_LENGTH) {
+      leds[led+1] = CRGB(min(r, 255),min(g, 255),min(b, 255));
+    }
+
+//    old_color = strip.getPixelColor(led+1);
+//    old_r = (uint8_t)(old_color >> 16);
+//    old_g = (uint8_t)(old_color >> 8 );
+//    old_b = (uint8_t)(old_color      );
+    r = leds[led+1].r + dot_r * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    g = leds[led+1].g + dot_g * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    b = leds[led+1].b + dot_b * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+    if(led+1 < STRIP_LENGTH) {
+      leds[led+1] = CRGB( min(r, 255), min(g, 255), min(b, 255) );
+    }
   }
 }
 
@@ -677,9 +700,9 @@ void do_banner() {
         uint8_t r = c >> 16;
         uint8_t g = c >> 8;
         uint8_t b = c;
-        strip.setPixelColor(j, r * i / 255, g * i / 255, b * i / 255);
+        leds[j].setRGB(r * i / 255, g * i / 255, b * i / 255);
       }
-      strip.show();
+      FastLED.show();
     }
 
     for (int16_t k = 255; k > -1; k -= STRIP_LENGTH/30) {
@@ -688,30 +711,33 @@ void do_banner() {
         uint8_t r = c >> 16;
         uint8_t g = c >> 8;
         uint8_t b = c;
-        strip.setPixelColor(j, r * k / 255, g * k / 255, b * k / 255);
+        leds[j].setRGB(r * k / 255, g * k / 255, b * k / 255);
       }
-      strip.show();
+      FastLED.show();
     }
     delay(100);
 
     // double flash
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        strip.setPixelColor(j, 255,255,255);
+        leds[j].setRGB(255,255,255);
     }
-    strip.show();
+    FastLED.show();
     delay(50);
 
-    strip.clear();
-    strip.show();
+    FastLED.clear();
+    FastLED.show();
     delay(50);
 
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        strip.setPixelColor(j, 255,255,255);
+        leds[j].setRGB(255,255,255);
     }
-    strip.show();
+    FastLED.show();
     delay(50);
 
-    strip.clear();
-    strip.show();
+    FastLED.clear();
+    FastLED.show();
     delay(100);
 }
+
+
+#endif // DEBUG_ONlY

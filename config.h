@@ -13,16 +13,22 @@
 #define MODE_LED_PIN_4 12
 #define STRIP_LENGTH 60
 #define SAMP_BUFF_LEN 256 // this needs to be a power of 2.
-#define SAMP_FREQ 5000 // Hz
+#define SAMP_FREQ 2500 // Hz
 #define AUTO_BEATS 64 // beats before change
 #define AUTO_BEATS_MIN_THRESH 300 // ms
 #define AUTO_BEATS_SILENCE_THRESH 5000 // ms
+#define BEAT_SUSTAIN 30 // minimum length of a beat detection
 #define ATTRACT_MODE_THRESHOLD 8 // vu value
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
 #define VU_LOOKBEHIND 10
-#define PWM_DUTY_CYCLE 20 // 1/10 duty cycle for LEDs without resistors at 10Khz PWM
+#define PWM_DUTY_CYCLE 10 // 1/10 duty cycle for LEDs without resistors at 10Khz PWM
+#define FPS 125
+#define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
+#define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 12800 @ 16MHz
 //#define FRAME_RATE_LIMIT 1
+
+//#define DEBUG_ONLY 1
 
 
 // This is the beat detect threshold.

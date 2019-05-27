@@ -1,12 +1,16 @@
 #include "config.h"
 
 #include "ledpwm.h"
-#include "render.h"
-#include "ultrafastneopixel.h"
 #include "sampler.h"
+
+#define NO_CORRECTION 1
+#include <FastLED.h>
+
 #include "debugrender.h"
 
-UltraFastNeoPixel strip = UltraFastNeoPixel(STRIP_LENGTH);
+#include "render.h"
+
+CRGB leds[STRIP_LENGTH];
 
 uint32_t static start_time; // time each loop started.
 uint32_t static silent_since; // time we've been silent since.
@@ -34,8 +38,10 @@ void setup() {
   pinMode(MODE_LED_PIN_3,OUTPUT);
   pinMode(MODE_LED_PIN_4,OUTPUT);
 
+  FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
+
 //  setup_filter();
-  setup_render();
+//  setup_render();
   setup_sampler();
   setup_ledpwm();
 //  Serial.begin(2000000);
@@ -63,12 +69,12 @@ static void reach_target_fps() {
     total_time = end_time - start_time;
   }
   
-  // frame target is 100fps, or 20k microseconds
-  if(total_time > 5000) {
+  if(total_time > FRAME_LENGTH_CYCLES) {
     slow=true;
   } else {
-    delayMicroseconds(5000-total_time);
     slow=false;
+    uint16_t delayCycles = ((FRAME_LENGTH_CYCLES-total_time) >> 2) - 8;
+    while(delayCycles-- > 0);
   }
   start_time = end_time;
 }
@@ -119,10 +125,16 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
+#ifdef DEBUG_ONLY
+void loop() {
+#else  
 void debug_loop() {
+#endif
+
+  uint8_t beat_sustain = 0;
   byte is_beats = 0;
-  bool is_beat_1;
-  bool is_beat_2;
+  bool is_beat_1 = false;
+  bool is_beat_2 = false;
   uint8_t vu_width = 0;
   uint8_t mode = 0;
 
@@ -143,33 +155,53 @@ void debug_loop() {
         mode = 0;
       }
     }
-    
-    is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
-    vu_width = calculate_vu(sample_ptr);
-      
-    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
 
+    if(is_beats && beat_sustain > 0) {
+      beat_sustain--;
+    }
+    if(beat_sustain == 0) {
+        is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
+        if(is_beats) {
+          is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+          is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+  
+          beat_sustain = BEAT_SUSTAIN;
+        }
+    }
+
+    vu_width = calculate_vu(sample_ptr);
+
+    uint8_t local_portb_val;
     switch(mode) {
       case 0: // show that beats are working
-        PORTB = (is_beat_1 << 1) | (is_beat_2 << 2);
+        local_portb_val = (is_beat_1 << 1) | (is_beat_2 << 2);
+        portb_val = local_portb_val;
         break;
       case 1: // show that sampling is working
-        PORTB = 0;
-        if (vu_width > 128) PORTB |= 32;
-        if (vu_width > 64)  PORTB |= 16;
-        if (vu_width > 32)  PORTB |= 8;
-        if (vu_width > 16)  PORTB |= 4;
-        if (vu_width > 8)   PORTB |= 2;
+        local_portb_val = 0;
+        if (vu_width > 128) local_portb_val |= 32;
+        if (vu_width > 64)  local_portb_val |= 16;
+        if (vu_width > 32)  local_portb_val |= 8;
+        if (vu_width > 16)  local_portb_val |= 4;
+        if (vu_width > 8)   local_portb_val |= 2;
+        portb_val = local_portb_val;
+        break;
+      case 2:
+        local_portb_val = slow ? 62 : 0;
+        portb_val = local_portb_val;
         break;
     }
 
     debug_render_combo(is_beat_2, is_beat_1, current_sample);
 
-    strip.show();
+    FastLED.show();
+#ifdef FRAME_RATE_LIMIT
+    reach_target_fps();
+#endif
   }  
 }
 
+#ifndef DEBUG_ONLY
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -178,6 +210,7 @@ void loop() {
     debug_loop();
   }
   
+  uint8_t beat_sustain = 0;
   byte is_beats = 0;
   bool is_beat_1 = false;
   bool is_beat_2 = false;
@@ -212,7 +245,18 @@ void loop() {
       portb_val = (mode << 1); // writes directly to pins 9-12
     }
     
-    is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
+    if(is_beats && beat_sustain > 0) {
+      beat_sustain--;
+    }
+    if(beat_sustain == 0) {
+        is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
+        if(is_beats) {
+          is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+          is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+  
+          beat_sustain = BEAT_SUSTAIN;
+        }
+    }
     vu_width = calculate_vu(sample_ptr);
 
     if (pushed || vu_width > ATTRACT_MODE_THRESHOLD) {
@@ -242,16 +286,17 @@ void loop() {
       if(auto_mode && auto_mode_change(is_beat_1)) {
         last_mode = mode;
         while(mode == last_mode) mode = random(0,MAX_MODE+1); // max is exclusive
-        PORTB = (mode << 1); // writes directly to pins 9-12.
+        portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
       render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
     }
 
-    strip.show();
+    FastLED.show();
 
 #ifdef FRAME_RATE_LIMIT
     reach_target_fps();
 #endif
   }
 }
+#endif // DEBUG_ONLY
