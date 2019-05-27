@@ -292,18 +292,26 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     }
 }
 
+// Manually unrolled version seems to give better ASM code...
 void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
-    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-      // the +1 and +2 just make it a bit more colourful on the strip…
-      uint8_t r = samples[(sample_ptr + j) % SAMP_BUFF_LEN];
-      uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
-      uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
-      strip.setPixelColor(j, 
-        r == 1 ? 0 : is_beat_2 ? r : 0, 
-        g == 1 ? 0 : is_beat ? g : 0, 
-        b == 1 ? 0 : b
-       );
+  for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+    uint8_t r = samples[(uint8_t)(sample_ptr + j*1) % SAMP_BUFF_LEN];
+    uint8_t g = samples[(uint8_t)(sample_ptr + j*3) % SAMP_BUFF_LEN];
+    uint8_t b = samples[(uint8_t)(sample_ptr + j*5) % SAMP_BUFF_LEN];
+    if(is_beat && is_beat_2) {
+      // V1
+      strip.setPixelColor(j,r,g,b);
+    } else if(is_beat) {
+    // V2
+      strip.setPixelColor(j,0,g,b);
+    } else if(is_beat_2) {
+    // V3
+      strip.setPixelColor(j,r,0,b);
+    } else {
+    // V4
+      strip.setPixelColor(j,r,0,0);
     }
+  }
 }
 
 void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
@@ -707,4 +715,3 @@ void do_banner() {
     strip.show();
     delay(100);
 }
-
