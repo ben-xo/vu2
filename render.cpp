@@ -667,27 +667,25 @@ void render_attract() {
     dot_pos[dot] += dot_speeds[dot];
     if(dot_age[dot] < 255) dot_age[dot]++;
 
-    uint8_t dot_r = (uint8_t)(dot_colors[dot].r);
-    uint8_t dot_g = (uint8_t)(dot_colors[dot].g);
-    uint8_t dot_b = (uint8_t)(dot_colors[dot].b);
+    CRGB dot_color = dot_colors[dot];
+    CRGB old_color;
     
-    uint16_t r = leds[led].r + dot_r * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-    uint16_t g = leds[led].g + dot_g * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-    uint16_t b = leds[led].b + dot_b * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-
-    if(led+1 < STRIP_LENGTH) {
-      leds[led+1] = CRGB(min(r, 255),min(g, 255),min(b, 255));
+    if(led < STRIP_LENGTH) {
+      old_color = leds[led];
+      leds[led] = CRGB(
+        qadd8(old_color.r, dot_color.r * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL),
+        qadd8(old_color.g, dot_color.g * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL),
+        qadd8(old_color.b, dot_color.b * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL)
+      );
     }
 
-//    old_color = strip.getPixelColor(led+1);
-//    old_r = (uint8_t)(old_color >> 16);
-//    old_g = (uint8_t)(old_color >> 8 );
-//    old_b = (uint8_t)(old_color      );
-    r = leds[led+1].r + dot_r * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-    g = leds[led+1].g + dot_g * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-    b = leds[led+1].b + dot_b * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-    if(led+1 < STRIP_LENGTH) {
-      leds[led+1] = CRGB( min(r, 255), min(g, 255), min(b, 255) );
+    if(led +1 < STRIP_LENGTH) {
+      old_color = leds[led+1];
+      leds[led+1] = CRGB(
+        qadd8(old_color.r, dot_color.r * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL),
+        qadd8(old_color.g, dot_color.g * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL),
+        qadd8(old_color.b, dot_color.b * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL)
+      );
     }
   }
 }
