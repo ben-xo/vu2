@@ -17,7 +17,7 @@
 #define AUTO_BEATS 64 // beats before change
 #define AUTO_BEATS_MIN_THRESH 300 // ms
 #define AUTO_BEATS_SILENCE_THRESH 5000 // ms
-#define BEAT_SUSTAIN 30 // minimum length of a beat detection
+#define BEAT_SUSTAIN 40 // minimum length of a beat detection
 #define ATTRACT_MODE_THRESHOLD 8 // vu value
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
