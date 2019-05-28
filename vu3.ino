@@ -166,6 +166,9 @@ void debug_loop() {
           is_beat_2 = is_beats & (1 << BEAT_PIN_2);
   
           beat_sustain = BEAT_SUSTAIN;
+        } else {
+          is_beat_1 = false;
+          is_beat_2 = false;
         }
     }
 
@@ -255,6 +258,9 @@ void loop() {
           is_beat_2 = is_beats & (1 << BEAT_PIN_2);
   
           beat_sustain = BEAT_SUSTAIN;
+        } else {
+          is_beat_1 = false;
+          is_beat_2 = false;
         }
     }
     vu_width = calculate_vu(sample_ptr);
