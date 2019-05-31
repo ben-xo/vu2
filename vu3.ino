@@ -41,7 +41,7 @@ void setup() {
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
 
 //  setup_filter();
-//  setup_render();
+  setup_render();
   setup_sampler();
   setup_ledpwm();
 //  Serial.begin(2000000);

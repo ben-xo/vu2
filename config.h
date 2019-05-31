@@ -4,14 +4,14 @@
 #define NEOPIXEL_PIN 6
 #define DUTY_CYCLE_LED 7
 #define BUTTON_PIN 4
-#define BEAT_PIN_1 2
-#define BEAT_PIN_2 3
+#define BEAT_PIN_1 2 // must be an interrupt pin
+#define BEAT_PIN_2 3 // must be an interrupt pin
 #define BUTTON_LED_PIN 13
 #define MODE_LED_PIN_1 9
 #define MODE_LED_PIN_2 10
 #define MODE_LED_PIN_3 11 
 #define MODE_LED_PIN_4 12
-#define STRIP_LENGTH 60
+#define STRIP_LENGTH 100
 #define SAMP_BUFF_LEN 256 // this needs to be a power of 2.
 #define SAMP_FREQ 2500 // Hz
 #define AUTO_BEATS 64 // beats before change

@@ -61,7 +61,7 @@ static void make_new_dot(uint8_t dot) {
     dot_age[dot] = 0;
 }
 
-uint32_t Wheel2(byte WheelPos) {
+CRGB Wheel2(byte WheelPos) {
   // 0 is blue (0,0,255)
   // 255 is yellow (255,127,0)
   CRGB col;
@@ -667,49 +667,54 @@ void render_attract() {
     dot_pos[dot] += dot_speeds[dot];
     if(dot_age[dot] < 255) dot_age[dot]++;
 
-    CRGB dot_color = dot_colors[dot];
-    CRGB old_color;
-    
-    if(led < STRIP_LENGTH) {
-      old_color = leds[led];
-      leds[led] = CRGB(
-        qadd8(old_color.r, dot_color.r * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL),
-        qadd8(old_color.g, dot_color.g * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL),
-        qadd8(old_color.b, dot_color.b * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL)
+    if(led+1 < STRIP_LENGTH) {
+      CRGB old_color = leds[led];
+      uint8_t old_r = old_color.r;
+      uint8_t old_g = old_color.g;
+      uint8_t old_b = old_color.b;
+      uint8_t dot_r = dot_colors[dot].r;
+      uint8_t dot_g = dot_colors[dot].g;
+      uint8_t dot_b = dot_colors[dot].b;
+      
+      uint16_t r = old_r + dot_r * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+      uint16_t g = old_g + dot_g * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+      uint16_t b = old_b + dot_b * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
+      leds[led+1] = CRGB( 
+        min(r, 255),
+        min(g, 255), 
+        min(b, 255)
       );
-    }
-
-    if(led +1 < STRIP_LENGTH) {
-      old_color = leds[led+1];
-      leds[led+1] = CRGB(
-        qadd8(old_color.r, dot_color.r * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL),
-        qadd8(old_color.g, dot_color.g * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL),
-        qadd8(old_color.b, dot_color.b * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL)
-      );
+//      old_color = strip.getPixelColor(led+1);
+//      old_r = (uint8_t)(old_color >> 16);
+//      old_g = (uint8_t)(old_color >> 8 );
+//      old_b = (uint8_t)(old_color      );
+//      r = old_r + dot_r * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+//      g = old_g + dot_g * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+//      b = old_b + dot_b * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
+//      strip.setPixelColor(led+1, 
+//        min(r, 255),
+//        min(g, 255), 
+//        min(b, 255)
+//      );
     }
   }
 }
+
 
 void do_banner() {
     // colour test
     for (uint16_t i = 0; i <= 255; i += STRIP_LENGTH/30) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        uint32_t c = Wheel((j + (i/4)) * 255 / STRIP_LENGTH);
-        uint8_t r = c >> 16;
-        uint8_t g = c >> 8;
-        uint8_t b = c;
-        leds[j].setRGB(r * i / 255, g * i / 255, b * i / 255);
+        CRGB c = Wheel((j + (i/4)) * 255 / STRIP_LENGTH);
+        leds[j].setRGB(c.r * i / 255, c.g * i / 255, c.b * i / 255);
       }
       FastLED.show();
     }
 
     for (int16_t k = 255; k > -1; k -= STRIP_LENGTH/30) {
       for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        uint32_t c = Wheel((j + (STRIP_LENGTH-k)/4) * 255 / STRIP_LENGTH);
-        uint8_t r = c >> 16;
-        uint8_t g = c >> 8;
-        uint8_t b = c;
-        leds[j].setRGB(r * k / 255, g * k / 255, b * k / 255);
+        CRGB c = Wheel((j + (STRIP_LENGTH-k)/4) * 255 / STRIP_LENGTH);
+        leds[j].setRGB(c.r * k / 255, c.g * k / 255, c.b * k / 255);
       }
       FastLED.show();
     }
