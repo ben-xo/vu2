@@ -4,6 +4,8 @@
 #include "config.h"
 #include "sampler.h"
 
+#define TIMER_COUNTER (F_CPU / (1 * SAMP_FREQ) - 1)
+
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
 volatile uint16_t current_sample = 0;
@@ -43,13 +45,18 @@ void setup_sampler() {
 //       |  (1 << ADSC)  // start ADC measurements
   ;
 
-  TCCR1B = 0 | (1 << CS11) 
-             | (1 << WGM12)
-  ; // set up TIMER1 with no prescaler, and interrupt on overflow
-  
-  OCR1A = 6399; // overflow value for 5kHz
-  TCNT1 = 0;
-  TIMSK1 |= (1 << OCIE1A); // enable timer1
+  // TIMER 1 for interrupt frequency 5000 Hz:  
+  TCCR1A = 0; // set entire TCCR1A register to 0
+  TCCR1B = 0; // same for TCCR1B
+  TCNT1  = 0; // initialize counter value to 0
+  // set compare match register for 5000 Hz increments (configured in config.h)
+  OCR1A = TIMER_COUNTER; // = 16000000 / (1 * 5000) - 1 (must be <65536)
+  // turn on CTC mode
+  TCCR1B |= (1 << WGM12);
+  // Set CS12, CS11 and CS10 bits for 1 prescaler
+  TCCR1B |= (0 << CS12) | (0 << CS11) | (1 << CS10);
+  // enable timer compare interrupt
+  TIMSK1 |= (1 << OCIE1A);
   
   sei();
 }
@@ -100,6 +107,3 @@ ISR(TIMER1_COMPA_vect)
 //    [ss] "i" (ss)
 //  );
 //}
-
-
-
