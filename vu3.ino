@@ -2,6 +2,9 @@
 
 #include "ledpwm.h"
 #include "sampler.h"
+#include "beatdetect.h"
+
+volatile uint8_t beats_from_interrupt = 0;
 
 #define NO_CORRECTION 1
 #include <FastLED.h>
@@ -44,6 +47,7 @@ void setup() {
   setup_render();
   setup_sampler();
   setup_ledpwm();
+  setup_beatdetect();
 //  Serial.begin(2000000);
 //  randomSeed(analogRead(2));
 }
@@ -156,21 +160,26 @@ void debug_loop() {
       }
     }
 
-    if(is_beats && beat_sustain > 0) {
-      beat_sustain--;
-    }
-    if(beat_sustain == 0) {
-        is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
-        if(is_beats) {
-          is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-          is_beat_2 = is_beats & (1 << BEAT_PIN_2);
-  
-          beat_sustain = BEAT_SUSTAIN;
-        } else {
-          is_beat_1 = false;
-          is_beat_2 = false;
-        }
-    }
+    is_beats = beats_from_interrupt;
+    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+
+    // TODO: is beat sustain useful? I'm not sure.
+//    if(is_beats && beat_sustain > 0) {
+//      beat_sustain--;
+//    }
+//    if(beat_sustain == 0) {
+//        is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
+//        if(is_beats) {
+//          is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+//          is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+//  
+//          beat_sustain = BEAT_SUSTAIN;
+//        } else {
+//          is_beat_1 = false;
+//          is_beat_2 = false;
+//        }
+//    }
 
     vu_width = calculate_vu(sample_ptr);
 
