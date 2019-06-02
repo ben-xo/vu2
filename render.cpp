@@ -351,16 +351,20 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
     while(p < STRIP_LENGTH)
     {
       // shift all the pixels along
-      uint16_t sine1 = sin8((uint8_t)(j+phase));
-      uint16_t sine2 = sin8((uint8_t)(k+phase));
-      uint16_t sine3 = sin8((uint8_t)(l+phase));
+//      uint16_t sine1 = sin8((uint8_t)(j+phase));
+//      uint16_t sine2 = sin8((uint8_t)(k+phase));
+//      uint16_t sine3 = sin8((uint8_t)(l+phase));
 //      if(!is_beat && !is_beat_2) {
-        // sine1, 2 and 3 are really RGB values. Adjustment is really a base white.
-        uint16_t adjustment = peakToPeak / 4 * 3;
-        sine1 = adjustment + (sine1 / 4); if(sine1 > 255) sine1 = 255; // saturate
-        sine2 = adjustment + (sine2 / 4); if(sine2 > 255) sine2 = 255; // saturate
-        sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
+//        // sine1, 2 and 3 are really RGB values. Adjustment is really a base white.
+//        uint16_t adjustment = peakToPeak / 4 * 3;
+//        sine1 = adjustment + (sine1 / 4); if(sine1 > 255) sine1 = 255; // saturate
+//        sine2 = adjustment + (sine2 / 4); if(sine2 > 255) sine2 = 255; // saturate
+//        sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
 //      }
+
+      uint8_t sine1 = beatsin8 (peakToPeak>>4, 0, 255, 0, p+j+phase);
+      uint8_t sine2 = beatsin8 (peakToPeak>>4, 0, 255, 0, p+k+phase);
+      uint8_t sine3 = beatsin8 (peakToPeak>>4, 0, 255, 0, p+l+phase);
       leds[p].setRGB(sine1, sine2, sine3);
       p++;
       j += 5;
@@ -554,6 +558,7 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
     target_pos = (peakToPeak /4); // range 0 to 15
   }
 
+  // TODO: could easily make this interrupt driven too
   if(is_beat) {
     if(!was_beat) {
       top = !top;
@@ -610,7 +615,7 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
         render_vu_plus_beat_interleave(peakToPeak, is_beat, do_fade);
         break;
       case 4:
-        render_stream_pixels(peakToPeak, is_beat, do_fade);
+        render_fire(is_beat, peakToPeak);
         break;
       case 5:
         render_sparkles(peakToPeak, is_beat, do_fade);
@@ -626,7 +631,6 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
         break;
       case 9:
         render_beat_bounce_flip(is_beat, peakToPeak, sample_ptr);
-        break;
     }
 }
 

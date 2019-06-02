@@ -10,6 +10,8 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
 void do_banner();
 void render_attract();
 
+#include "fire.h"
+
 #endif
 
 // modes 0 to MAX_MODE are effects

@@ -42,7 +42,7 @@ void setup() {
   pinMode(MODE_LED_PIN_4,OUTPUT);
 
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
-
+ 
 //  setup_filter();
   setup_render();
   setup_sampler();
@@ -135,7 +135,7 @@ void loop() {
 void debug_loop() {
 #endif
 
-  uint8_t beat_sustain = 0;
+//  uint8_t beat_sustain = 0;
   byte is_beats = 0;
   bool is_beat_1 = false;
   bool is_beat_2 = false;
@@ -222,7 +222,7 @@ void loop() {
     debug_loop();
   }
   
-  uint8_t beat_sustain = 0;
+//  uint8_t beat_sustain = 0;
   byte is_beats = 0;
   bool is_beat_1 = false;
   bool is_beat_2 = false;
