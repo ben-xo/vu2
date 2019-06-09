@@ -12,7 +12,7 @@
 #define MODE_LED_PIN_3 11 
 #define MODE_LED_PIN_4 12
 #define STRIP_LENGTH 60
-#define SAMP_BUFF_LEN 256 // this needs to be a power of 2.
+#define SAMP_BUFF_LEN 256 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
 #define SAMP_FREQ 2500 // Hz
 #define AUTO_BEATS 128 // beats before change
 #define AUTO_BEATS_MIN_THRESH 300 // ms
@@ -22,7 +22,7 @@
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
 #define VU_LOOKBEHIND 10
-#define PWM_DUTY_CYCLE 10 // 1/10 duty cycle for LEDs without resistors at 10Khz PWM
+#define PWM_DUTY_CYCLE 20 // 1/10 duty cycle for LEDs without resistors at 10Khz PWM
 #define FPS 125
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 12800 @ 16MHz

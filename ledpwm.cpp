@@ -20,7 +20,7 @@ void setup_ledpwm() {
   TCNT2 = 0;
 
   // 10000 Hz (16000000/((24+1)*64))
-  OCR2A = 24;
+  OCR2A = 49;
   // CTC
   TCCR2A |= (1 << WGM21);
   // Prescaler 64

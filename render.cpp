@@ -325,9 +325,9 @@ void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
 // Manually unrolled version seems to give better ASM code...
 void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-    uint8_t r = samples[(uint8_t)(sample_ptr + j*1) % SAMP_BUFF_LEN];
-    uint8_t g = samples[(uint8_t)(sample_ptr + j*3) % SAMP_BUFF_LEN];
-    uint8_t b = samples[(uint8_t)(sample_ptr + j*5) % SAMP_BUFF_LEN];
+    uint8_t r = samples[(sample_ptr + j*1) % SAMP_BUFF_LEN];
+    uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
+    uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
     if(is_beat && is_beat_2) {
       // V1
       leds[j].setRGB(r,g,b);

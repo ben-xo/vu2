@@ -6,8 +6,8 @@ void setup_beatdetect() {
     DDRD &= ~(1 << DDD2);     // Clear the PD2 pin
     DDRD &= ~(1 << DDD3);     // Clear the PD3 pin
 
-    PORTD |= (1 << PORTD2);    // turn On the Pull-up
-    PORTD |= (1 << PORTD3);    // turn On the Pull-up
+//    PORTD |= (1 << PORTD2);    // turn On the Pull-up
+//    PORTD |= (1 << PORTD3);    // turn On the Pull-up
 
     EICRA |= (1 << ISC10);    // set INT1 to trigger on ANY logic change
     EICRA |= (1 << ISC00);    // set INT1 to trigger on ANY logic change
