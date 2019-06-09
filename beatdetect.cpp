@@ -4,16 +4,24 @@
 
 void setup_beatdetect() {
     DDRD &= ~(1 << DDD2);     // Clear the PD2 pin
-    // PD2 (PCINT0 pin) is now an input
+    DDRD &= ~(1 << DDD3);     // Clear the PD3 pin
 
     PORTD |= (1 << PORTD2);    // turn On the Pull-up
-    // PD2 is now an input with pull-up enabled
+    PORTD |= (1 << PORTD3);    // turn On the Pull-up
 
-    EICRA |= (1 << ISC10);    // set INT0 to trigger on ANY logic change
-    EIMSK |= (1 << INT1);     // Turns on INT0  
+    EICRA |= (1 << ISC10);    // set INT1 to trigger on ANY logic change
+    EICRA |= (1 << ISC00);    // set INT1 to trigger on ANY logic change
+    EIMSK |= (1 << INT0);     // Turns on INT0  
+    EIMSK |= (1 << INT1);     // Turns on INT1 
 }
 
 ISR (INT1_vect)
+{
+    /* interrupt code here */
+    beats_from_interrupt = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
+}
+
+ISR (INT0_vect)
 {
     /* interrupt code here */
     beats_from_interrupt = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
