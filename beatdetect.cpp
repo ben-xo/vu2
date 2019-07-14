@@ -15,12 +15,7 @@ void setup_beatdetect() {
     EIMSK |= (1 << INT1);     // Turns on INT1 
 }
 
-ISR (INT1_vect)
-{
-    /* interrupt code here */
-    beats_from_interrupt = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
-}
-
+ISR (INT1_vect, ISR_ALIASOF(INT0_vect));
 ISR (INT0_vect)
 {
     /* interrupt code here */
