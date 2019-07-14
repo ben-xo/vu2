@@ -57,12 +57,21 @@ void setup_sampler() {
   TCCR1B |= (0 << CS12) | (0 << CS11) | (1 << CS10);
   // enable timer compare interrupt
   TIMSK1 |= (1 << OCIE1A);
+
+#ifdef DEBUG_SAMPLE_RATE
+  // debugging pin for checking sample rate
+  pinMode (DEBUG_SAMPLE_RATE_PIN, INPUT);
+#endif
   
   sei();
 }
 
 ISR(TIMER1_COMPA_vect)
 {
+#ifdef DEBUG_SAMPLE_RATE
+  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
+#endif
+
   ADCSRA |= (1 << ADSC); // trigger next analog sample.
   
   uint8_t sample_idx = (current_sample + 1);
@@ -72,6 +81,10 @@ ISR(TIMER1_COMPA_vect)
   volatile byte* the_sample = samples + current_sample;
   *the_sample = sample;
   new_sample_count++;
+  
+#ifdef DEBUG_SAMPLE_RATE
+  DEBUG_SAMPLE_RATE_PORT &= ~(1 << DEBUG_SAMPLE_RATE_PIN);
+#endif
 }
 
 //// This optimised version saves 12 cycles from the C code above. 
