@@ -245,16 +245,14 @@ void loop() {
     
     if(pushed == SHORT_PUSH) {
       mode++;
+      portb_val = (mode << 1); // writes directly to pins 9-12
       auto_mode = false;
       is_attract_mode = false;
       if(mode > MAX_MODE) mode = 0;
     } else if(pushed == LONG_PUSH) {
       auto_mode = true;
       mode = 0;
-    }
-
-    if(pushed) {
-      portb_val = (mode << 1); // writes directly to pins 9-12
+      portb_val = 0;
     }
     
     is_beats = beats_from_interrupt;
