@@ -29,6 +29,9 @@
 //#define FRAME_RATE_LIMIT 1
 
 //#define DEBUG_ONLY 1
+//#define DEBUG_SAMPLE_RATE 1
+//#define DEBUG_SAMPLE_RATE_PORT PORTC
+//#define DEBUG_SAMPLE_RATE_PIN PC1
 
 
 // This is the beat detect threshold.
