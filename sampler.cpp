@@ -60,7 +60,7 @@ void setup_sampler() {
 
 #ifdef DEBUG_SAMPLE_RATE
   // debugging pin for checking sample rate
-  pinMode (DEBUG_SAMPLE_RATE_PIN, INPUT);
+  pinMode (DEBUG_SAMPLE_RATE_PIN, OUTPUT);
 #endif
   
   sei();
