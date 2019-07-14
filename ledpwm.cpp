@@ -44,9 +44,8 @@ void disable_ledpwm() {
 }
 
 void enable_ledpwm() {
-  // re-enable the timer (with pre-scaler 64);
-  TCNT2 = 0;
-  TCCR2B = (1 << CS22);
+  TCNT2 = 10; // start at an offset so that PWM interrupts don't coincide with Sampler interrupts
+  TCCR2B = (1 << CS22); // re-enable the timer (with pre-scaler 64);
 }
 
 //ISR(TIMER2_COMPA_vect) {
