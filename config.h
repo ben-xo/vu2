@@ -11,10 +11,11 @@
 #define MODE_LED_PIN_4 12
 #define BUTTON_LED_PIN 13
 
+
 /*** LED PWM configuration ***/
-#define PWM_PRESCALER    8
 #define PWM_LED_FRQ      10000 // 10kHz
 #define PWM_DUTY_PERCENT 10
+
 
 /*** Neopixel configuration ***/
 #define STRIP_LENGTH 60
@@ -23,9 +24,11 @@
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 12800 @ 16MHz
 //#define FRAME_RATE_LIMIT 1
 
+
 /*** Audio sampling config ***/
 #define SAMP_BUFF_LEN 256 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
 #define SAMP_FREQ 2500 // Hz
+
 
 /*** Beat Detect config ***/
 #define AUTO_BEATS 128 // beats before change
@@ -40,11 +43,13 @@
 #define DEFAULT_THRESHOLD 48.0
 #define USE_POT_FOR_THRESHOLD 0
 
+
 /*** Attract mode config ***/
 #define ATTRACT_MODE_THRESHOLD 8 // vu value
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
 #define VU_LOOKBEHIND 10
+
 
 /*** random debug stuff ***/
 //#define DEBUG_ONLY 1
