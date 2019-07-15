@@ -1,38 +1,37 @@
+/*** Pin configuration ***/
 #define AUDIO_INPUT 0
-#define AUDIO_INPUT_LP 2
-#define AUDIO_INPUT_HP 3
-#define NEOPIXEL_PIN 6
-#define DUTY_CYCLE_LED 7
-#define BUTTON_PIN 4
 #define BEAT_PIN_1 2 // must be an interrupt pin
 #define BEAT_PIN_2 3 // must be an interrupt pin
-#define BUTTON_LED_PIN 13
+#define BUTTON_PIN 4
+#define NEOPIXEL_PIN 6
+#define DUTY_CYCLE_LED 7
 #define MODE_LED_PIN_1 9
 #define MODE_LED_PIN_2 10
 #define MODE_LED_PIN_3 11 
 #define MODE_LED_PIN_4 12
+#define BUTTON_LED_PIN 13
+
+/*** LED PWM configuration ***/
+#define PWM_PRESCALER    8
+#define PWM_LED_FRQ      10000 // 10kHz
+#define PWM_DUTY_PERCENT 10
+
+/*** Neopixel configuration ***/
 #define STRIP_LENGTH 60
-#define SAMP_BUFF_LEN 256 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
-#define SAMP_FREQ 2500 // Hz
-#define AUTO_BEATS 128 // beats before change
-#define AUTO_BEATS_MIN_THRESH 300 // ms
-#define AUTO_BEATS_SILENCE_THRESH 5000 // ms
-//#define BEAT_SUSTAIN 40 // minimum length of a beat detection
-#define ATTRACT_MODE_THRESHOLD 8 // vu value
-#define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
-#define ATTRACT_MODE_DOTS 5
-#define VU_LOOKBEHIND 10
-#define PWM_DUTY_CYCLE 20 // 1/10 duty cycle for LEDs without resistors at 10Khz PWM
 #define FPS 125
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 12800 @ 16MHz
 //#define FRAME_RATE_LIMIT 1
 
-//#define DEBUG_ONLY 1
-//#define DEBUG_SAMPLE_RATE 1
-//#define DEBUG_SAMPLE_RATE_PORT PORTC
-//#define DEBUG_SAMPLE_RATE_PIN PC1
+/*** Audio sampling config ***/
+#define SAMP_BUFF_LEN 256 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
+#define SAMP_FREQ 2500 // Hz
 
+/*** Beat Detect config ***/
+#define AUTO_BEATS 128 // beats before change
+#define AUTO_BEATS_MIN_THRESH 300 // ms
+#define AUTO_BEATS_SILENCE_THRESH 5000 // ms
+//#define BEAT_SUSTAIN 40 // minimum length of a beat detection
 
 // This is the beat detect threshold.
 // If you build a box without the pot, you can read the threshold out
@@ -40,5 +39,17 @@
 #define THRESHOLD_INPUT 1
 #define DEFAULT_THRESHOLD 48.0
 #define USE_POT_FOR_THRESHOLD 0
+
+/*** Attract mode config ***/
+#define ATTRACT_MODE_THRESHOLD 8 // vu value
+#define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
+#define ATTRACT_MODE_DOTS 5
+#define VU_LOOKBEHIND 10
+
+/*** random debug stuff ***/
+//#define DEBUG_ONLY 1
+//#define DEBUG_SAMPLE_RATE 1
+//#define DEBUG_SAMPLE_RATE_PORT PORTC
+//#define DEBUG_SAMPLE_RATE_PIN PC1
 
 //#define LONGCLI 1
