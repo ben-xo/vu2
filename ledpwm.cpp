@@ -8,7 +8,24 @@
 #include "config.h"
 #include "ledpwm.h"
 
-// when 0, leds should be lit.
+#define PWM_PRESCALER 8 // must match what enable_ledpwm() does
+
+// e.g. at 16MHz, overflow val will be 200. At 20Mhz, 250. At 8MHz, 100.
+#define PWM_OVERFLOW_VALUE (F_CPU / PWM_LED_FRQ / PWM_PRESCALER)
+
+// e.g. at 16MHz, duty val will be 180. At 20Mhz, 225. At 8MHz, 90.
+#define PWM_DUTY_VALUE     (PWM_OVERFLOW_VALUE - (PWM_OVERFLOW_VALUE / (100 / PWM_DUTY_PERCENT)))
+
+/* definition to expand macro then apply to pragma message */
+/* from https://stackoverflow.com/questions/1562074/how-do-i-show-the-value-of-a-define-at-compile-time */
+#define VALUE_TO_STRING(x) #x
+#define VALUE(x) VALUE_TO_STRING(x)
+#define VAR_NAME_VALUE(var) #var "="  VALUE(var)
+
+// compile time debug to see the PWM vals
+#pragma message(VAR_NAME_VALUE(PWM_OVERFLOW_VALUE))
+#pragma message(VAR_NAME_VALUE(PWM_DUTY_VALUE))
+
 uint8_t volatile portb_val = 0;
 
 void setup_ledpwm() {
@@ -17,9 +34,9 @@ void setup_ledpwm() {
   TCCR2A = 0;
   TCCR2B = 0;
 
-  // 10000 Hz (16000000/((24+1)*64)) - 64 is in enable_pwm()
-  OCR2A = 24; // 24 for 10kHz
-  OCR2B = 22; // duty cycle 10% of OCR2A
+  // The correct formula here is (F_CPU / ((OCR2A+1)*PRESCALER)) - google why
+  OCR2A = PWM_OVERFLOW_VALUE - 1; // 24 for 10kHz with prescaler 64, 199 for 10kHz with prescaler 8
+  OCR2B = PWM_DUTY_VALUE;         // duty cycle 10% of OCR2A
   
   // CTC
   TCCR2A = (1 << WGM21);
@@ -30,13 +47,9 @@ void setup_ledpwm() {
 
   // this clears the timer and sets the right pre-scaler, starting the timer.
   enable_ledpwm();
-  sei();  
+  sei();
 }
 
-/**
- * Called before going into a context when the interrupts are just a waste of time 
- * (such as rendering pixels on the light strip)
- */
 void disable_ledpwm() {
   // disable the timer entirely, then make sure the lights are off.
   TCCR2B = 0;
@@ -44,8 +57,12 @@ void disable_ledpwm() {
 }
 
 void enable_ledpwm() {
-  TCNT2 = 10; // start at an offset so that PWM interrupts don't coincide with Sampler interrupts
-  TCCR2B = (1 << CS22); // re-enable the timer (with pre-scaler 64);
+  // start at an offset so that PWM interrupts don't coincide with Sampler interrupts
+  // Without this, sometimes we get unstable PWM when interrupts pile up.
+  TCNT2 = 30;
+  
+  TCCR2B = (1 << CS21); // re-enable the timer (with pre-scaler 8) - change PWM_PRESCALER if you change this
+//  TCCR2B = (1 << CS22); // re-enable the timer (with pre-scaler 64) - change PWM_PRESCALER if you change this
 }
 
 //ISR(TIMER2_COMPA_vect) {
