@@ -9,6 +9,7 @@
 #define GOLD CRGB(0xFF, 0xFF, 0x77)
 
 #define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
+#define VU_PER_PIXEL (256 / STRIP_LENGTH)
 
 uint8_t static random_table[STRIP_LENGTH];
 uint8_t static maximum = 255;
@@ -55,9 +56,9 @@ CRGB Wheel(byte WheelPos) {
 }
 
 static void make_new_dot(uint8_t dot) {
-    dot_colors[dot] = Wheel(random(0,256));
-    dot_pos[dot] = random(0, 10000); // 32768 * 0.2 (so pixels dont start at the very end of the strip)
-    dot_speeds[dot] = random(POS_PER_PIXEL/17,POS_PER_PIXEL/5);
+    dot_colors[dot] = Wheel(random8());
+    dot_pos[dot] = random16(10000); // 32768 * 0.2 (so pixels dont start at the very end of the strip)
+    dot_speeds[dot] = random16(POS_PER_PIXEL/17,POS_PER_PIXEL/5);
     dot_age[dot] = 0;
 }
 
@@ -211,16 +212,17 @@ void shoot_pixel(int pixel) {
 void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     static uint8_t beat_brightness;
     uint8_t adjPeak = gamma8(peakToPeak);
-    int led = map(adjPeak, 0, maximum, -2, STRIP_LENGTH - 1) - 1;
+    int led = map8(adjPeak, 0, STRIP_LENGTH);
+    uint8_t color = 0;
     beat_brightness = qadd8(beat_brightness/2, adjPeak);
     
-    for (int j = STRIP_LENGTH - 1; j >= 0; j--)
+    for (uint8_t j = 0; j < STRIP_LENGTH; j++)
     {
       // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
         if(j <= led && led >= 0) {
           // set VU color up to peak
-          int color = map(j, 0, STRIP_LENGTH, 0, 255);
-          leds[j] = Wheel((color)%256);
+          color += VU_PER_PIXEL + VU_PER_PIXEL; // double it because half the range is beat flash
+          leds[j] = Wheel(color);
         }
         else if(j >= STRIP_LENGTH/2 && j < STRIP_LENGTH && is_beat) {
           leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
@@ -233,6 +235,40 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
           }
         }
     }  
+}
+
+void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fade) {
+  static uint8_t beat_brightness;
+  uint8_t adjPeak = gamma8(peakToPeak);
+  int led = map8(adjPeak, 0, STRIP_LENGTH);
+  uint8_t color = 0;
+  beat_brightness = qadd8(beat_brightness/2, adjPeak);
+  
+  for (uint8_t j = 0; j < STRIP_LENGTH; j++)
+  {
+  // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
+    if(j % 2) {
+      // VU
+      if(j <= led*2) {
+        // set VU color up to peak
+        color -= VU_PER_PIXEL + VU_PER_PIXEL; // double it because half the range is beat flash
+        leds[j] = Wheel(color);
+      } else {
+        if(do_fade) {
+          fade_pixel_fast(j);
+        }
+      }
+    } else {
+      if(is_beat) {
+      // beats
+        leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
+      } else {
+        if(do_fade) {
+          fade_pixel_slow(j);
+        }    
+      }      
+    }
+  }
 }
 
 void render_stream_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
@@ -273,37 +309,6 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
         }
       }
     }  
-}
-
-void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fade) {
-  uint8_t adjPeak = gamma8(peakToPeak);
-  uint8_t led = map(adjPeak, 0, 128, 0, STRIP_LENGTH - 1);
-  uint8_t beat_brightness = map(peakToPeak, 0, maximum, 128, 255);
-  unsigned int bias = 30 * (is_beat ? 1 : 0);
-
-  for (int j = 0; j < STRIP_LENGTH; j++ ) {
-    if(j % 2) {    
-      // VU
-      if(j <= led) {
-        // set VU color up to peak
-        uint8_t color = map(j, 0, STRIP_LENGTH, 0, 255);
-        leds[j] = Wheel((color-bias)%256);
-      } else {
-        if(do_fade) {
-          fade_pixel(j);
-        }    
-      }
-    } else {
-      if(is_beat) {
-      // beats
-        leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
-      } else {
-        if(do_fade) {
-          fade_pixel(j);
-        }    
-      }
-    }     
-  }
 }
 
 void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
@@ -419,7 +424,7 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
       was_beat_recently_time = millis();
       last_pattern = bar_segment_pattern;
       while(last_pattern == bar_segment_pattern) {
-        bar_segment_pattern = random(0,BAR_PATTERNS);
+        bar_segment_pattern = random8(BAR_PATTERNS);
       }
       if(bar_segment_pattern >= BAR_PATTERNS) bar_segment_pattern=0;
     }
