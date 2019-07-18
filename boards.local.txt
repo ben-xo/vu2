@@ -1,0 +1,2 @@
+uno.menu.cpu.atmega328=ATmega328
+uno.menu.cpu.atmega328.build.mcu=atmega328
