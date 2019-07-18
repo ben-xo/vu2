@@ -251,10 +251,10 @@ void loop() {
     
     if(pushed == SHORT_PUSH) {
       mode++;
+      if(mode > MAX_MODE) mode = 0;
       portb_val = (mode << 1); // writes directly to pins 9-12
       auto_mode = false;
       is_attract_mode = false;
-      if(mode > MAX_MODE) mode = 0;
     } else if(pushed == LONG_PUSH) {
       auto_mode = true;
       mode = 0;
