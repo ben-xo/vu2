@@ -19,10 +19,11 @@
 
 /*** Neopixel configuration ***/
 #define STRIP_LENGTH 60
-#define FPS 125
+#define FPS 120
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
-#define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 12800 @ 16MHz
-//#define FRAME_RATE_LIMIT 1
+#define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 128000 @ 16MHz
+//#define FRAME_RATE_LIMIT 1 // limitless is fun!
+
 
 
 /*** Audio sampling config ***/
@@ -53,8 +54,11 @@
 
 /*** random debug stuff ***/
 //#define DEBUG_ONLY 1
-//#define DEBUG_SAMPLE_RATE 1
-//#define DEBUG_SAMPLE_RATE_PORT PORTC
-//#define DEBUG_SAMPLE_RATE_PIN PC1
+#define DEBUG_SAMPLE_RATE 1
+#define DEBUG_SAMPLE_RATE_PORT PORTC
+#define DEBUG_SAMPLE_RATE_PIN PC1
+#define DEBUG_FRAME_RATE 1
+#define DEBUG_FRAME_RATE_PORT PORTC
+#define DEBUG_FRAME_RATE_PIN PC2
 
 //#define LONGCLI 1
