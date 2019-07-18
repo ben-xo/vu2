@@ -40,6 +40,11 @@ void setup() {
   pinMode(MODE_LED_PIN_2,OUTPUT);
   pinMode(MODE_LED_PIN_3,OUTPUT);
   pinMode(MODE_LED_PIN_4,OUTPUT);
+  
+#ifdef DEBUG_FRAME_RATE
+  // debugging pin for checking frame rate
+  pinMode (DEBUG_FRAME_RATE_PIN, OUTPUT);
+#endif
 
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
  
@@ -63,26 +68,23 @@ static uint8_t calculate_vu(uint8_t sample_ptr) {
   return max_val - min_val;
 }
 
-#ifdef FRAME_RATE_LIMIT
-static void reach_target_fps() {
+static void inline reach_target_fps() {
   uint32_t end_time = micros();
-  uint32_t total_time;
-  if (end_time < start_time) {
-    total_time = -end_time + start_time;
-  } else {
-    total_time = end_time - start_time;
-  }
+#ifdef FRAME_RATE_LIMIT
+  uint32_t total_time = end_time - start_time;
   
-  if(total_time > FRAME_LENGTH_CYCLES) {
+  if(total_time > FRAME_LENGTH_MICROS) {
     slow=true;
   } else {
     slow=false;
-    uint16_t delayCycles = ((FRAME_LENGTH_CYCLES-total_time) >> 2) - 8;
-    while(delayCycles-- > 0);
+    
+    uint32_t delayTime = FRAME_LENGTH_MICROS - total_time;
+    Serial.println(total_time);
+    delayMicroseconds(delayTime);
   }
+#endif
   start_time = end_time;
 }
-#endif
 
 // returns true on the falling edge of a button push
 static uint8_t was_button_pressed(uint8_t pins) {
@@ -142,10 +144,9 @@ void debug_loop() {
   uint8_t vu_width = 0;
   uint8_t mode = 0;
 
-  start_time = micros();
+  start_time = micros(); // updated in reach_target_fps()
   silent_since = start_time;
   while(true) {
-    start_time = micros();
     
     // read these as they're volatile
     cli();
@@ -206,10 +207,15 @@ void debug_loop() {
 
     debug_render_combo(is_beat_2, is_beat_1, current_sample);
 
-    FastLED.show();
-#ifdef FRAME_RATE_LIMIT
-    reach_target_fps();
+#ifdef DEBUG_FRAME_RATE
+  DEBUG_FRAME_RATE_PORT |= (1 << DEBUG_FRAME_RATE_PIN);
 #endif
+    FastLED.show();
+#ifdef DEBUG_FRAME_RATE
+  DEBUG_FRAME_RATE_PORT &= ~(1 << DEBUG_FRAME_RATE_PIN);
+#endif
+
+    reach_target_fps();
   }  
 }
 
@@ -235,9 +241,9 @@ void loop() {
 
   do_banner();
 
-  silent_since = micros();
+  start_time = micros(); // updated in reach_target_fps()
+  silent_since = start_time;
   while(true) {
-    start_time = micros();
     
     // read these as they're volatile
     uint8_t sample_ptr = current_sample;
@@ -310,11 +316,15 @@ void loop() {
       render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
     }
 
-    FastLED.show();
-
-#ifdef FRAME_RATE_LIMIT
-    reach_target_fps();
+#ifdef DEBUG_FRAME_RATE
+  DEBUG_FRAME_RATE_PORT |= (1 << DEBUG_FRAME_RATE_PIN);
 #endif
+    FastLED.show();
+#ifdef DEBUG_FRAME_RATE
+  DEBUG_FRAME_RATE_PORT &= ~(1 << DEBUG_FRAME_RATE_PIN);
+#endif
+
+    reach_target_fps();
   }
 }
 #endif // DEBUG_ONLY
