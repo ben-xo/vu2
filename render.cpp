@@ -152,7 +152,7 @@ static void generate_sparkle_table() {
   // only 
   for (i = 0; i < STRIP_LENGTH / 2; i++)
   {
-      size_t j = random(0, STRIP_LENGTH - i + 1);
+      size_t j = random8(STRIP_LENGTH - i + 1);
     
       int t = random_table[i];
       random_table[i] = random_table[j];
