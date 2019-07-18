@@ -430,16 +430,15 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     }
 }
 
-void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, bool is_beat_2) {
-    uint32_t color;
+void render_double_vu(uint8_t peakToPeak, bool is_beat, bool do_fade, bool is_beat_2) {
+    uint8_t color=0;
     CRGB crgb_color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
     uint8_t adjPeak = gamma8(peakToPeak);
-    int led = map(adjPeak, 0, maximum, 0, STRIP_LENGTH/2);
-    int bias = 0;
+    uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/2);
 
     static bool was_beat_2 = false;
-    static byte fade_type = 0;
+    static uint8_t fade_type = 0;
     
     if(is_beat_2) {
       if(!was_beat_2) {
@@ -455,26 +454,17 @@ void render_double_vu(unsigned int peakToPeak, bool is_beat, bool do_fade, bool 
     for (uint8_t j = 0; j < STRIP_LENGTH/4; j++)
     {
       if(j <= led && led >= 0) {
+        color += (VU_PER_PIXEL*4);
         
         // set VU color up to peak
-        color = map(j, 0, STRIP_LENGTH/4, 0, 255);
         switch(fade_type) {
           default:
-          case 0: crgb_color = Wheel((color+bias)%256); break;
-          case 1: crgb_color = Wheel2((color+bias)%256); break;
-          case 2: crgb_color = Wheel3((color+bias)%256); break;
+          case 0: crgb_color = Wheel(color); break;
+          case 1: crgb_color = Wheel2(color); break;
+          case 2: crgb_color = Wheel3(color); break;
         }
         leds[j] = crgb_color;
         leds[(STRIP_LENGTH/2)+j] = crgb_color;
-        
-        // set VU color up to peak
-        color = map(j, 0, STRIP_LENGTH/4, 255, 0);
-        switch(fade_type) {
-          default:
-          case 0: crgb_color = Wheel((color+bias)%256); break;
-          case 1: crgb_color = Wheel2((color+bias)%256); break;
-          case 2: crgb_color = Wheel3((color+bias)%256); break;
-        }
         leds[(STRIP_LENGTH/2)-j-1] = crgb_color;
         leds[(STRIP_LENGTH)-j-1] = crgb_color;
       }
