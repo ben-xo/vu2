@@ -19,7 +19,7 @@
 
 /*** Neopixel configuration ***/
 #define STRIP_LENGTH 60 // don't recommend >100
-#define FPS 120
+#define FPS 125
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 128000 @ 16MHz
 #define FRAME_RATE_LIMIT 1 // limitless is fun!
