@@ -2,17 +2,20 @@
 #include <Arduino.h>
 #include "config.h"
 #include "render.h"
+#include "plume_map.h"
 
 #ifndef DEBUG_ONLY
 
 #define SILVER CRGB(0xFF, 0xFF, 0xFF)
 #define GOLD CRGB(0xFF, 0xFF, 0x77)
+#define DARK_SILVER CRGB(0x7F, 0x7F, 0x7F)
+#define DARK_GOLD CRGB(0x7F, 0x7F, 0x37)
 
 #define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
 #define VU_PER_PIXEL (256 / STRIP_LENGTH)
 
 uint8_t static random_table[STRIP_LENGTH];
-uint8_t static maximum = 255;
+
 uint8_t static phase = 0;
 static CRGB dot_colors[ATTRACT_MODE_DOTS];
 static uint32_t dot_pos[ATTRACT_MODE_DOTS];
@@ -93,7 +96,7 @@ CRGB Wheel_Purple_Yellow(byte WheelPos) {
   // 0 is purple (63,0,255)
   // 255 is yellow (255,127,0)
   CRGB col;
-  col.r = map(WheelPos,0,255,63,255);
+  col.r = map8(WheelPos,63,255);
   col.g = WheelPos >> 2;
   col.b = 255-WheelPos;
   return col;
@@ -131,14 +134,25 @@ static void fade_pixel_fast(int pixel) {
 }
 
 // fades pixels more the closer they are the start, so that peaks stay visible
-static void fade_pixel_plume(int pixel) {
-  uint8_t fade_factor;
-  if(pixel < STRIP_LENGTH >> 1) {
-    fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 51, 0);  
+
+//static void fade_pixel_plume(int pixel) {
+//  uint8_t fade_factor;
+//  if(pixel < STRIP_LENGTH >> 1) {
+//    fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 51, 0);  
+//  } else {
+//    fade_factor = map(pixel, STRIP_LENGTH >> 1, STRIP_LENGTH, 0, 51);  
+//  }
+//  leds[pixel].fadeLightBy(fade_factor);
+//}
+
+
+
+static void fade_pixel_plume(uint8_t pixel) {
+  if(pixel < STRIP_LENGTH/2) {
+    leds[pixel].fadeLightBy(pgm_read_byte(&fade_pixel_plume_map[pixel]));
   } else {
-    fade_factor = map(pixel, STRIP_LENGTH >> 1, STRIP_LENGTH, 0, 51);  
+    leds[pixel].fadeLightBy(pgm_read_byte(&fade_pixel_plume_map2[pixel-STRIP_LENGTH/2]));
   }
-  leds[pixel].fadeLightBy(fade_factor);
 }
 
 static void generate_sparkle_table() {
@@ -203,7 +217,7 @@ void shoot_pixel(int pixel) {
     color.b += ((leds[pixel-3].b >> 2) & 0x3F);
     color.b += ((leds[pixel-4].b >> 3) & 0x1F);    
   } else {
-    fade_pixel(pixel);
+    fade_pixel_slow(pixel);
   }
 
   leds[pixel] = color;  
@@ -311,18 +325,29 @@ void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     }  
 }
 
-void render_sparkles(unsigned int peakToPeak, bool is_beat, bool do_fade) {
-    if(do_fade) {
-      for (uint8_t j = 0; j < STRIP_LENGTH; j++)
-      {
-        fade_pixel(j);
-      }
+void render_sparkles(uint8_t peakToPeak, bool is_beat, bool do_fade) {
+    uint8_t adjPeak = qsub8(peakToPeak, 2); // if it's close to 0, make it 0, so it doesn't flicker
+    uint8_t index = map8(adjPeak, 0, STRIP_LENGTH/2);
+
+    // even though strictly speaking we don't need to generate the table if index is < 1,
+    // we do it anyway because it keeps the frame rate consistent.
+    generate_sparkle_table();
+
+    CRGB gold   = is_beat ? GOLD   : DARK_GOLD;
+    CRGB silver = is_beat ? SILVER : DARK_SILVER;
+
+    for (uint8_t j = 0; j < index; j++) {
+      leds[random_table[j]] = j%2 ? gold : silver;
     }
-    int index = map(peakToPeak, 0, maximum, -2, STRIP_LENGTH/2 );
-    if(index >= 0) {
-      generate_sparkle_table();
-      for (uint8_t j = is_beat?0:(index/4); j <= index; j++) {
-        leds[random_table[j]] = j%2 ? GOLD : SILVER;
+    
+    if(do_fade) {
+      // fade the rest!
+      for (uint8_t j = index; j < STRIP_LENGTH; j++) {
+#       ifdef FRAME_RATE_LIMIT
+        fade_pixel_fast(random_table[j]);
+#       else
+        fade_pixel_slow(random_table[j]);
+#       endif
       }
     }
 }
@@ -538,20 +563,19 @@ void rainbowCycle(uint8_t wait) {
 }
 
 static uint8_t current_pos = STRIP_LENGTH/2; // start in center
-void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t sample_ptr) {  
+#define HALF_CENTER = (STRIP_LENGTH/4) // one quarter of the way down the strip (which quarter flips on the beat)
+void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
+  static uint16_t hue = 0; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
+  
   static bool top = true; // which half?
   static bool was_beat = false; // which half?
   uint8_t target_pos;
   uint8_t new_pos;
-  if (STRIP_LENGTH >= 64) {
-    target_pos = peakToPeak /2; // range 0 to 31
-  }
-  else if (STRIP_LENGTH >= 48 && STRIP_LENGTH < 64) {
-    target_pos = (peakToPeak /2) + (peakToPeak /4); // range 0 to 23
-  }
-  else if (STRIP_LENGTH >= 32 && STRIP_LENGTH < 48) {
-    target_pos = (peakToPeak /4); // range 0 to 15
-  }
+
+  // convert peakToPeak into 
+
+  // target_pos is where the beat line is trying to get to (based on the current volume)
+  target_pos = max_vu;
 
   // TODO: could easily make this interrupt driven too
   if(is_beat) {
@@ -570,11 +594,12 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
 
   // home in
   if(target_pos > current_pos) {
+    // this should be a saturated add, but it won't overflow because we don't really support strip lengths >100
     new_pos = (target_pos - current_pos)/8 + current_pos + 1;
     for(uint8_t i = 0; i < STRIP_LENGTH; i++)
     {
       if( i <= new_pos && i >= current_pos ) {
-        leds[i] = Wheel(0-i+peakToPeak);
+        leds[i] = CHSV(((uint8_t)hue)-i,255,255);
       } else {
         fade_pixel_fast(i);
       }
@@ -584,16 +609,17 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
     for(uint8_t i = 0; i < STRIP_LENGTH; i++)
     {
       if( i >= new_pos && i <= current_pos ) {
-        leds[i] = Wheel(i+peakToPeak);
+        leds[i] = CHSV(((uint8_t)hue)+i,255,255);
       } else {
         fade_pixel_fast(i);
       }
     }
   }
   current_pos = new_pos;
+  hue = (hue + 1) % 2048;
 }
  
-void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr) {
+void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
 
     switch(mode) {
       default:
@@ -625,7 +651,7 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
         render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
         break;
       case 9:
-        render_beat_bounce_flip(is_beat, peakToPeak, sample_ptr);
+        render_beat_bounce_flip(is_beat, peakToPeak, sample_ptr, min_vu, max_vu);
     }
 }
 

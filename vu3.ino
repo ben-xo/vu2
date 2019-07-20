@@ -57,7 +57,7 @@ void setup() {
 //  randomSeed(analogRead(2));
 }
 
-static uint8_t calculate_vu(uint8_t sample_ptr) {
+static uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out) {
   // VU is always width of last 20 samples, wherever we happen to be right now.
   uint8_t max_val=0, min_val=255;
   for (uint8_t i = 0; i < VU_LOOKBEHIND; i++) {
@@ -65,6 +65,8 @@ static uint8_t calculate_vu(uint8_t sample_ptr) {
     if(int_sample > max_val) max_val = int_sample;
     if(int_sample < min_val) min_val = int_sample;
   }
+  *min_val_out = min_val;
+  *max_val_out = max_val;
   return max_val - min_val;
 }
 
@@ -182,7 +184,8 @@ void debug_loop() {
 //        }
 //    }
 
-    vu_width = calculate_vu(sample_ptr);
+    uint8_t min_vu = 0, max_vu = 255;
+    vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu);
 
     uint8_t local_portb_val;
     switch(mode) {
@@ -281,7 +284,8 @@ void loop() {
 //          is_beat_2 = false;
 //        }
 //    }
-    vu_width = calculate_vu(sample_ptr);
+    uint8_t min_vu = 0, max_vu = 255;
+    vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu);
 
     if (pushed || vu_width > ATTRACT_MODE_THRESHOLD) {
       // loudness: cancel attract mode, and so does a button press.
@@ -313,7 +317,7 @@ void loop() {
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample);
+      render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample, min_vu, max_vu);
     }
 
 #ifdef DEBUG_FRAME_RATE

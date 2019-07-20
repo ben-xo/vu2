@@ -6,7 +6,7 @@ extern byte samples[SAMP_BUFF_LEN];
 extern volatile uint16_t current_sample;
 void setup_render();
 void rainbowCycle(uint8_t);
-void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr);
+void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu);
 void do_banner();
 void render_attract();
 
