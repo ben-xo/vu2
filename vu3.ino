@@ -70,20 +70,14 @@ static uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *m
   return max_val - min_val;
 }
 
+uint32_t last_delay=0;
 static void inline reach_target_fps() {
   uint32_t end_time = micros();
 #ifdef FRAME_RATE_LIMIT
   uint32_t total_time = end_time - start_time;
-  
-  if(total_time > FRAME_LENGTH_MICROS) {
-    slow=true;
-  } else {
-    slow=false;
-    
-    uint32_t delayTime = FRAME_LENGTH_MICROS - total_time;
-    Serial.println(total_time);
-    delayMicroseconds(delayTime);
-  }
+  last_delay = (FRAME_LENGTH_MICROS - total_time) + (last_delay/2);
+  delayMicroseconds(last_delay);
+//  Serial.println(total_time);
 #endif
   start_time = end_time;
 }
