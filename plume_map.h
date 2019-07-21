@@ -3,6 +3,8 @@
 #define FADE_PLUME_FACTOR 51.0
 #define FADE_PLUME_SCALE FADE_PLUME_FACTOR / ((float)STRIP_LENGTH/2)
 
+// adapted from http://lolengine.net/blog/2011/12/20/cpp-lookup-table-generation
+
 // Macro expansion for building tables with sizes of powers of 2
 #define S4(i)    S1((i)),   S1((i)+1),     S1((i)+2),     S1((i)+3)
 #define S16(i)   S4((i)),   S4((i)+4),     S4((i)+8),     S4((i)+12)
