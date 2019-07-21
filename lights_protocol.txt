@@ -1,0 +1,119 @@
+lights protocol
+
+
+SYNC
+audio byte full 8
+audio byte beat_pass 8
+beat_1 bit 1 / beat_2 bit 1 / mode select 6? (0-63?)
+address 5? (0-31? - this matches RS-482)
+command - 
+
+Sync frame (1) SYNC 
+11111000: 
+
+audio frame (2) AAA1 AAA2
+DDDDDDDD: audio byte full
+DDDDDDBB: BB 00: no beats, no low pass. DD: timestamp? phase? bpm?
+          BB 10: beat 2, no low pass. 	DD:			
+          BB 01 DD ??????: beat 1 followed by low pass 6-bit
+          BB 11 DD ??????: beat 1 and beat 2 followed by low pass 6-bit
+
+Address frame (1) AIxx or AGxx (individual or group)
+0000GGGG: G=group address for command (0= everyone, 1-15 specific)
+001AAAAA: A=individual address for command (0-31 specific)
+01??????:
+1???????: reserved. 1111010 is SYNC - do not use
+
+Command frame (1) CFxx
+0MMMMMMM: Mode change (128 modes)
+1000000D: D=direction (0-1)
+1000001P: P=pixel offset (0 = -1, 1 = +1)
+100001BB: B=brightness (0-3 = 0 = off, 1 = halve, 2 = double, 3 = full)
+10001HHH: H=phase (0-15)
+1001SSSS: S=scale audio (0-15)
+101DGGGG: D=0 - leave group G. D=1 join group G
+110CCCCC: C=color-offset (-16 - -1, then +1 - +16) (no 0 - no point)
+1110????: reserved
+11110???: reserved
+111110FF: SYNC data header F=frame number (0-3)
+11111100: ENDD end data frame
+11111101: reserved
+11111110: reserved
+11111111: REND RENDER
+
+
+8+8+8+8+8 = 50 bits (start + stop) = 125,000 baud rate per sample with no overhead 
+
+
+
+space for 80 bytes between samples, but don't want to do that when it's rendering strip
+8000us / 8ms per frame at 125fps 
+400 us per sample at 2500kHz
+= 20 samples per frame 
+5us per byte at 200kbps
+80 bytes between samples max
+
+~2000 us for 60 pixels
+~3300 us for 100 pixels
+~5000 us for 150 pixels
+~6600 us for 200 pixels
+
+
+MICROS_PER_SAMPLE = (1000000/SAMPLE_RATE)
+MICROS_PER_FRAME = (STRIP_LENGTH*33)
+SAMPLES_PER_FRAME = (SAMPLE_RATE/FPS)
+SAMPLES_DURING_RENDER = ceil(MICROS_PER_FRAME / MICROS_PER_SAMPLE)
+
+(total frames = FPS)
+
+SYNC [f1 - f<SAMPLES_DURING_RENDER>]
+AAA1
+AAA2
+
+[x SAMPLES_DURING_RENDER] - 
+  5 at 60 pixels
+  9 at 100 pixels
+  13 at 120 
+  15 at 180 pixels 
+  16 at 193 pixels - THIS IS MAX
+  17 at 200 pixels - NOT ENOUGH SPACE FOR DATA
+
+
+df1
+AAA1 [f<SAMPLES_DURING_RENDER+1>]
+AAA2 [78 remain]
+SYND 11111000 [77]
+AFxx 
+CFxx set groupings x 32 32*2 [13]
+ENDD [12]
+
+df2 [f<SAMPLES_DURING_RENDER+2>]
+AAA1
+AAA2 [78 remain]
+SYND 11111001
+AGxx
+CFxx
+CFxx
+CFxx send command to group * 16 (16*4) [13]
+ENDD
+
+df3 [f<SAMPLES_DURING_RENDER+3>]
+AAA1
+AAA2 [78 remain]
+SYND 11111010
+AGxx
+CFxx
+CFxx
+CFxx send command to group * 16 (16*4) [13]
+ENDD
+
+AAA1 [f<SAMPLES_DURING_RENDER+4> - f<FPS-1>]
+AAA2
+
+df4
+AAA1 [f<FPS>]
+AAA2 [78 remain]
+SYND 11111011
+REND
+
+
