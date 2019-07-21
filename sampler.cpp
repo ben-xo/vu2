@@ -11,15 +11,7 @@ byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
 volatile uint16_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
 
-static void disable_timer0_interrupt() {
-//  TIMSK0 &= ~_BV(TOIE0); // disable timer0 overflow interrupt. Breaks serial.
-}
-
 void setup_sampler() {
-
-  // we don't want to trigger the default timer interrupt routine.
-  // it's surprisingly heavy, and it would introduce jitter to the sampler.
-  disable_timer0_interrupt();
 
   cli();
   ADCSRA = 0;             // clear ADCSRA register
