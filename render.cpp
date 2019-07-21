@@ -545,7 +545,7 @@ void colorWipe(CRGB c, uint8_t wait) {
   for (uint8_t i = 0; i < STRIP_LENGTH; i++) {
     leds[i] = c;
     FastLED.show();
-    delay(wait);
+    FastLED.delay(wait);
   }
 }
 
@@ -558,7 +558,7 @@ void rainbowCycle(uint8_t wait) {
       leds[i] = Wheel(((i * 256 / STRIP_LENGTH) + j) & 255);
     }
     FastLED.show();
-    delay(wait);
+    FastLED.delay(wait);
   }
 }
 
@@ -743,28 +743,28 @@ void do_banner() {
       }
       FastLED.show();
     }
-    delay(100);
+    FastLED.delay(100);
 
     // double flash
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
         leds[j].setRGB(255,255,255);
     }
     FastLED.show();
-    delay(50);
+    FastLED.delay(50);
 
     FastLED.clear();
     FastLED.show();
-    delay(50);
+    FastLED.delay(50);
 
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
         leds[j].setRGB(255,255,255);
     }
     FastLED.show();
-    delay(50);
+    FastLED.delay(50);
 
     FastLED.clear();
     FastLED.show();
-    delay(100);
+    FastLED.delay(100);
 }
 
 
