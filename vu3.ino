@@ -47,7 +47,8 @@ void setup() {
 #endif
 
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
- 
+  FastLED.setDither( 0 );
+  
 //  setup_filter();
   setup_render();
   setup_sampler();
