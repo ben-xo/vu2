@@ -112,3 +112,17 @@ ISR(TIMER1_COMPA_vect)
 //    [ss] "i" (ss)
 //  );
 //}
+
+
+uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out) {
+  // VU is always width of last 20 samples, wherever we happen to be right now.
+  uint8_t max_val=0, min_val=255;
+  for (uint8_t i = 0; i < VU_LOOKBEHIND; i++) {
+    uint8_t int_sample = samples[(sample_ptr-i)%SAMP_BUFF_LEN];
+    if(int_sample > max_val) max_val = int_sample;
+    if(int_sample < min_val) min_val = int_sample;
+  }
+  *min_val_out = min_val;
+  *max_val_out = max_val;
+  return max_val - min_val;
+}

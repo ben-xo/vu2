@@ -3,6 +3,9 @@
 #include "ledpwm.h"
 #include "sampler.h"
 #include "beatdetect.h"
+#include "buttons.h"
+#include "fps.h"
+#include "debug_loop.h"
 
 volatile uint8_t beats_from_interrupt = 0;
 
@@ -14,13 +17,6 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "render.h"
 
 CRGB leds[STRIP_LENGTH];
-
-uint32_t static start_time; // time each loop started.
-uint32_t static silent_since; // time we've been silent since.
-bool static slow = false; // track render time
-
-#define SHORT_PUSH 1
-#define LONG_PUSH 2
 
 void setup() {
   // put your setup code here, to run once:
@@ -54,57 +50,10 @@ void setup() {
   setup_sampler();
   setup_ledpwm();
   setup_beatdetect();
-//  Serial.begin(2000000);
+
+  setup_debug();
 //  randomSeed(analogRead(2));
 }
-
-static uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out) {
-  // VU is always width of last 20 samples, wherever we happen to be right now.
-  uint8_t max_val=0, min_val=255;
-  for (uint8_t i = 0; i < VU_LOOKBEHIND; i++) {
-    uint8_t int_sample = samples[(sample_ptr-i)%SAMP_BUFF_LEN];
-    if(int_sample > max_val) max_val = int_sample;
-    if(int_sample < min_val) min_val = int_sample;
-  }
-  *min_val_out = min_val;
-  *max_val_out = max_val;
-  return max_val - min_val;
-}
-
-uint32_t last_delay=0;
-static void inline reach_target_fps() {
-  uint32_t end_time = micros();
-#ifdef FRAME_RATE_LIMIT
-  uint32_t total_time = end_time - start_time;
-  // XXX: for some reason the frame rate isn't stable. This stabilises it, even though it's the wrong FPS
-  last_delay = (FRAME_LENGTH_MICROS - total_time) + (last_delay/2);
-  delayMicroseconds(last_delay);
-//  Serial.println(total_time);
-#endif
-  start_time = end_time;
-}
-
-// returns true on the falling edge of a button push
-static uint8_t was_button_pressed(uint8_t pins) {
-  static bool is_down = false;
-  static uint32_t last_push;
-  if(is_down && !pins) {
-    is_down = false;
-    if(millis() - last_push > 3000) {
-      // long push
-      return LONG_PUSH;
-    }
-    // short push
-    return SHORT_PUSH;
-  }
-  if(!is_down && pins) {
-    is_down = true;
-    last_push = millis();
-  }
-  // no push yet, although one may be in progress.
-  return 0;
-}
-
 
 // auto change every 8 bars
 uint32_t static last_beat;
@@ -129,96 +78,6 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
-#ifdef DEBUG_ONLY
-void loop() {
-#else  
-void debug_loop() {
-#endif
-
-//  uint8_t beat_sustain = 0;
-  byte is_beats = 0;
-  bool is_beat_1 = false;
-  bool is_beat_2 = false;
-  uint8_t vu_width = 0;
-  uint8_t mode = 0;
-
-  start_time = micros(); // updated in reach_target_fps()
-  silent_since = start_time;
-  while(true) {
-    
-    // read these as they're volatile
-    cli();
-    uint8_t sample_ptr = current_sample;
-    sei();
-
-    uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
-    if(pushed == SHORT_PUSH) {
-      mode++;
-      if(mode > MAX_MODE) {
-        mode = 0;
-      }
-    }
-
-    is_beats = beats_from_interrupt;
-    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
-
-    // TODO: is beat sustain useful? I'm not sure.
-//    if(is_beats && beat_sustain > 0) {
-//      beat_sustain--;
-//    }
-//    if(beat_sustain == 0) {
-//        is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
-//        if(is_beats) {
-//          is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-//          is_beat_2 = is_beats & (1 << BEAT_PIN_2);
-//  
-//          beat_sustain = BEAT_SUSTAIN;
-//        } else {
-//          is_beat_1 = false;
-//          is_beat_2 = false;
-//        }
-//    }
-
-    uint8_t min_vu = 0, max_vu = 255;
-    vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu);
-
-    uint8_t local_portb_val;
-    switch(mode) {
-      case 0: // show that beats are working
-        local_portb_val = (is_beat_1 << 1) | (is_beat_2 << 2);
-        portb_val = local_portb_val;
-        break;
-      case 1: // show that sampling is working
-        local_portb_val = 0;
-        if (vu_width > 128) local_portb_val |= 32;
-        if (vu_width > 64)  local_portb_val |= 16;
-        if (vu_width > 32)  local_portb_val |= 8;
-        if (vu_width > 16)  local_portb_val |= 4;
-        if (vu_width > 8)   local_portb_val |= 2;
-        portb_val = local_portb_val;
-        break;
-      case 2:
-        local_portb_val = slow ? 62 : 0;
-        portb_val = local_portb_val;
-        break;
-    }
-
-    debug_render_combo(is_beat_2, is_beat_1, current_sample);
-
-#ifdef DEBUG_FRAME_RATE
-  DEBUG_FRAME_RATE_PORT |= (1 << DEBUG_FRAME_RATE_PIN);
-#endif
-    FastLED.show();
-#ifdef DEBUG_FRAME_RATE
-  DEBUG_FRAME_RATE_PORT &= ~(1 << DEBUG_FRAME_RATE_PIN);
-#endif
-
-    reach_target_fps();
-  }  
-}
-
-#ifndef DEBUG_ONLY
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -240,8 +99,6 @@ void loop() {
 
   do_banner();
 
-  start_time = micros(); // updated in reach_target_fps()
-  silent_since = start_time;
   while(true) {
     
     // read these as they're volatile
@@ -264,22 +121,6 @@ void loop() {
     is_beat_1 = is_beats & (1 << BEAT_PIN_1);
     is_beat_2 = is_beats & (1 << BEAT_PIN_2);
 
-    // TODO: is beat sustain useful? I'm not sure.
-//    if(is_beats && beat_sustain > 0) {
-//      beat_sustain--;
-//    }
-//    if(beat_sustain == 0) {
-//        is_beats = PIND & ((1 << BEAT_PIN_1) | (1 << BEAT_PIN_2)); // read once - port is volatile
-//        if(is_beats) {
-//          is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-//          is_beat_2 = is_beats & (1 << BEAT_PIN_2);
-//  
-//          beat_sustain = BEAT_SUSTAIN;
-//        } else {
-//          is_beat_1 = false;
-//          is_beat_2 = false;
-//        }
-//    }
     uint8_t min_vu = 0, max_vu = 255;
     vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu);
 
@@ -309,7 +150,7 @@ void loop() {
       is_beat_2 = is_beats & (1 << BEAT_PIN_2);
       if(auto_mode && auto_mode_change(is_beat_1)) {
         last_mode = mode;
-        while(mode == last_mode) mode = random(0,MAX_MODE+1); // max is exclusive
+        while(mode == last_mode) mode = random8(MAX_MODE+1); // max is exclusive
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
@@ -327,4 +168,3 @@ void loop() {
     reach_target_fps();
   }
 }
-#endif // DEBUG_ONLY
