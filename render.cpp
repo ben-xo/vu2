@@ -2,7 +2,6 @@
 #include <Arduino.h>
 #include "config.h"
 #include "render.h"
-#include "plume_map.h"
 
 #ifndef DEBUG_ONLY
 
@@ -11,16 +10,10 @@
 #define DARK_SILVER CRGB(0x7F, 0x7F, 0x7F)
 #define DARK_GOLD CRGB(0x7F, 0x7F, 0x37)
 
-#define POS_PER_PIXEL (32768 / STRIP_LENGTH) // ratio of attract mode pixel-positions to actual LEDs
-#define VU_PER_PIXEL (256 / STRIP_LENGTH)
-
 uint8_t static random_table[STRIP_LENGTH];
 
 uint8_t static phase = 0;
-static CRGB dot_colors[ATTRACT_MODE_DOTS];
-static uint32_t dot_pos[ATTRACT_MODE_DOTS];
-static uint16_t dot_speeds[ATTRACT_MODE_DOTS];
-static uint8_t dot_age[ATTRACT_MODE_DOTS];
+
 
 static const uint8_t PROGMEM _gammaTable[256] = {
   0,   3,   5,   7,   9,  11,  13,  14,  16,  18,  19,  21,  22,  24,  25,  26,
@@ -44,115 +37,11 @@ uint8_t static gamma8(uint8_t x)  {
   return pgm_read_byte(&_gammaTable[x]); // 0-255 in, 0-255 out
 }
 
-
-CRGB Wheel(byte WheelPos) {
-  WheelPos = 255 - WheelPos;
-  if (WheelPos < 85) {
-    return CRGB(255 - WheelPos * 3, 0, WheelPos * 3);
-  } else if (WheelPos < 170) {
-    WheelPos -= 85;
-    return CRGB(0, WheelPos * 3, 255 - WheelPos * 3);
-  } else {
-    WheelPos -= 170;
-    return CRGB(WheelPos * 3, 255 - WheelPos * 3, 0);
-  }
-}
-
-static void make_new_dot(uint8_t dot) {
-    dot_colors[dot] = Wheel(random8());
-    dot_pos[dot] = random16(10000); // 32768 * 0.2 (so pixels dont start at the very end of the strip)
-    dot_speeds[dot] = random16(POS_PER_PIXEL/17,POS_PER_PIXEL/5);
-    dot_age[dot] = 0;
-}
-
-CRGB Wheel2(byte WheelPos) {
-  // 0 is blue (0,0,255)
-  // 255 is yellow (255,127,0)
-  CRGB col;
-  col.r = WheelPos;
-  col.g = WheelPos >> 1;
-  col.b = 255-WheelPos;
-  return col;
-}
-
 void setup_render() {
   // Initialize all pixels to 'off'
   FastLED.clear();
   FastLED.show();
-  for(uint8_t i = 0; i < ATTRACT_MODE_DOTS; i++) {
-    make_new_dot(i);
-  }
-}
-
-CRGB Wheel3(byte WheelPos) {
-  CRGB col;
-  col.r = 0;
-  col.g = 128-WheelPos > 0 ? 128-WheelPos : 0;
-  col.b = WheelPos > 128 ? 128 : WheelPos;
-  return col;
-}
-
-CRGB Wheel_Purple_Yellow(byte WheelPos) {
-  // 0 is purple (63,0,255)
-  // 255 is yellow (255,127,0)
-  CRGB col;
-  col.r = map8(WheelPos,63,255);
-  col.g = WheelPos >> 2;
-  col.b = 255-WheelPos;
-  return col;
-}
-
-static inline uint8_t ssub8(uint8_t a, uint8_t b) {
-  uint8_t c = a - b;
-  if (c > a) 
-    return 0;
-  return c;
-}
-
-static void fade_pixel(int pixel) {
-  uint8_t r = leds[pixel].r;
-  uint8_t g = leds[pixel].g;
-  uint8_t b = leds[pixel].b;
-  // this is equivalent to r*0.875
-  leds[pixel] = CRGB(ssub8(r, (r>>3)+1), ssub8(g, (g>>3)+1), ssub8(b, (b>>3)+1));
-}
-
-static void fade_pixel_slow(int pixel) {
-  uint8_t r = leds[pixel].r;
-  uint8_t g = leds[pixel].g;
-  uint8_t b = leds[pixel].b;
-  // this is equivalent to r*0.9375
-  leds[pixel] = CRGB(ssub8(r, (r>>4)+1), ssub8(g, (g>>4)+1), ssub8(b, (b>>4)+1));
-}
-
-static void fade_pixel_fast(int pixel) {
-  uint8_t r = leds[pixel].r;
-  uint8_t g = leds[pixel].g;
-  uint8_t b = leds[pixel].b;
-  leds[pixel] = CRGB(ssub8(r, (r>>2)+1), ssub8(g, (g>>2)+1), ssub8(b, (b>>2)+1));
-  // this is equivalent to r*0.75
-}
-
-// fades pixels more the closer they are the start, so that peaks stay visible
-
-//static void fade_pixel_plume(int pixel) {
-//  uint8_t fade_factor;
-//  if(pixel < STRIP_LENGTH >> 1) {
-//    fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 51, 0);  
-//  } else {
-//    fade_factor = map(pixel, STRIP_LENGTH >> 1, STRIP_LENGTH, 0, 51);  
-//  }
-//  leds[pixel].fadeLightBy(fade_factor);
-//}
-
-
-
-static void fade_pixel_plume(uint8_t pixel) {
-  if(pixel < STRIP_LENGTH/2) {
-    leds[pixel].fadeLightBy(pgm_read_byte(&fade_pixel_plume_map[pixel]));
-  } else {
-    leds[pixel].fadeLightBy(pgm_read_byte(&fade_pixel_plume_map2[pixel-STRIP_LENGTH/2]));
-  }
+  setup_attract();
 }
 
 static void generate_sparkle_table() {
@@ -173,54 +62,6 @@ static void generate_sparkle_table() {
       random_table[i] = random_table[j];
       random_table[j] = t;
   }  
-}
-
-
-
-// this effect needs to be rendered from the end of the strip backwards
-void stream_pixel(int pixel) {
-  CRGB old_color[4];
-  
-  if(pixel > 3) {
-    for (uint8_t i = 0; i<4; i++) {
-      old_color[i] = leds[pixel-i];
-      
-      // Rotate and mask all colours at once.
-      // Each of the 4 previous pixels contributes 1/4 brightness
-      // so we divide each colour by 2.
-      old_color[i].r = (old_color[i].r >> 2);
-      old_color[i].g = (old_color[i].g >> 2);
-      old_color[i].b = (old_color[i].b >> 2);
-      old_color[i].r &= 0x3F;
-      old_color[i].g &= 0x3F;
-      old_color[i].b &= 0x3F;
-    }
-
-    leds[pixel] = old_color[0] + old_color[1] + old_color[2] + old_color[3];  
-  } else {
-    fade_pixel(pixel);
-  }
-}
-
-// like stream pixel but with a sharper fade
-void shoot_pixel(int pixel) {
-  CRGB color = CRGB(0,0,0);
-
-  if(pixel >= 4) {
-    color.r  = ((leds[pixel-2].r >> 1) & 0x7F);
-    color.r += ((leds[pixel-3].r >> 2) & 0x3F);
-    color.r += ((leds[pixel-4].r >> 3) & 0x1F);
-    color.g  = ((leds[pixel-2].g >> 1) & 0x7F);
-    color.g += ((leds[pixel-3].g >> 2) & 0x3F);
-    color.g += ((leds[pixel-4].g >> 3) & 0x1F);    
-    color.b  = ((leds[pixel-2].b >> 1) & 0x7F);
-    color.b += ((leds[pixel-3].b >> 2) & 0x3F);
-    color.b += ((leds[pixel-4].b >> 3) & 0x1F);    
-  } else {
-    fade_pixel_slow(pixel);
-  }
-
-  leds[pixel] = color;  
 }
 
 void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade) {
@@ -285,45 +126,6 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fa
   }
 }
 
-void render_stream_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
-    int led = map(peakToPeak, 0, 160, -2, STRIP_LENGTH/3*2 - 1) - 1;
-    
-    for (int j = STRIP_LENGTH-1; j >= 0; j--)
-    {
-      if(j <= led && led >= 0) {
-        // set VU color up to peak
-        int color = map(j, 0, STRIP_LENGTH, 0, 255);
-        leds[j] = Wheel(color);
-      }
-      else {
-        stream_pixel(j);
-         if(!is_beat && do_fade) {
-          fade_pixel_plume(j);
-        }
-     }
-    }  
-}
-
-// this effect shifts colours along the strip on the beat.
-void render_shoot_pixels(unsigned int peakToPeak, bool is_beat, bool do_fade) {
-    // only VU half the strip; for the effect to work it needs headroom.
-    uint8_t led = map(peakToPeak, 0, 128, 0, (STRIP_LENGTH >> 1) - 1);
-    
-    for (int j = STRIP_LENGTH - 1; j >= 0; j--)
-    {
-      if(j <= led) {
-        // set VU color up to peak
-        int color = map(j, 0, STRIP_LENGTH >> 2, 0, 255);
-        leds[j] = Wheel_Purple_Yellow(color);
-      }
-      else {
-        shoot_pixel(j);
-        if(!is_beat && do_fade) {
-          fade_pixel_plume(j);
-        }
-      }
-    }  
-}
 
 void render_sparkles(uint8_t peakToPeak, bool is_beat, bool do_fade) {
     uint8_t adjPeak = qsub8(peakToPeak, 2); // if it's close to 0, make it 0, so it doesn't flicker
@@ -462,7 +264,7 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool do_fade, bool is_be
     uint8_t adjPeak = gamma8(peakToPeak);
     uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/2);
 
-    static bool was_beat_2 = false;
+    static bool was_beat_2 = false; 
     static uint8_t fade_type = 0;
     
     if(is_beat_2) {
@@ -605,7 +407,7 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
       }
     }
   } else {
-    new_pos = ssub8(current_pos - (current_pos - target_pos)/8, 1);
+    new_pos = qsub8(current_pos - (current_pos - target_pos)/8, 1);
     for(uint8_t i = 0; i < STRIP_LENGTH; i++)
     {
       if( i >= new_pos && i <= current_pos ) {
@@ -655,117 +457,7 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
     }
 }
 
-void calculate_overtakes(uint8_t dot) {
-  for(uint8_t i = 0; i < ATTRACT_MODE_DOTS; i++) {
-    if((dot_pos[dot] < dot_pos[i]) && (dot_pos[dot] + dot_speeds[dot]) >= dot_pos[i]) {
-      // i will overtake j on next render. Let's make them collide!
-      uint8_t r = ((uint8_t)(dot_colors[i].r) + (uint8_t)(dot_colors[dot].r)) >> 1;
-      uint8_t g = ((uint8_t)(dot_colors[i].g) + (uint8_t)(dot_colors[dot].g)) >> 1;
-      uint8_t b = ((uint8_t)(dot_colors[i].b) + (uint8_t)(dot_colors[dot].b)) >> 1;
-      dot_colors[i] = CRGB(r,g,b);
-      dot_colors[dot] = dot_colors[i];
-    }
-  }
-}
 
-// TODO: optimise for FastLED
-void render_attract() {
-
-  uint16_t leds_offsets[ATTRACT_MODE_DOTS] = {0};
-
-  // fade out (trails, but also between non-attract modes and this mode)
-  for(uint8_t i = 0; i < STRIP_LENGTH; i++) {
-    fade_pixel(i);
-  }
-
-  // this loop scales the dots from their "native res" (0-32768) antialiased to the LED strip (0-60)
-  // and keeps track of which LED pixels have actually been rendered to (which is 2x number of dots)
-  for(uint8_t dot=0; dot < ATTRACT_MODE_DOTS; dot++) {
-    if(dot_pos[dot] >= 32768) {
-      make_new_dot(dot);
-    } 
-    // draw adjusted to strip (trying to do anti-aliasing)
-    // ratio of pixel in left or right pixels
-    uint16_t led = dot_pos[dot] / POS_PER_PIXEL;
-    leds_offsets[dot] = (dot_pos[dot] % (POS_PER_PIXEL));
-    calculate_overtakes(dot);
-    dot_pos[dot] += dot_speeds[dot];
-    if(dot_age[dot] < 255) dot_age[dot]++;
-
-    if(led+1 < STRIP_LENGTH) {
-      CRGB old_color = leds[led];
-      uint8_t old_r = old_color.r;
-      uint8_t old_g = old_color.g;
-      uint8_t old_b = old_color.b;
-      uint8_t dot_r = dot_colors[dot].r;
-      uint8_t dot_g = dot_colors[dot].g;
-      uint8_t dot_b = dot_colors[dot].b;
-      
-      uint16_t r = old_r + dot_r * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-      uint16_t g = old_g + dot_g * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-      uint16_t b = old_b + dot_b * (dot_age[dot]/255.0) * (POS_PER_PIXEL - leds_offsets[dot])/POS_PER_PIXEL;
-      leds[led+1] = CRGB( 
-        min(r, 255),
-        min(g, 255), 
-        min(b, 255)
-      );
-//      old_color = strip.getPixelColor(led+1);
-//      old_r = (uint8_t)(old_color >> 16);
-//      old_g = (uint8_t)(old_color >> 8 );
-//      old_b = (uint8_t)(old_color      );
-//      r = old_r + dot_r * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-//      g = old_g + dot_g * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-//      b = old_b + dot_b * (dot_age[dot]/255.0) * (leds_offsets[dot])/POS_PER_PIXEL;
-//      strip.setPixelColor(led+1, 
-//        min(r, 255),
-//        min(g, 255), 
-//        min(b, 255)
-//      );
-    }
-  }
-}
-
-
-void do_banner() {
-    // colour test
-    for (uint16_t i = 0; i <= 255; i += STRIP_LENGTH/30) {
-      for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        CRGB c = Wheel((j + (i/4)) * 255 / STRIP_LENGTH);
-        leds[j].setRGB(c.r * i / 255, c.g * i / 255, c.b * i / 255);
-      }
-      FastLED.show();
-    }
-
-    for (int16_t k = 255; k > -1; k -= STRIP_LENGTH/30) {
-      for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        CRGB c = Wheel((j + (STRIP_LENGTH-k)/4) * 255 / STRIP_LENGTH);
-        leds[j].setRGB(c.r * k / 255, c.g * k / 255, c.b * k / 255);
-      }
-      FastLED.show();
-    }
-    FastLED.delay(100);
-
-    // double flash
-    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        leds[j].setRGB(255,255,255);
-    }
-    FastLED.show();
-    FastLED.delay(50);
-
-    FastLED.clear();
-    FastLED.show();
-    FastLED.delay(50);
-
-    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-        leds[j].setRGB(255,255,255);
-    }
-    FastLED.show();
-    FastLED.delay(50);
-
-    FastLED.clear();
-    FastLED.show();
-    FastLED.delay(100);
-}
 
 
 #endif // DEBUG_ONlY
