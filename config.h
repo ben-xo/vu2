@@ -1,5 +1,5 @@
 /*** Pin configuration ***/
-#define AUDIO_INPUT 0
+#define AUDIO_INPUT_PIN 0
 #define BEAT_PIN_1 2 // must be an interrupt pin
 #define BEAT_PIN_2 3 // must be an interrupt pin
 #define BUTTON_PIN 4
@@ -18,7 +18,7 @@
 
 
 /*** Neopixel configuration ***/
-#define STRIP_LENGTH 60 // don't recommend >100
+#define STRIP_LENGTH 100 // don't recommend >100
 #define FPS 125
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 128000 @ 16MHz

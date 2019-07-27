@@ -8,7 +8,7 @@
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
-volatile uint16_t current_sample = 0;
+volatile uint8_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
 
 void setup_sampler() {
@@ -16,7 +16,7 @@ void setup_sampler() {
   cli();
   ADCSRA = 0;             // clear ADCSRA register
   ADCSRB = 0;             // clear ADCSRB register
-  ADMUX |= (0 & 0x07)     // set A0 analog input pin
+  ADMUX |= (AUDIO_INPUT_PIN & 0x07)     // set A0 analog input pin
         |  (1 << REFS0)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (1 << REFS1)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (1 << ADLAR)   // left align ADC value to 8 bits from ADCH register
@@ -40,7 +40,7 @@ void setup_sampler() {
   // TIMER 1 for interrupt frequency 5000 Hz:  
   TCCR1A = 0; // set entire TCCR1A register to 0
   TCCR1B = 0; // same for TCCR1B
-  TCNT1  = 0; // initialize counter value to 0
+  TCNT1  = 109; // initialize counter value to 0
   // set compare match register for 5000 Hz increments (configured in config.h)
   OCR1A = TIMER_COUNTER; // = 16000000 / (1 * 5000) - 1 (must be <65536)
   // turn on CTC mode
