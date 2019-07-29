@@ -64,6 +64,43 @@ static void generate_sparkle_table() {
   }  
 }
 
+
+// hues which range to opposites on the colour wheel, which opposites slowly changing
+// saturates to which on beat; beat is a multiplier which fade
+// 
+void render_vu_with_beat_strobe(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
+  static uint8_t hue = 0;
+  static uint8_t beat_offset = 0;
+
+  if(is_beat_2) {
+    beat_offset = 255; 
+  } else {
+    beat_offset >>= 1;
+  }
+
+  CRGB beat_color = CRGB(beat_offset, beat_offset, beat_offset);
+  
+  CRGB led_buffer[STRIP_LENGTH];
+  
+  CHSV end1_hsv = CHSV(hue,    255,255);
+  CHSV end2_hsv = CHSV(hue+85,255,255);
+  hsv2rgb_rainbow(end1_hsv, led_buffer[0]);
+  hsv2rgb_rainbow(end2_hsv, led_buffer[STRIP_LENGTH-1]);
+  fill_gradient_RGB(led_buffer, STRIP_LENGTH, led_buffer[0], led_buffer[STRIP_LENGTH-1]);
+
+  uint8_t vu_led = map8(peakToPeak, 0, STRIP_LENGTH);
+
+  uint8_t i;
+  for(i = 0; i < vu_led; i++) {
+    leds[i] = led_buffer[i] + beat_color;
+  }
+  for(; i < STRIP_LENGTH; i++) {
+    fade_pixel_fast(i);
+  }
+
+  if(is_beat) hue++;
+}
+
 void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     static uint8_t beat_brightness;
     uint8_t adjPeak = gamma8(peakToPeak);
@@ -262,7 +299,7 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool do_fade, bool is_be
     CRGB crgb_color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
     uint8_t adjPeak = gamma8(peakToPeak);
-    uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/2);
+    uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/3);
 
     static bool was_beat_2 = false; 
     static uint8_t fade_type = 0;
@@ -426,7 +463,7 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
     switch(mode) {
       default:
       case 0:
-        render_vu_plus_beat_end(peakToPeak, is_beat, do_fade);
+        render_vu_with_beat_strobe(peakToPeak, is_beat, is_beat_2);
         break;
       case 1:
         render_shoot_pixels(peakToPeak, is_beat, do_fade);
