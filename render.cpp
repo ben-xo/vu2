@@ -5,11 +5,6 @@
 
 #ifndef DEBUG_ONLY
 
-#define SILVER CRGB(0xFF, 0xFF, 0xFF)
-#define GOLD CRGB(0xFF, 0xFF, 0x77)
-#define DARK_SILVER CRGB(0x7F, 0x7F, 0x7F)
-#define DARK_GOLD CRGB(0x7F, 0x7F, 0x37)
-
 uint8_t static random_table[STRIP_LENGTH];
 
 uint8_t static phase = 0;
@@ -129,7 +124,7 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
     }  
 }
 
-void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fade) {
+void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
   static uint8_t beat_brightness;
   uint8_t adjPeak = gamma8(peakToPeak);
   int led = map8(adjPeak, 0, STRIP_LENGTH);
@@ -146,25 +141,26 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat, bool do_fa
         color -= VU_PER_PIXEL + VU_PER_PIXEL; // double it because half the range is beat flash
         leds[j] = Wheel(color);
       } else {
-        if(do_fade) {
-          fade_pixel_fast(j);
-        }
+        fade_pixel_fast(j);
       }
     } else {
       if(is_beat) {
       // beats
         leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
       } else {
-        if(do_fade) {
-          fade_pixel_slow(j);
-        }    
+        fade_pixel_slow(j);
       }      
     }
   }
 }
 
 
-void render_sparkles(uint8_t peakToPeak, bool is_beat, bool do_fade) {
+void render_sparkles(uint8_t peakToPeak, bool is_beat) {
+    const CRGB SILVER(0xFF, 0xFF, 0xFF);
+    const CRGB GOLD(0xFF, 0xFF, 0x77);
+    const CRGB DARK_SILVER(0x7F, 0x7F, 0x7F);
+    const CRGB DARK_GOLD(0x7F, 0x7F, 0x37);
+
     uint8_t adjPeak = qsub8(peakToPeak, 2); // if it's close to 0, make it 0, so it doesn't flicker
     uint8_t index = map8(adjPeak, 0, STRIP_LENGTH/2);
 
@@ -179,15 +175,13 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat, bool do_fade) {
       leds[random_table[j]] = j%2 ? gold : silver;
     }
     
-    if(do_fade) {
-      // fade the rest!
-      for (uint8_t j = index; j < STRIP_LENGTH; j++) {
-#       ifdef FRAME_RATE_LIMIT
-        fade_pixel_fast(random_table[j]);
-#       else
-        fade_pixel_slow(random_table[j]);
-#       endif
-      }
+    // fade the rest!
+    for (uint8_t j = index; j < STRIP_LENGTH; j++) {
+#     ifdef FRAME_RATE_LIMIT
+      fade_pixel_fast(random_table[j]);
+#     else
+      fade_pixel_slow(random_table[j]);
+#     endif
     }
 }
 
@@ -269,7 +263,7 @@ static boolean _in_current_bar_segment(uint8_t j) {
   uint16_t offset = bar_segment_pattern;
   return (pgm_read_byte(&bar_patterns[(offset*BAR_PATTERNS) + ((j / BAR_PATTERN_SIZE) % BAR_PATTERN_SIZE)]) >> (j % BAR_PATTERN_SIZE)) & 1;
 }
-void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
+void render_bar_segments(unsigned int peakToPeak, bool is_beat) {
 //    unsigned int brightness = peakToPeak / 4;
     uint8_t last_pattern;
         
@@ -279,9 +273,7 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
       if(_in_current_bar_segment(j)) {
         leds[j].setRGB(color.r/4*3+peakToPeak,color.g/4*3+peakToPeak,color.b/4*3+peakToPeak);
       } else {
-        if(do_fade) {
-          fade_pixel(j);
-        }
+        fade_pixel(j);
       }
     }
     if(is_beat && millis() > was_beat_recently_time + 250) {
@@ -294,7 +286,7 @@ void render_bar_segments(unsigned int peakToPeak, bool is_beat, bool do_fade) {
     }
 }
 
-void render_double_vu(uint8_t peakToPeak, bool is_beat, bool do_fade, bool is_beat_2) {
+void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
     uint8_t color=0;
     CRGB crgb_color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
@@ -332,7 +324,7 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool do_fade, bool is_be
         leds[(STRIP_LENGTH/2)-j-1] = crgb_color;
         leds[(STRIP_LENGTH)-j-1] = crgb_color;
       }
-      else if(do_fade) {
+      else {
         if(is_beat) {
           fade_pixel(j);
           fade_pixel_slow((STRIP_LENGTH/2)+j);
@@ -458,7 +450,7 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
   hue = (hue + 1) % 2048;
 }
  
-void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool is_beat_2, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
+void render(unsigned int peakToPeak, bool is_beat, byte mode, bool is_beat_2, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
 
     switch(mode) {
       default:
@@ -466,25 +458,25 @@ void render(unsigned int peakToPeak, bool is_beat, bool do_fade, byte mode, bool
         render_vu_with_beat_strobe(peakToPeak, is_beat, is_beat_2);
         break;
       case 1:
-        render_shoot_pixels(peakToPeak, is_beat, do_fade);
+        render_stream_pixels(peakToPeak, is_beat);
         break;
       case 2:
-        render_double_vu(peakToPeak, is_beat, do_fade, is_beat_2);
+        render_double_vu(peakToPeak, is_beat, is_beat_2);
         break;
       case 3:
-        render_vu_plus_beat_interleave(peakToPeak, is_beat, do_fade);
+        render_vu_plus_beat_interleave(peakToPeak, is_beat);
         break;
       case 4:
         render_fire(is_beat, peakToPeak);
         break;
       case 5:
-        render_sparkles(peakToPeak, is_beat, do_fade);
+        render_sparkles(peakToPeak, is_beat);
         break;
       case 6:
         render_beat_line(peakToPeak, is_beat, is_beat_2);
         break;
       case 7:
-        render_bar_segments(peakToPeak, is_beat, do_fade);
+        render_bar_segments(peakToPeak, is_beat);
         break;
       case 8:
         render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);

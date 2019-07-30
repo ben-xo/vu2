@@ -18,10 +18,7 @@ void debug_loop() {
   while(true) {
     
     // read these as they're volatile
-    cli();
     uint8_t sample_ptr = current_sample;
-    sei();
-
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     if(pushed == SHORT_PUSH) {
       mode++;

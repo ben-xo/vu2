@@ -154,7 +154,7 @@ void loop() {
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, is_beat_2, true, mode, is_beat_1, current_sample, min_vu, max_vu);
+      render(vu_width, is_beat_2, mode, is_beat_1, current_sample, min_vu, max_vu);
     }
 
 #ifdef DEBUG_FRAME_RATE
