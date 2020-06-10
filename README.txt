@@ -49,3 +49,4 @@ Enhancements
 
 * You can attach LEDs (output, LED to GND) to the LED pins mentioned in config.h. They will show a binary of which mode is currently in effect.
 * if you hold down the button at start up it will enter test mode and the LEDs will be a simple level meter so you can test it before attaching. the Neopixel strip
+* The output from the lights pin can drive two strips with the same data so you could put them back to back to make a VU twice as long reflected in the middle!
