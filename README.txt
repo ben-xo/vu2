@@ -15,11 +15,6 @@ The basic hardware is simple:
 
 How to use
 
-1) Set up Arduino Studio
-2) Install FastLED lib
-3) REPLACE FastLED lib with the version from https://github.com/ben-xo/FastLED . This version has modifications to enable interrupts in certain places in order to not drop samples.
-4) Load vu3.ino into Arduino Studio and program it
-
 Circuit
 
 * very simmilar to https://elmwoodelectronics.ca/blogs/news/maker-festival-projects-giant-neopixel-vu-meter but I'll explain anyway (that diagram uses A1 instead of A0 for sampling)
@@ -36,7 +31,21 @@ Circuit
 
 the beat pins are designed to spice up the visualisers when low pass analog beats are sent to them. experiment...
 
+Software
+
+1) Set up Arduino Studio
+2) Install FastLED lib
+3) REPLACE FastLED lib with the version from https://github.com/ben-xo/FastLED . This version has modifications to enable interrupts in certain places in order to not drop samples.
+4) Load vu3.ino into Arduino Studio
+5) edit config.h . set your strip length. maybe comment out the DEBUG defines if i left them uncommented
+6) program arduino
+
+There is a screensaver which kicks in after 15 seconds silence, but when there's a signal it is back to VU. You might need to adjust the levels low or high! Sensitivity CAN be adjusted with care in sampler.cpp (or with resistors)
+
+Push button to change modes.
 
 
+Enhancements
 
-
+* You can attach LEDs (output, LED to GND) to the LED pins mentioned in config.h. They will show a binary of which mode is currently in effect.
+* if you hold down the button at start up it will enter test mode and the LEDs will be a simple level meter so you can test it before attaching. the Neopixel strip
