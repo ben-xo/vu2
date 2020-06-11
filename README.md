@@ -14,6 +14,11 @@ THIS PROJECT IS NOT OPEN SOURCE. Whilst I have put the source code on GitHub, no
 
 I reserve all rights and the right to change this license in future.
 
+What does it look like?
+=======================
+
+Kinda like this https://www.instagram.com/p/Bt-8dVqlZSi/ or this https://www.instagram.com/p/Bt-8dVqlZSi/
+
 Features
 ========
 
