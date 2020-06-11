@@ -14,6 +14,16 @@ THIS PROJECT IS NOT OPEN SOURCE. Whilst I have put the source code on GitHub, no
 
 I reserve all rights and the right to change this license in future.
 
+Features
+========
+
+* Works from line-in
+* If you give it external beat signals, it will use those for beat detection. Beat source NOT required (but spices it up)
+* 6 (or 7? or 8?) different visualisers. Some aren't really finished but see what you think.
+* Auto change after a certain number of beats
+* Screensaver when silent for more then 15(?) seconds
+* Nice rainbow when you turn it on
+
 How to use
 ==========
 
