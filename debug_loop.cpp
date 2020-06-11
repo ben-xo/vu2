@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 #include "debug_loop.h"
 
 void setup_debug() {

@@ -1,3 +1,7 @@
+/*
+ * I assert no copyright on this file because to be frank most of it came from the AdaFruit NeoPixel examples
+ */
+
 #include "color_wheels.h"
 
 // originally taken from AdaFruit NeoPixel strandtest, then modified for FastLED

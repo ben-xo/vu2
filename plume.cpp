@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 #include "plume.h"
 
 // fades pixels more the closer they are the start, so that peaks stay visible

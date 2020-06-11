@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 // AVR Timer CTC Interrupts Calculator
 // v. 8
 // http://www.arduinoslovakia.eu/application/timer-calculator

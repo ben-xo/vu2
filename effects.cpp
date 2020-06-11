@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 // helpers used by many effects.
 
 #include "effects.h"

@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 #include <Arduino.h>
 
 #define SHORT_PUSH 1

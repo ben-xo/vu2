@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 #include "effects.h"
 #include "plume_map.h"
 #include "color_wheels.h"

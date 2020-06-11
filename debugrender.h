@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 #include <FastLED.h>
 #include "config.h"
 #include "sampler.h"

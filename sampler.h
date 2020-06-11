@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 extern byte samples[SAMP_BUFF_LEN];
 extern volatile uint8_t current_sample;

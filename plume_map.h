@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 #include "config.h"
 
 #define FADE_PLUME_FACTOR 51.0

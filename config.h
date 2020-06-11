@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 /*** Pin configuration ***/
 #define AUDIO_INPUT_PIN 0
 #define BEAT_PIN_1 2 // must be an interrupt pin

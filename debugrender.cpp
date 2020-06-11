@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 #include "debugrender.h"
 
 // These are example renderers, really just for visualising what's being sampled.

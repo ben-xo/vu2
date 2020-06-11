@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 // This file is included by all LED strip audio effects.
 
 #ifndef _EFFECTS_H

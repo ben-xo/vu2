@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 // LED PWM using interrupts.
 // Makes a huge assumption that you're using the entirety of PORTB for LEDs.
 

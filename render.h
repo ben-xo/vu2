@@ -1,3 +1,7 @@
+/*
+ * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ */
+
 #ifndef DEBUG_ONLY
 
 #include "effects.h"
