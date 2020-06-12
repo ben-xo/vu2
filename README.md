@@ -60,7 +60,7 @@ Circuit
 
 First of all this should go without saying but LEAVE THE POWER DISCONNECTED until you're ready
 
-Very simmilar (BUT NOT IDENTICAL) to https://elmwoodelectronics.ca/blogs/news/maker-festival-projects-giant-neopixel-vu-meter 
+Very similar (BUT NOT IDENTICAL) to https://elmwoodelectronics.ca/blogs/news/maker-festival-projects-giant-neopixel-vu-meter 
 
 You should load up config.h as that's where the pins are assigned - and double check these instructions against it.
 
@@ -136,6 +136,11 @@ Yeah! You do! I have no idea what to tell you, ask me questions on Twitter @benx
 Thanks for coming to my TED talk
 
 
+History
+=======
+
+* Worked on it throughout 2017 to 2019
+* Made it public in a fit of GitHub and Twitter dopamine-seeking on 11th June 2020
 
 
 
