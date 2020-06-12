@@ -64,7 +64,7 @@ Very similar (BUT NOT IDENTICAL) to https://elmwoodelectronics.ca/blogs/news/mak
 
 Here's some FRITZ
 
-![a circuit diagram](master/vu2%20basic.png?raw=true)
+![a circuit diagram](vu2%20basic.png?raw=true)
 
 You should load up config.h as that's where the pins are assigned - and double check these instructions against it.
 
