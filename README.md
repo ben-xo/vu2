@@ -62,6 +62,10 @@ First of all this should go without saying but LEAVE THE POWER DISCONNECTED unti
 
 Very similar (BUT NOT IDENTICAL) to https://elmwoodelectronics.ca/blogs/news/maker-festival-projects-giant-neopixel-vu-meter 
 
+Here's some FRITZ
+
+![a circuit diagram](/vu basic.png)
+
 You should load up config.h as that's where the pins are assigned - and double check these instructions against it.
 
 * attach 1uF decoupling cap across to your strip. (This stops the lights browning out the Arduino when they flash brightly.) This is a standard NeoPixel wiring.
