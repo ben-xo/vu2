@@ -6,7 +6,7 @@
 
 #include "ledpwm.h"
 #include "sampler.h"
-#include "beatdetect.h"
+//#include "beatdetect.h"
 #include "buttons.h"
 #include "fps.h"
 #include "debug_loop.h"
@@ -53,7 +53,7 @@ void setup() {
   setup_render();
   setup_sampler();
   setup_ledpwm();
-  setup_beatdetect();
+//  setup_beatdetect();
 
   setup_debug();
 //  randomSeed(analogRead(2));
@@ -106,7 +106,7 @@ void loop() {
   while(true) {
     
     // read these as they're volatile
-    uint8_t sample_ptr = current_sample;
+    int8_t sample_ptr = current_sample - 127; // signify
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     
     if(pushed == SHORT_PUSH) {
@@ -125,7 +125,7 @@ void loop() {
     is_beat_1 = is_beats & (1 << BEAT_PIN_1);
     is_beat_2 = is_beats & (1 << BEAT_PIN_2);
 
-    uint8_t min_vu = 0, max_vu = 255;
+    int8_t min_vu = -128, max_vu = 127;
     vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu);
 
     if (pushed || vu_width > ATTRACT_MODE_THRESHOLD) {
