@@ -2,10 +2,10 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
-#include "debug_loop.h"
+#include "debug.h"
 
 void setup_debug() {
-  
+  Serial.begin(2000000);
 }
 
 void debug_loop() {
