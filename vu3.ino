@@ -159,7 +159,7 @@ void loop() {
 
     // now let's do some beat calculations
     bool filter_beat = false;
-    is_beat_1 = false;
+    is_beat_1 = false; // clearing this once per frame gives us a beat-strobe effect...
     beat_pin.low();
     while(new_sample_count) {
         cli();
