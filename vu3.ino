@@ -9,28 +9,35 @@
 //#include "beatdetect.h"
 #include "buttons.h"
 #include "fps.h"
-#include "debug_loop.h"
+#include "debug.h"
+
+#include "PeckettIIRFixedPoint.h"
 
 volatile uint8_t beats_from_interrupt = 0;
 
 #define NO_CORRECTION 1
 #include <FastLED.h>
 
-#include "debugrender.h"
+#include <DigitalIO.h>
 
+#include "debugrender.h"
 #include "render.h"
 
 CRGB leds[STRIP_LENGTH];
+
+DigitalPin<BEAT_PIN_1> beat_pin;
+DigitalPin<BEAT_PIN_2> tempo_pin;
 
 void setup() {
   // put your setup code here, to run once:
 
   // the pin with the push button
   pinMode(BUTTON_PIN, INPUT);
-  pinMode(BEAT_PIN_1, INPUT);
-  pinMode(BEAT_PIN_2, INPUT);
   pinMode(NEOPIXEL_PIN, OUTPUT);
   pinMode(DUTY_CYCLE_LED, OUTPUT);
+
+  beat_pin.config(OUTPUT, LOW);
+  tempo_pin.config(OUTPUT, LOW);
   
   // the pin with the push-button LED
   pinMode(BUTTON_LED_PIN,OUTPUT);  
@@ -53,7 +60,7 @@ void setup() {
   
 //  setup_filter();
   setup_render();
-  setup_sampler();
+  setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
   setup_ledpwm();
 //  setup_beatdetect();
 
@@ -107,6 +114,8 @@ void loop() {
 
   while(true) {
     
+    DEBUG_FRAME_RATE_HIGH();
+
     // read these as they're volatile
     uint8_t sample_ptr = current_sample;
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
@@ -148,27 +157,47 @@ void loop() {
       }
     }
 
+    // now let's do some beat calculations
+    bool filter_beat = false;
+    is_beat_1 = false;
+    beat_pin.low();
+    while(new_sample_count) {
+        cli();
+        uint8_t sample_ptr = current_sample;
+        new_sample_count--;
+        uint8_t val = samples[sample_ptr];
+        sei();
+
+//        Serial.println(val);
+        
+        
+        PeckettIIRFixedPoint(val, &filter_beat);
+        if(filter_beat) {
+          is_beat_1 = true; // high if at least one beat
+        }
+        
+    }
+    if(is_beat_1) {
+      beat_pin.high();
+    }
+
     if(is_attract_mode) {
       render_attract();
     } else {
       
-      if(auto_mode && auto_mode_change(false /* is_beat_1 */)) {
+      if(auto_mode && auto_mode_change(is_beat_1)) {
         last_mode = mode;
         while(mode == last_mode) mode = random8(MAX_MODE+1); // max is exclusive
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, false /* is_beat_2 */, mode, false /* is_beat_1 */, current_sample, min_vu, max_vu);
+      render(vu_width, is_beat_1, mode, is_beat_1, current_sample, min_vu, max_vu);
     }
 
-#ifdef DEBUG_FRAME_RATE
-  DEBUG_FRAME_RATE_PORT |= (1 << DEBUG_FRAME_RATE_PIN);
-#endif
     FastLED.show();
-#ifdef DEBUG_FRAME_RATE
-  DEBUG_FRAME_RATE_PORT &= ~(1 << DEBUG_FRAME_RATE_PIN);
-#endif
-
+    
+    DEBUG_FRAME_RATE_LOW();
+    
     reach_target_fps();
   }
 }
