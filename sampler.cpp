@@ -2,33 +2,26 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
-#include <Arduino.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <FastLED.H> // for ssub8()
-#include "config.h"
 #include "sampler.h"
-
-#define TIMER_COUNTER (F_CPU / (1 * SAMP_FREQ) - 1)
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
 volatile uint8_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
 
-void setup_sampler() {
-
-  // Please note that we expect the signal to oscillate around the range of uint8.
-  // To get your silence at ~127, use a potential divider and run it through a 47uF cap. (Make sure the cap is -ve leg to AUDIO_INPUT_PIN)
-
-  // see http://www.robotplatform.com/knowledge/ADC/adc_tutorial_3.html
+/**
+ * timer_counter = (F_CPU / (1 * desired_sample_frequency) - 1)
+ * 
+ * that "1" is the prescaler
+ */
+void setup_sampler(uint16_t timer_counter) {
 
   cli();
   ADCSRA = 0;             // clear ADCSRA register
   ADCSRB = 0;             // clear ADCSRB register
   ADMUX |= (AUDIO_INPUT_PIN & 0x07)     // set A0 analog input pin
-        |  (0 << REFS1)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (1 << REFS0)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
+        |  (0 << REFS1)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (1 << ADLAR)   // left align ADC value to 8 bits from ADCH register
   ;
 
@@ -39,7 +32,7 @@ void setup_sampler() {
 //         | (1 << ADPS2) 
          | (1 << ADPS1) 
          | (0 << ADPS0)
-  ; // 128 prescaler for 9600 Hz, which is the slowest it will do.
+  ; // fastest prescaler it can do. Most precise timing for ADC.
 
 //ADCSRA |= (1 << ADATE) // enable auto trigger
 //ADCSRA |= (1 << ADIE)  // enable interrupts when measurement complete
@@ -51,8 +44,8 @@ void setup_sampler() {
   TCCR1A = 0; // set entire TCCR1A register to 0
   TCCR1B = 0; // same for TCCR1B
   TCNT1  = 109; // initialize counter value to 0
-  // set compare match register for 5000 Hz increments (configured in config.h)
-  OCR1A = TIMER_COUNTER; // = 16000000 / (1 * 5000) - 1 (must be <65536)
+  // set compare match register correctly (passed in)
+  OCR1A = timer_counter;
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS12, CS11 and CS10 bits for 1 prescaler
