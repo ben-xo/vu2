@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <FastLED.H> // for ssub8()
 #include "config.h"
 #include "sampler.h"
 
@@ -22,7 +23,7 @@ void setup_sampler() {
   ADCSRB = 0;             // clear ADCSRB register
   ADMUX |= (AUDIO_INPUT_PIN & 0x07)     // set A0 analog input pin
         |  (1 << REFS0)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
-        |  (1 << REFS1)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
+        |  (0 << REFS1)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (1 << ADLAR)   // left align ADC value to 8 bits from ADCH register
   ;
 
@@ -32,7 +33,7 @@ void setup_sampler() {
   ADCSRA  = 0
 //         | (1 << ADPS2) 
          | (1 << ADPS1) 
-         | (1 << ADPS0)
+         | (0 << ADPS0)
   ; // 128 prescaler for 9600 Hz, which is the slowest it will do.
 
 //ADCSRA |= (1 << ADATE) // enable auto trigger
@@ -118,14 +119,16 @@ ISR(TIMER1_COMPA_vect)
 //}
 
 
-uint8_t calculate_vu(int8_t sample_ptr, int8_t *min_val_out, int8_t *max_val_out) {
+uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out) {
   // VU is always width of last 20 samples, wherever we happen to be right now.
-  int8_t max_val=-128, min_val=127;
-  for (uint8_t i = 0; i < VU_LOOKBEHIND; i++) {
-    int8_t int_sample = samples[(sample_ptr-i)%SAMP_BUFF_LEN];
+  uint8_t max_val=0, min_val=255, i=0;
+  uint8_t start = sample_ptr - VU_LOOKBEHIND + 1;
+  do {
+    uint8_t int_sample = samples[(start + i) % SAMP_BUFF_LEN];
     if(int_sample > max_val) max_val = int_sample;
     if(int_sample < min_val) min_val = int_sample;
-  }
+    i++;
+  } while(i < VU_LOOKBEHIND);
   *min_val_out = min_val;
   *max_val_out = max_val;
   return max_val - min_val;
