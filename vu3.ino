@@ -40,6 +40,8 @@ void setup() {
   pinMode(MODE_LED_PIN_2,OUTPUT);
   pinMode(MODE_LED_PIN_3,OUTPUT);
   pinMode(MODE_LED_PIN_4,OUTPUT);
+  pinMode(MODE_LED_PIN_5,OUTPUT);
+  pinMode(BUTTON_LED_PIN,OUTPUT);
   
 #ifdef DEBUG_FRAME_RATE
   // debugging pin for checking frame rate
@@ -106,13 +108,13 @@ void loop() {
   while(true) {
     
     // read these as they're volatile
-    int8_t sample_ptr = current_sample - 127; // signify
+    uint8_t sample_ptr = current_sample;
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     
     if(pushed == SHORT_PUSH) {
       mode++;
       if(mode > MAX_MODE) mode = 0;
-      portb_val = (mode << 1); // writes directly to pins 9-12
+      portb_val = (mode); // writes directly to pins 9-12
       auto_mode = false;
       is_attract_mode = false;
     } else if(pushed == LONG_PUSH) {
@@ -121,11 +123,11 @@ void loop() {
       portb_val = 0;
     }
     
-    is_beats = beats_from_interrupt;
-    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+//    is_beats = beats_from_interrupt;
+//    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+//    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
 
-    int8_t min_vu = -128, max_vu = 127;
+    uint8_t min_vu = 0, max_vu = 255;
     vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu);
 
     if (pushed || vu_width > ATTRACT_MODE_THRESHOLD) {
@@ -150,15 +152,13 @@ void loop() {
       render_attract();
     } else {
       
-      is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-      is_beat_2 = is_beats & (1 << BEAT_PIN_2);
-      if(auto_mode && auto_mode_change(is_beat_1)) {
+      if(auto_mode && auto_mode_change(false /* is_beat_1 */)) {
         last_mode = mode;
         while(mode == last_mode) mode = random8(MAX_MODE+1); // max is exclusive
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, is_beat_2, mode, is_beat_1, current_sample, min_vu, max_vu);
+      render(vu_width, false /* is_beat_2 */, mode, false /* is_beat_1 */, current_sample, min_vu, max_vu);
     }
 
 #ifdef DEBUG_FRAME_RATE
