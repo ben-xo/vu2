@@ -1,5 +1,8 @@
 /*
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
+ * 
+ * This was addapted from the Beat Detection sketch written by Damian Peckett. I did the Fixed Point conversion myself. 
+ * See https://damian.pecke.tt/2015/03/02/beat-detection-on-the-arduino.html for his original blog post and code.
  */
  
 #include <Arduino.h>
