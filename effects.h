@@ -5,7 +5,7 @@
 // This file is included by all LED strip audio effects.
 
 #ifndef _EFFECTS_H
-#define _EFFECTS_H 1
+#define _EFFECTS_H
 
 #define VU_PER_PIXEL (256 / STRIP_LENGTH)
 
@@ -30,4 +30,4 @@ void do_banner();
 void setup_attract();
 void render_attract();
 
-#endif
+#endif /* _EFFECTS_H */

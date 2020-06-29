@@ -2,6 +2,9 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
+#ifndef _CONFIG_H
+#define _CONFIG_H
+
 /*** Pin configuration ***/
 #define AUDIO_INPUT_PIN 0
 #define BEAT_PIN_1 2 // must be an interrupt pin
@@ -24,7 +27,7 @@
 
 /*** Neopixel configuration ***/
 #define STRIP_LENGTH 60 // don't recommend >100
-#define FPS 125
+#define FPS 100
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 128000 @ 16MHz
 #define FRAME_RATE_LIMIT 1 // limitless is fun!
@@ -59,11 +62,13 @@
 
 /*** random debug stuff ***/
 //#define DEBUG_ONLY 1
-//#define DEBUG_SAMPLE_RATE 1
-//#define DEBUG_SAMPLE_RATE_PORT PORTC
-//#define DEBUG_SAMPLE_RATE_PIN PC1
-//#define DEBUG_FRAME_RATE 1
-//#define DEBUG_FRAME_RATE_PORT PORTC
-//#define DEBUG_FRAME_RATE_PIN PC2
+#define DEBUG_SAMPLE_RATE 1
+#define DEBUG_SAMPLE_RATE_PORT PORTC
+#define DEBUG_SAMPLE_RATE_PIN PC1
+#define DEBUG_FRAME_RATE 1
+#define DEBUG_FRAME_RATE_PORT PORTC
+#define DEBUG_FRAME_RATE_PIN PC2
 
 //#define LONGCLI 1
+
+#endif /* _CONFIG_H */
