@@ -2,7 +2,6 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
-#include <Arduino.h>
 #include "fps.h"
 
 uint32_t start_time = 0; // time each loop started.
