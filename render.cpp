@@ -412,7 +412,7 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
   // convert peakToPeak into 
 
   // target_pos is where the beat line is trying to get to (based on the current volume)
-  target_pos = max_vu;
+  target_pos = peakToPeak;
 
   // TODO: could easily make this interrupt driven too
   if(is_beat) {
@@ -488,7 +488,7 @@ void render(unsigned int peakToPeak, bool is_beat, byte mode, bool is_beat_2, ui
         render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
         break;
       case 9:
-        render_beat_bounce_flip(is_beat, peakToPeak, sample_ptr, min_vu, max_vu);
+        render_beat_bounce_flip(is_beat_2, peakToPeak, sample_ptr, min_vu, max_vu);
     }
 }
 
