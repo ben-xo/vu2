@@ -191,20 +191,23 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
 // Manually unrolled version seems to give better ASM code...
 void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-    uint8_t r = samples[(sample_ptr + j*1) % SAMP_BUFF_LEN];
-    uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
-    uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
+
+    // these look better if they're darker around the "mid value", so offset down and then scale up whatever's left for contrast.
+    uint8_t r = qmul8(qsub8(samples[(sample_ptr + j*1) % SAMP_BUFF_LEN], 64), 2);
+    uint8_t g = qmul8(qsub8(samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], 64), 2);
+    uint8_t b = qmul8(qsub8(samples[(sample_ptr + j*5) % SAMP_BUFF_LEN], 64), 2);
+
     if(is_beat && is_beat_2) {
       // V1
       leds[j].setRGB(r,g,b);
     } else if(is_beat) {
-    // V2
+      // V2
       leds[j].setRGB(0,g,b);
     } else if(is_beat_2) {
-    // V3
+      // V3
       leds[j].setRGB(r,0,b);
     } else {
-    // V4
+      // V4
       leds[j].setRGB(0,0,b);
     }
   }
