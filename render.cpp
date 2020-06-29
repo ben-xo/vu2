@@ -191,20 +191,23 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
 // Manually unrolled version seems to give better ASM code...
 void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
-    uint8_t r = samples[(sample_ptr + j*1) % SAMP_BUFF_LEN];
-    uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
-    uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
+
+    // these look better if they're darker around the "mid value", so offset down and then scale up whatever's left for contrast.
+    uint8_t r = qmul8(qsub8(samples[(sample_ptr + j*1) % SAMP_BUFF_LEN], 64), 2);
+    uint8_t g = qmul8(qsub8(samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], 64), 2);
+    uint8_t b = qmul8(qsub8(samples[(sample_ptr + j*5) % SAMP_BUFF_LEN], 64), 2);
+
     if(is_beat && is_beat_2) {
       // V1
       leds[j].setRGB(r,g,b);
     } else if(is_beat) {
-    // V2
+      // V2
       leds[j].setRGB(0,g,b);
     } else if(is_beat_2) {
-    // V3
+      // V3
       leds[j].setRGB(r,0,b);
     } else {
-    // V4
+      // V4
       leds[j].setRGB(0,0,b);
     }
   }
@@ -409,7 +412,7 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
   // convert peakToPeak into 
 
   // target_pos is where the beat line is trying to get to (based on the current volume)
-  target_pos = max_vu;
+  target_pos = peakToPeak;
 
   // TODO: could easily make this interrupt driven too
   if(is_beat) {
@@ -485,7 +488,7 @@ void render(unsigned int peakToPeak, bool is_beat, byte mode, bool is_beat_2, ui
         render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
         break;
       case 9:
-        render_beat_bounce_flip(is_beat, peakToPeak, sample_ptr, min_vu, max_vu);
+        render_beat_bounce_flip(is_beat_2, peakToPeak, sample_ptr, min_vu, max_vu);
     }
 }
 
