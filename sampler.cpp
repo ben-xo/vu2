@@ -18,14 +18,17 @@ volatile uint8_t new_sample_count = 0;
 
 void setup_sampler() {
 
+  // Please note that we expect the signal to oscillate around the range of uint8.
+  // To get your silence at ~127, use a potential divider and run it through a 47uF cap. (Make sure the cap is -ve leg to AUDIO_INPUT_PIN)
+
   // see http://www.robotplatform.com/knowledge/ADC/adc_tutorial_3.html
 
   cli();
   ADCSRA = 0;             // clear ADCSRA register
   ADCSRB = 0;             // clear ADCSRB register
   ADMUX |= (AUDIO_INPUT_PIN & 0x07)     // set A0 analog input pin
-        |  (1 << REFS0)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (0 << REFS1)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
+        |  (1 << REFS0)   // set reference voltage to internal 1.1v (gives a signal boost for audio).
         |  (1 << ADLAR)   // left align ADC value to 8 bits from ADCH register
   ;
 
