@@ -18,6 +18,8 @@ volatile uint8_t new_sample_count = 0;
 
 void setup_sampler() {
 
+  // see http://www.robotplatform.com/knowledge/ADC/adc_tutorial_3.html
+
   cli();
   ADCSRA = 0;             // clear ADCSRA register
   ADCSRB = 0;             // clear ADCSRB register
