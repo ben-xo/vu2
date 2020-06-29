@@ -9,10 +9,11 @@
 #define BUTTON_PIN 4
 #define NEOPIXEL_PIN 6
 #define DUTY_CYCLE_LED 7
-#define MODE_LED_PIN_1 9
-#define MODE_LED_PIN_2 10
-#define MODE_LED_PIN_3 11 
-#define MODE_LED_PIN_4 12
+#define MODE_LED_PIN_1 8
+#define MODE_LED_PIN_2 9
+#define MODE_LED_PIN_3 10 
+#define MODE_LED_PIN_4 11
+#define MODE_LED_PIN_5 12
 #define BUTTON_LED_PIN 13
 
 
@@ -32,7 +33,7 @@
 
 /*** Audio sampling config ***/
 #define SAMP_BUFF_LEN 256 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
-#define SAMP_FREQ 2500 // Hz
+#define SAMP_FREQ 5000 // Hz
 
 
 /*** Beat Detect config ***/
@@ -53,16 +54,16 @@
 #define ATTRACT_MODE_THRESHOLD 8 // vu value
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
-#define VU_LOOKBEHIND 10
+#define VU_LOOKBEHIND 20
 
 
 /*** random debug stuff ***/
 //#define DEBUG_ONLY 1
-#define DEBUG_SAMPLE_RATE 1
-#define DEBUG_SAMPLE_RATE_PORT PORTC
-#define DEBUG_SAMPLE_RATE_PIN PC1
-#define DEBUG_FRAME_RATE 1
-#define DEBUG_FRAME_RATE_PORT PORTC
-#define DEBUG_FRAME_RATE_PIN PC2
+//#define DEBUG_SAMPLE_RATE 1
+//#define DEBUG_SAMPLE_RATE_PORT PORTC
+//#define DEBUG_SAMPLE_RATE_PIN PC1
+//#define DEBUG_FRAME_RATE 1
+//#define DEBUG_FRAME_RATE_PORT PORTC
+//#define DEBUG_FRAME_RATE_PIN PC2
 
 //#define LONGCLI 1
