@@ -63,9 +63,9 @@ void setup_sampler(uint16_t timer_counter) {
 
 ISR(TIMER1_COMPA_vect)
 {
-#ifdef DEBUG_SAMPLE_RATE
-  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
-#endif
+//#ifdef DEBUG_SAMPLE_RATE
+//  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
+//#endif
 
   ADCSRA |= (1 << ADSC); // trigger next analog sample.
   
@@ -77,9 +77,9 @@ ISR(TIMER1_COMPA_vect)
   *the_sample = sample;
   new_sample_count++;
   
-#ifdef DEBUG_SAMPLE_RATE
-  DEBUG_SAMPLE_RATE_PORT &= ~(1 << DEBUG_SAMPLE_RATE_PIN);
-#endif
+//#ifdef DEBUG_SAMPLE_RATE
+//  DEBUG_SAMPLE_RATE_PORT &= ~(1 << DEBUG_SAMPLE_RATE_PIN);
+//#endif
 }
 
 //// This optimised version saves 12 cycles from the C code above. 

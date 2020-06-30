@@ -113,9 +113,9 @@ void loop() {
   do_banner();
 
   while(true) {
-    
-    DEBUG_FRAME_RATE_HIGH();
-
+    DEBUG_FRAME_RATE_LOW();
+    DEBUG_SAMPLE_RATE_LOW();
+        
     // read these as they're volatile
     uint8_t sample_ptr = current_sample;
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
@@ -157,10 +157,14 @@ void loop() {
       }
     }
 
+    DEBUG_FRAME_RATE_LOW();
+    DEBUG_SAMPLE_RATE_HIGH();
+
     // now let's do some beat calculations
     bool filter_beat = false;
     is_beat_1 = false; // clearing this once per frame gives us a beat-strobe effect...
     beat_pin.low();
+//    DEBUG_SAMPLE_RATE_HIGH(); 
     while(new_sample_count) {
         cli();
         uint8_t sample_ptr = current_sample;
@@ -177,9 +181,14 @@ void loop() {
         }
         
     }
+//    DEBUG_SAMPLE_RATE_LOW();
+    
     if(is_beat_1) {
       beat_pin.high();
     }
+
+    DEBUG_FRAME_RATE_HIGH();
+    DEBUG_SAMPLE_RATE_HIGH();
 
     if(is_attract_mode) {
       render_attract();
@@ -194,10 +203,13 @@ void loop() {
       render(vu_width, is_beat_1, mode, is_beat_1, current_sample, min_vu, max_vu);
     }
 
+    DEBUG_FRAME_RATE_LOW();
+    DEBUG_SAMPLE_RATE_HIGH();
     FastLED.show();
     
-    DEBUG_FRAME_RATE_LOW();
-    
+    DEBUG_FRAME_RATE_HIGH();
+    DEBUG_SAMPLE_RATE_LOW();
     reach_target_fps();
+
   }
 }
