@@ -8,7 +8,7 @@ uint32_t start_time = 0; // time each loop started.
 uint32_t silent_since = 0; // time we've been silent since.
 bool slow = false; // track render time
 
-int8_t fps_interrupt_count = 40;
+int8_t fps_interrupt_count = SAMP_FREQ / FPS; // 
 volatile bool new_frame = false;
 
 uint32_t last_delay=0;
@@ -25,7 +25,7 @@ ISR(TIMER1_COMPB_vect)
   fps_interrupt_count--;
   if(!fps_interrupt_count) {
     new_frame = true;
-    fps_interrupt_count = 40;
+    fps_interrupt_count = SAMP_FREQ / FPS;
   }
 }
 
