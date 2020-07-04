@@ -2,6 +2,8 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
+#if 0 // disabled
+
 #include <Arduino.h>
 #include "config.h"
 #include "beatdetect.h"
@@ -38,3 +40,5 @@ ISR (INT0_vect, ISR_NAKED)
   asm volatile( "pop     r16                              \n\t");
   asm volatile( "reti                                     \n\t");
 }
+
+#endif

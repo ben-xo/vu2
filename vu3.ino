@@ -11,9 +11,7 @@
 #include "fps.h"
 #include "debug.h"
 
-#include "PeckettIIRFixedPoint.h"
-
-volatile uint8_t beats_from_interrupt = 0;
+//volatile uint8_t beats_from_interrupt = 0;
 
 #define NO_CORRECTION 1
 #include <FastLED.h>
@@ -101,9 +99,9 @@ void loop() {
   }
   
 //  uint8_t beat_sustain = 0;
-  byte is_beats = 0;
+//  byte is_beats = 0;
   bool is_beat_1 = false;
-  bool is_beat_2 = false;
+//  bool is_beat_2 = false;
   uint8_t vu_width = 0;
   uint8_t mode = 0;
   uint8_t last_mode = 0;
@@ -161,31 +159,11 @@ void loop() {
     DEBUG_FRAME_RATE_LOW();
     DEBUG_SAMPLE_RATE_HIGH();
 
-    // now let's do some beat calculations
-    bool filter_beat = false;
-    is_beat_1 = false; // clearing this once per frame gives us a beat-strobe effect...
-    beat_pin.low();
-//    DEBUG_SAMPLE_RATE_HIGH(); 
-    while(new_sample_count) {
-        cli();
-        uint8_t sample_ptr = current_sample;
-        new_sample_count--;
-        uint8_t val = samples[sample_ptr];
-        sei();
-
-//        Serial.println(val);
-        
-        
-        PeckettIIRFixedPoint(val, &filter_beat);
-        if(filter_beat) {
-          is_beat_1 = true; // high if at least one beat
-        }
-        
-    }
-//    DEBUG_SAMPLE_RATE_LOW();
-    
-    if(is_beat_1) {
+    is_beat_1 = filter_beat;
+    if(filter_beat) {
       beat_pin.high();
+    } else {
+      beat_pin.low();
     }
 
     DEBUG_FRAME_RATE_HIGH();
@@ -201,7 +179,7 @@ void loop() {
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, is_beat_1, mode, is_beat_1, current_sample, min_vu, max_vu);
+      render(vu_width, is_beat_1, mode, is_beat_1, sample_ptr, min_vu, max_vu);
     }
 
     DEBUG_FRAME_RATE_LOW();
