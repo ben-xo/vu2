@@ -33,7 +33,7 @@ void debug_loop() {
         new_sample_count--;
         sei();
 
-        vu_width = calculate_vu(sample_index, &min_vu, &max_vu);
+        vu_width = calculate_vu(sample_index, &min_vu, &max_vu, new_sample_count);
 
         if(pushed == SHORT_PUSH) {
           uint8_t start = sample_index - VU_LOOKBEHIND + 1;

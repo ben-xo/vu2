@@ -136,7 +136,8 @@ void loop() {
 //    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
 
     uint8_t min_vu = 0, max_vu = 255;
-    vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu);
+    vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu, new_sample_count);
+    vu_width = vu_width + scale8(vu_width, calculate_auto_gain_bonus(vu_width));
 
     if (pushed || vu_width > ATTRACT_MODE_THRESHOLD) {
       // loudness: cancel attract mode, and so does a button press.

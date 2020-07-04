@@ -4,6 +4,8 @@
 
 #include "sampler.h"
 
+#include <FastLED.h> // for qsub8
+
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
 volatile uint8_t current_sample = 0;
@@ -121,17 +123,29 @@ ISR(TIMER1_COMPA_vect)
 //}
 
 
-uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out) {
+uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out, uint8_t new_sample_count) {
   // VU is always width of last 20 samples, wherever we happen to be right now.
   uint8_t max_val=0, min_val=255, i=0;
-  uint8_t start = sample_ptr - VU_LOOKBEHIND + 1;
+  uint8_t start = sample_ptr - new_sample_count + 1;
   do {
     uint8_t int_sample = samples[(start + i) % SAMP_BUFF_LEN];
     if(int_sample > max_val) max_val = int_sample;
     if(int_sample < min_val) min_val = int_sample;
     i++;
-  } while(i < VU_LOOKBEHIND);
+  } while(i < new_sample_count);
   *min_val_out = min_val;
   *max_val_out = max_val;
   return max_val - min_val;
+}
+
+uint8_t calculate_auto_gain_bonus(uint8_t vu_width) {
+  // return a multiplier that will scale vu_width so that a "recently large" vu_width would be 255 (adjust to taste).
+  // "recently large" means we track the largest seen VU width, but scale it down on every frame. "New loudness" will therefore increase this, but quiet patches will decrease it.
+  static uint8_t weighted_max_vu = 0;
+  weighted_max_vu = qsub8(weighted_max_vu, 2); // decrease on each call. "2" should give a roughly 1 second window at 125 FPS.
+  if(vu_width > weighted_max_vu) {
+    weighted_max_vu = vu_width;
+  }
+
+  return 255 - weighted_max_vu; // this value can be used with scale8(): vu_width = vu_width + scale8(vu_width, this_value)
 }
