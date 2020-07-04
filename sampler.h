@@ -21,6 +21,7 @@ extern byte samples[SAMP_BUFF_LEN];
 extern volatile uint8_t current_sample;
 extern volatile uint8_t new_sample_count;
 void setup_sampler(uint16_t timer_counter);
-uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out);
+uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out, uint8_t new_sample_count);
+uint8_t calculate_auto_gain_bonus(uint8_t vu_width);
 
 #endif /* _SAMPLER_H */
