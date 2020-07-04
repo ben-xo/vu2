@@ -6,7 +6,7 @@
 
 uint32_t start_time = 0; // time each loop started.
 uint32_t silent_since = 0; // time we've been silent since.
-bool slow = false; // track render time
+volatile bool slow = false; // track render time
 
 int8_t fps_interrupt_count = SAMP_FREQ / FPS; // 
 volatile bool new_frame = false;

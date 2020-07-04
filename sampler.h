@@ -10,6 +10,10 @@
 #include <avr/interrupt.h>
 #include "config.h"
 
+#include "PeckettIIRFixedPoint.h"
+
+extern volatile bool filter_beat;
+
 #define SAMPLER_TIMER_COUNTER_FOR(desired_sample_frequency) ((F_CPU / (1 * desired_sample_frequency) - 1))
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
