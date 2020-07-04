@@ -159,6 +159,18 @@ void loop() {
     DEBUG_FRAME_RATE_LOW();
     DEBUG_SAMPLE_RATE_HIGH();
 
+    // now let's do some beat calculations
+    while(new_sample_count) {
+        cli();
+        uint8_t sample_ptr = current_sample - new_sample_count;
+        new_sample_count--;
+        uint8_t val = samples[sample_ptr];
+        sei();
+
+        PeckettIIRFixedPoint(val, &filter_beat);
+    }
+    DEBUG_SAMPLE_RATE_LOW();
+
     is_beat_1 = filter_beat;
     if(filter_beat) {
       beat_pin.high();
@@ -179,7 +191,7 @@ void loop() {
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, is_beat_1, mode, is_beat_1, sample_ptr, min_vu, max_vu);
+      render(vu_width, is_beat_1, mode, is_beat_1, current_sample, min_vu, max_vu);
     }
 
     DEBUG_FRAME_RATE_LOW();

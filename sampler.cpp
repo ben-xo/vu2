@@ -78,8 +78,8 @@ ISR(TIMER1_COMPA_vect)
   *the_sample = sample;
   new_sample_count++;
 
-  sei(); // enable interrupts and process the filter
-  PeckettIIRFixedPoint(sample, &filter_beat);
+//  sei(); // enable interrupts and process the filter
+//  PeckettIIRFixedPoint(sample, &filter_beat);
   
 //#ifdef DEBUG_SAMPLE_RATE
 //  DEBUG_SAMPLE_RATE_PORT &= ~(1 << DEBUG_SAMPLE_RATE_PIN);
