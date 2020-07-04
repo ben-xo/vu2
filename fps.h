@@ -9,4 +9,5 @@ extern uint32_t start_time;   // time each loop started.
 extern uint32_t silent_since; // time we've been silent since.
 extern bool slow;             // track render time
 
+void setup_fps();
 void reach_target_fps();

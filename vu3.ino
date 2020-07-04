@@ -61,6 +61,7 @@ void setup() {
 //  setup_filter();
   setup_render();
   setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
+  setup_fps();
   setup_ledpwm();
 //  setup_beatdetect();
 
