@@ -7,7 +7,7 @@
 #include <FastLED.h> // for qsub8
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
-byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
+byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(SAMP_BUFF_LEN)));
 volatile uint8_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
 bool filter_beat = false;
@@ -72,11 +72,11 @@ ISR(TIMER1_COMPA_vect)
 
   ADCSRA |= (1 << ADSC); // trigger next analog sample.
   
-  uint8_t sample_idx = (current_sample + 1);
+  uint8_t sample_idx = (current_sample + 1) % SAMP_BUFF_LEN;
   current_sample = sample_idx;
   
   byte sample = ADCH;
-  volatile byte* the_sample = samples + current_sample;
+  volatile byte* the_sample = samples + sample_idx;
   *the_sample = sample;
   new_sample_count++;
 

@@ -35,7 +35,7 @@
 
 
 /*** Audio sampling config ***/
-#define SAMP_BUFF_LEN 256 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
+#define SAMP_BUFF_LEN 128 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
 #define SAMP_FREQ 5000 // Hz
 
 
