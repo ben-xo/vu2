@@ -70,7 +70,8 @@ ISR(TIMER1_COMPA_vect)
 //  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
 //#endif
 
-  ADCSRA |= (1 << ADSC); // trigger next analog sample.
+  ADCSRA = (1 << ADSC) | (1 << ADPS1) | (1 << ADEN); // trigger a sample.
+  // we know what ADCSRA should be set to, so we can do this in 2 cycles instead of the 4 it would take with ADCSRA |= (1 << ADSC)
   
   uint8_t sample_idx = (current_sample + 1) % SAMP_BUFF_LEN;
   current_sample = sample_idx;
