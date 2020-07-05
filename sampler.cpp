@@ -10,7 +10,7 @@
 byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(256)));
 volatile uint8_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
-volatile bool filter_beat = false;
+bool filter_beat = false;
 
 /**
  * timer_counter = (F_CPU / (1 * desired_sample_frequency) - 1)
