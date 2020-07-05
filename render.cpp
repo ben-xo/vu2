@@ -214,10 +214,16 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
 }
 
 void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
-    uint8_t reverse_speed = (peakToPeak >> 6) + 2; // range 2 to 5
-    uint16_t p,j,k,l;
-    p=j=k=l=0;
-    while(p < STRIP_LENGTH)
+    uint8_t reverse_speed = 2; // range 2 to 5
+    uint8_t j=0,k=0,l=0,m=0;
+
+    if(is_beat) {
+      phase -= scale8(peakToPeak, 32);
+    } else {
+      phase += scale8(peakToPeak, 64)+1;
+    }
+
+    for(uint8_t p = 0; p < STRIP_LENGTH; p++)
     {
       // shift all the pixels along
 //      uint16_t sine1 = sin8((uint8_t)(j+phase));
@@ -231,22 +237,20 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
 //        sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
 //      }
 
-      uint8_t sine1 = beatsin8 (peakToPeak>>4, 0, 255, 0, p+j+phase);
-      uint8_t sine2 = beatsin8 (peakToPeak>>4, 0, 255, 0, p+k+phase);
-      uint8_t sine3 = beatsin8 (peakToPeak>>4, 0, 255, 0, p+l+phase);
-      leds[p].setRGB(sine1, sine2, sine3);
-      p++;
-      j += 5;
-      k += 10;
-      l += 15;
-    }
-    if(is_beat) {
-      phase += reverse_speed;
-      if(is_beat_2) {
-        phase += reverse_speed;
+      uint8_t sine1 = beatsin8 (30, 0, 255, p, j+phase);
+      uint8_t sine2 = beatsin8 (30, 0, 255, p, k+phase);
+      uint8_t sine3 = beatsin8 (30, 0, 255, p, l+phase);
+      uint8_t sine4 = beatsin8 (30, 0, 255, p<<8, phase);
+      leds[p].setRGB(scale8(sine1,sine4), scale8(sine2,sine4), scale8(sine3,sine4));
+      if(is_beat) {
+        j -= 7;
+        k -= 13;
+        l -= 17;
+      } else {
+        j += 1; // these offsets make the colours do interesting bands
+        k += 3;
+        l += 5;
       }
-    } else {
-      phase--;
     }
 }
 
