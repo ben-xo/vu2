@@ -9,7 +9,7 @@
 /*
  * This version is commented out because map() is slow. Instead, we precalculate the plume fade in plume_map.h
  */
-static void fade_pixel_plume(int pixel) {
+static void fade_pixel_plume(uint8_t pixel) {
   uint8_t fade_factor;
   if(pixel < STRIP_LENGTH >> 1) {
     fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 51, 0);  
@@ -28,7 +28,7 @@ static void fade_pixel_plume(int pixel) {
 //}
 
 // this effect needs to be rendered from the end of the strip backwards
-static void stream_pixel(int pixel) {
+static void stream_pixel(uint8_t pixel) {
   CRGB old_color[4];
   
   if(pixel > 3) {
@@ -73,14 +73,14 @@ static void shoot_pixel(uint8_t pixel) {
   leds[pixel] = color;  
 }
 
-void render_stream_pixels(unsigned int peakToPeak, bool is_beat) {
+void render_stream_pixels(uint8_t peakToPeak, bool is_beat) {
     int led = map(peakToPeak, 0, 160, -2, STRIP_LENGTH/3*2 - 1) - 1;
     
-    for (int j = STRIP_LENGTH-1; j >= 0; j--)
+    for (uint8_t j = STRIP_LENGTH-1; j >= 0; j--)
     {
       if(j <= led && led >= 0) {
         // set VU color up to peak
-        int color = map(j, 0, STRIP_LENGTH, 0, 255);
+        uint8_t color = map(j, 0, STRIP_LENGTH, 0, 255);
         leds[j] = Wheel(-color);
       }
       else {
@@ -93,12 +93,12 @@ void render_stream_pixels(unsigned int peakToPeak, bool is_beat) {
 }
 
 // this effect shifts colours along the strip on the beat.
-void render_shoot_pixels(unsigned int peakToPeak, bool is_beat) {
+void render_shoot_pixels(uint8_t peakToPeak, bool is_beat) {
     // only VU half the strip; for the effect to work it needs headroom.
     uint8_t led = map8(peakToPeak, 0, (STRIP_LENGTH >> 1) - 1);
 
     // have to render this one in reverse because 
-    for (int j = STRIP_LENGTH - 1; j >= 0; j--)
+    for (uint8_t j = STRIP_LENGTH - 1; j >= 0; j--)
     {
       if(j == led) {
         // set VU color up to peak
