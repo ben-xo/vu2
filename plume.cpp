@@ -75,9 +75,10 @@ static void shoot_pixel(uint8_t pixel) {
 
 void render_stream_pixels(uint8_t peakToPeak, bool is_beat) {
     int led = map(peakToPeak, 0, 160, -2, STRIP_LENGTH/3*2 - 1) - 1;
-    
-    for (uint8_t j = STRIP_LENGTH-1; j >= 0; j--)
-    {
+
+    uint8_t j = STRIP_LENGTH;
+    do {
+      j--;
       if(j <= led && led >= 0) {
         // set VU color up to peak
         uint8_t color = map(j, 0, STRIP_LENGTH, 0, 255);
@@ -89,7 +90,7 @@ void render_stream_pixels(uint8_t peakToPeak, bool is_beat) {
           fade_pixel_plume(j);
         }
      }
-    }  
+    } while(j > 0);
 }
 
 // this effect shifts colours along the strip on the beat.
@@ -97,9 +98,11 @@ void render_shoot_pixels(uint8_t peakToPeak, bool is_beat) {
     // only VU half the strip; for the effect to work it needs headroom.
     uint8_t led = map8(peakToPeak, 0, (STRIP_LENGTH >> 1) - 1);
 
-    // have to render this one in reverse because 
-    for (uint8_t j = STRIP_LENGTH - 1; j >= 0; j--)
+    // have to render this one in reverse because
+    uint8_t j = STRIP_LENGTH;
+    do
     {
+      j--;
       if(j == led) {
         // set VU color up to peak
         uint8_t color = j * VU_PER_PIXEL;
@@ -111,5 +114,5 @@ void render_shoot_pixels(uint8_t peakToPeak, bool is_beat) {
           fade_pixel_plume(j);
         }
       }
-    }  
+    } while(j > 0);
 }
