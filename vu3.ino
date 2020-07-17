@@ -6,6 +6,7 @@
 
 #include "ledpwm.h"
 #include "sampler.h"
+#include "tempo.h"
 //#include "beatdetect.h"
 #include "buttons.h"
 #include "fps.h"
@@ -59,6 +60,7 @@ void setup() {
 //  setup_filter();
   setup_render();
   setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
+  setup_tempo();
   setup_fps();
   setup_ledpwm();
 //  setup_beatdetect();
@@ -102,7 +104,7 @@ void loop() {
 //  uint8_t beat_sustain = 0;
 //  byte is_beats = 0;
   bool is_beat_1 = false;
-//  bool is_beat_2 = false;
+  bool is_beat_2 = false;
   uint8_t vu_width = 0;
   uint8_t mode = 0;
   uint8_t last_mode = 0;
@@ -163,23 +165,51 @@ void loop() {
     DEBUG_SAMPLE_RATE_HIGH();
 
     // now let's do some beat calculations
-    while(new_sample_count) {
-        cli();
-        uint8_t sample_ptr = current_sample - new_sample_count;
-        new_sample_count--;
-        uint8_t val = samples[sample_ptr];
-        sei();
 
-        PeckettIIRFixedPoint(val, &filter_beat);
-    }
+    // snapshot values.
+    cli();
+    uint8_t my_current_sample = current_sample;
+    uint8_t my_new_sample_count = new_sample_count;
+    sei();
+
+    uint8_t my_sample_base = my_current_sample - new_sample_count;
+    uint8_t offset = 0;
+    do {
+      uint8_t val = samples[(my_sample_base + offset) % SAMP_BUFF_LEN];
+      PeckettIIRFixedPoint(val, &filter_beat);
+      offset++;
+    } while(offset < my_new_sample_count);
+    new_sample_count -= my_new_sample_count; // decrement the global new sample count
+    
+
     DEBUG_SAMPLE_RATE_LOW();
 
     is_beat_1 = filter_beat;
     if(filter_beat) {
       beat_pin.high();
+//      record_rising_edge(); // TODO: fixme
     } else {
       beat_pin.low();
     }
+
+    // TODO: need to do this incrementally per sample
+    // we do this calc every sample, otherwise it's weirdly quantised
+//    switch(recalc_tempo()) {
+//      case TEMPO_RISE:
+//        tempo_beat = true;
+//        tempo_pin.high();
+//        break;
+//
+//      case TEMPO_FALL:
+//        tempo_beat = false;
+//        tempo_pin.low();
+//        break;
+//
+//      default:
+//        break;
+//    }
+
+    is_beat_2 = tempo_beat;
 
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_HIGH();
@@ -194,7 +224,7 @@ void loop() {
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, is_beat_1, mode, is_beat_1, current_sample, min_vu, max_vu);
+      render(vu_width, is_beat_1, mode, is_beat_2, current_sample, min_vu, max_vu);
     }
 
     DEBUG_FRAME_RATE_LOW();
