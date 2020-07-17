@@ -193,7 +193,7 @@ void loop() {
     }
 
     // TODO: need to do this incrementally per sample
-//    // we do this calc every sample, otherwise it's weirdly quantised
+    // we do this calc every sample, otherwise it's weirdly quantised
 //    switch(recalc_tempo()) {
 //      case TEMPO_RISE:
 //        tempo_beat = true;
@@ -208,8 +208,8 @@ void loop() {
 //      default:
 //        break;
 //    }
-//
-//    is_beat_2 = tempo_beat;
+
+    is_beat_2 = tempo_beat;
 
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_HIGH();
