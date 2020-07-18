@@ -170,26 +170,31 @@ void loop() {
     cli();
     uint8_t my_current_sample = current_sample;
     uint8_t my_new_sample_count = new_sample_count;
+    bool was_beat = filter_beat;
     sei();
 
     uint8_t my_sample_base = my_current_sample - new_sample_count;
     uint8_t offset = 0;
     do {
-      uint8_t val = samples[(my_sample_base + offset) % SAMP_BUFF_LEN];
+      uint8_t sample_idx = (my_sample_base + offset) % SAMP_BUFF_LEN;
+      uint8_t val = samples[sample_idx];
       PeckettIIRFixedPoint(val, &filter_beat);
+      set_beat_at(sample_idx, filter_beat);
       offset++;
     } while(offset < my_new_sample_count);
     new_sample_count -= my_new_sample_count; // decrement the global new sample count
-    
 
     DEBUG_SAMPLE_RATE_LOW();
 
     is_beat_1 = filter_beat;
-    if(filter_beat) {
+    if(is_beat_1) {
       beat_pin.high();
-//      record_rising_edge(); // TODO: fixme
     } else {
       beat_pin.low();
+    }
+
+    if(!was_beat && is_beat_1) {
+        record_rising_edge();
     }
 
     // TODO: need to do this incrementally per sample
@@ -224,7 +229,7 @@ void loop() {
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, is_beat_1, mode, is_beat_2, current_sample, min_vu, max_vu);
+      render(vu_width, is_beat_1, mode, is_beat_1, current_sample, min_vu, max_vu);
     }
 
     DEBUG_FRAME_RATE_LOW();

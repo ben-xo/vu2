@@ -18,10 +18,15 @@ extern volatile bool filter_beat;
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 extern byte samples[SAMP_BUFF_LEN];
+extern byte beat_bitmap[SAMP_BUFF_LEN >> 3];
 extern volatile uint8_t current_sample;
 extern volatile uint8_t new_sample_count;
 void setup_sampler(uint16_t timer_counter);
 uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out, uint8_t new_sample_count);
 uint8_t calculate_auto_gain_bonus(uint8_t vu_width);
+
+void set_beat_at(uint8_t offset, bool is_beat);
+bool get_beat_at(uint8_t offset);
+
 
 #endif /* _SAMPLER_H */
