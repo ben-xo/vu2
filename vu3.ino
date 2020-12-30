@@ -27,6 +27,8 @@ CRGB leds[STRIP_LENGTH];
 DigitalPin<BEAT_PIN_1> beat_pin;
 DigitalPin<BEAT_PIN_2> tempo_pin;
 
+static uint16_t frame_counter = 0;
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -173,6 +175,8 @@ void loop() {
     bool was_beat = filter_beat;
     sei();
 
+    is_beat_1 = false; // start calculation assuming no beat in this frame
+
     uint8_t my_sample_base = my_current_sample - new_sample_count;
     uint8_t offset = 0;
     do {
@@ -181,12 +185,16 @@ void loop() {
       PeckettIIRFixedPoint(val, &filter_beat);
       set_beat_at(sample_idx, filter_beat);
       offset++;
+
+      // If there was a beat edge detected at any point, set is_beat_1.
+      // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
+      // If we only checked the end of the frame, we might miss a beat that was very short.
+      is_beat_1 |= filter_beat;
     } while(offset < my_new_sample_count);
     new_sample_count -= my_new_sample_count; // decrement the global new sample count
 
     DEBUG_SAMPLE_RATE_LOW();
 
-    is_beat_1 = filter_beat;
     if(is_beat_1) {
       beat_pin.high();
     } else {
@@ -239,6 +247,6 @@ void loop() {
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_LOW();
     reach_target_fps();
-
+    frame_counter++;
   }
 }
