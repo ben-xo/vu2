@@ -9,10 +9,7 @@
 
 #ifndef DEBUG_ONLY
 
-uint8_t static random_table[STRIP_LENGTH];
-
 uint8_t static phase = 0;
-
 
 static const uint8_t PROGMEM _gammaTable[256] = {
   0,   3,   5,   7,   9,  11,  13,  14,  16,  18,  19,  21,  22,  24,  25,  26,
@@ -43,7 +40,7 @@ void setup_render() {
   setup_attract();
 }
 
-static void generate_sparkle_table() {
+static void generate_sparkle_table(uint8_t* random_table) {
   int i;
   
   for (i = 0; i < STRIP_LENGTH; i++) {
@@ -167,10 +164,11 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
 
     uint8_t adjPeak = qsub8(peakToPeak, 2); // if it's close to 0, make it 0, so it doesn't flicker
     uint8_t index = map8(adjPeak>>1, 0, STRIP_LENGTH/2);
+    uint8_t random_table[STRIP_LENGTH];
 
     // even though strictly speaking we don't need to generate the table if index is < 1,
     // we do it anyway because it keeps the frame rate consistent.
-    generate_sparkle_table();
+    generate_sparkle_table(random_table);
 
     CRGB gold   = is_beat ? GOLD   : DARK_GOLD;
     CRGB silver = is_beat ? SILVER : DARK_SILVER;
