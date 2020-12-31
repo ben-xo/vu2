@@ -5,13 +5,11 @@
 #include <Arduino.h>
 #include "config.h"
 #include "render.h"
+#include "sampler.h"
 
 #ifndef DEBUG_ONLY
 
-uint8_t static random_table[STRIP_LENGTH];
-
 uint8_t static phase = 0;
-
 
 static const uint8_t PROGMEM _gammaTable[256] = {
   0,   3,   5,   7,   9,  11,  13,  14,  16,  18,  19,  21,  22,  24,  25,  26,
@@ -42,7 +40,7 @@ void setup_render() {
   setup_attract();
 }
 
-static void generate_sparkle_table() {
+static void generate_sparkle_table(uint8_t* random_table) {
   int i;
   
   for (i = 0; i < STRIP_LENGTH; i++) {
@@ -166,10 +164,11 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
 
     uint8_t adjPeak = qsub8(peakToPeak, 2); // if it's close to 0, make it 0, so it doesn't flicker
     uint8_t index = map8(adjPeak>>1, 0, STRIP_LENGTH/2);
+    uint8_t random_table[STRIP_LENGTH];
 
     // even though strictly speaking we don't need to generate the table if index is < 1,
     // we do it anyway because it keeps the frame rate consistent.
-    generate_sparkle_table();
+    generate_sparkle_table(random_table);
 
     CRGB gold   = is_beat ? GOLD   : DARK_GOLD;
     CRGB silver = is_beat ? SILVER : DARK_SILVER;
@@ -193,9 +192,20 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
 
     // these look better if they're darker around the "mid value", so offset down and then scale up whatever's left for contrast.
-    uint8_t r = samples[(sample_ptr + j*1) % SAMP_BUFF_LEN];
+    uint8_t r = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
     uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
-    uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
+    uint8_t b = samples[(sample_ptr + j*1) % SAMP_BUFF_LEN];
+
+    b = qmul8(b,4);
+    if(b <= 128) { 
+      b = 128 - b;
+    } else {
+      b = b - 127;
+    }
+//    b = qmul8(b, 1);
+
+    is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
+    is_beat_2 = false;
 
     if(is_beat && is_beat_2) {
       // V1
@@ -405,7 +415,7 @@ void rainbowCycle(uint8_t wait) {
 
 static uint8_t current_pos = STRIP_LENGTH/2; // start in center
 #define HALF_CENTER = (STRIP_LENGTH/4) // one quarter of the way down the strip (which quarter flips on the beat)
-void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
+void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
   static uint16_t hue = 0; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
   
   static bool top = true; // which half?
@@ -416,7 +426,7 @@ void render_beat_bounce_flip(bool is_beat, unsigned int peakToPeak, uint8_t samp
   // convert peakToPeak into 
 
   // target_pos is where the beat line is trying to get to (based on the current volume)
-  target_pos = peakToPeak;
+  target_pos = scale8(peakToPeak, STRIP_LENGTH);
 
   // TODO: could easily make this interrupt driven too
   if(is_beat) {

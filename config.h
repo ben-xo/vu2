@@ -29,6 +29,7 @@
 #define STRIP_LENGTH 60 // don't recommend >100
 #define FPS 125 // if you change this, you'll need to change FRAME_DIVISOR as well. Basically, don't change this if you want fast tempo calculations
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
+#define FRAME_LENGTH_MILLIS (1000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 128000 @ 16MHz
 #define FRAME_RATE_LIMIT 1 // limitless is fun!
 
@@ -53,8 +54,10 @@
 #define USE_POT_FOR_THRESHOLD 0
 
 
-#define BEAT_FLASH_LENGTH 30 // ms
-#define MIN_BPM_MILLIS 705 // millis per beat @ ~85bpm
+// This awkward calculation is to get it to round to nearest number of frames, which is roughly 4 frames at 125fps
+// See https://stackoverflow.com/a/2422722. 
+#define BEAT_FLASH_LENGTH ((30 + (1000/FPS) - 1) / (1000/FPS)) // frames
+#define MIN_BPM_FRAMES ((FPS*60)/85) // frames per beat @ ~85bpm
 #define FRAME_DIVISOR 3 // at 125 frames per second there are 8ms per frame, and so to get from ms to frames you >> 3.
 
 

@@ -8,6 +8,7 @@
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(SAMP_BUFF_LEN)));
+byte beat_bitmap[SAMP_BUFF_LEN >> 3] __attribute__((__aligned__(SAMP_BUFF_LEN >> 3)));
 volatile uint8_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
 volatile bool filter_beat = false;
@@ -157,4 +158,20 @@ uint8_t calculate_auto_gain_bonus(uint8_t vu_width) {
   }
 
   return weighted_max_vu;
+}
+
+void set_beat_at(uint8_t offset, bool is_beat) {
+  uint8_t beat_bitmap_index = offset / 8;
+  uint8_t beat_bitmap_shift = offset & 7;
+  if(is_beat) {
+    beat_bitmap[beat_bitmap_index] |= (1 << beat_bitmap_shift);
+  } else {
+    beat_bitmap[beat_bitmap_index] &= ~(1 << beat_bitmap_shift);
+  }
+}
+
+bool get_beat_at(uint8_t offset) {
+  uint8_t beat_bitmap_index = offset / 8;
+  uint8_t beat_bitmap_shift = offset & 7;
+  return beat_bitmap[beat_bitmap_index] & (1 << beat_bitmap_shift);
 }

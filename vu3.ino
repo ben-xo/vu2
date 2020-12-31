@@ -4,6 +4,8 @@
 
 #include "config.h"
 
+//#include "framestate.h"
+
 #include "ledpwm.h"
 #include "sampler.h"
 #include "tempo.h"
@@ -26,6 +28,8 @@ CRGB leds[STRIP_LENGTH];
 
 DigitalPin<BEAT_PIN_1> beat_pin;
 DigitalPin<BEAT_PIN_2> tempo_pin;
+
+uint16_t frame_counter = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -170,46 +174,45 @@ void loop() {
     cli();
     uint8_t my_current_sample = current_sample;
     uint8_t my_new_sample_count = new_sample_count;
+    bool was_beat = filter_beat;
     sei();
+
+    is_beat_1 = false; // start calculation assuming no beat in this frame
 
     uint8_t my_sample_base = my_current_sample - new_sample_count;
     uint8_t offset = 0;
     do {
-      uint8_t val = samples[(my_sample_base + offset) % SAMP_BUFF_LEN];
+      uint8_t sample_idx = (my_sample_base + offset) % SAMP_BUFF_LEN;
+      uint8_t val = samples[sample_idx];
       PeckettIIRFixedPoint(val, &filter_beat);
+      set_beat_at(sample_idx, filter_beat);
       offset++;
+
+      // If there was a beat edge detected at any point, set is_beat_1.
+      // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
+      // If we only checked the end of the frame, we might miss a beat that was very short.
+      is_beat_1 |= filter_beat;
     } while(offset < my_new_sample_count);
     new_sample_count -= my_new_sample_count; // decrement the global new sample count
-    
 
     DEBUG_SAMPLE_RATE_LOW();
 
-    is_beat_1 = filter_beat;
-    if(filter_beat) {
+    if(is_beat_1) {
       beat_pin.high();
-//      record_rising_edge(); // TODO: fixme
     } else {
       beat_pin.low();
     }
 
-    // TODO: need to do this incrementally per sample
-    // we do this calc every sample, otherwise it's weirdly quantised
-//    switch(recalc_tempo()) {
-//      case TEMPO_RISE:
-//        tempo_beat = true;
-//        tempo_pin.high();
-//        break;
-//
-//      case TEMPO_FALL:
-//        tempo_beat = false;
-//        tempo_pin.low();
-//        break;
-//
-//      default:
-//        break;
-//    }
+    if(!was_beat && is_beat_1) {
+        record_rising_edge();
+    }
 
-    is_beat_2 = tempo_beat;
+    is_beat_2 = recalc_tempo(is_beat_2);
+    if(is_beat_2) {
+        tempo_pin.high();
+    } else {
+        tempo_pin.low();
+    }
 
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_HIGH();
@@ -234,6 +237,6 @@ void loop() {
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_LOW();
     reach_target_fps();
-
+    frame_counter++;
   }
 }
