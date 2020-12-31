@@ -20,6 +20,12 @@ void setup_tempo() {
 void clear_tempo() {
   cleared = true;
   edge_index = 0;
+  beat_gap_sum = 0;
+  beat_gap_avg = 0;
+  for(uint8_t i = 0; i < 16; i++) {
+    rising_edge_times[i] = 0;
+    rising_edge_gap[i] = 0;
+  }
 }
 
 // records the rising edge of a beat, filtering edges that are too close together
