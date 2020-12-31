@@ -25,7 +25,7 @@ void clear_tempo() {
 // records the rising edge of a beat, filtering edges that are too close together
 void record_rising_edge() {
 
-  gap = frame_counter - rising_edge_times[edge_index];
+  uint16_t gap = frame_counter - rising_edge_times[edge_index];
 
   // 160ms is slightly less than a half beat at 180bpm ((60/180/2)*1000 == ~167ms)
   if(gap > (160 / FRAME_LENGTH_MILLIS)) { // don't record beats which are too close together
