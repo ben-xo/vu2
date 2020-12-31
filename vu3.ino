@@ -4,6 +4,8 @@
 
 #include "config.h"
 
+//#include "framestate.h"
+
 #include "ledpwm.h"
 #include "sampler.h"
 #include "tempo.h"
@@ -205,7 +207,7 @@ void loop() {
         record_rising_edge();
     }
 
-    is_beat_2 = recalc_tempo();
+    is_beat_2 = recalc_tempo(is_beat_2);
     if(is_beat_2) {
         tempo_pin.high();
     } else {

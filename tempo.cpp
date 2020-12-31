@@ -29,7 +29,9 @@ void record_rising_edge() {
 
   // 160ms is slightly less than a half beat at 180bpm ((60/180/2)*1000 == ~167ms)
   if(gap > (160 / FRAME_LENGTH_MILLIS)) { // don't record beats which are too close together
-    
+
+    edge_index = (edge_index + 1) & 15; // range 0 to 15
+
     rising_edge_times[edge_index] = frame_counter;
     
     beat_gap_sum -= rising_edge_gap[edge_index];
@@ -41,13 +43,11 @@ void record_rising_edge() {
     // Bear in mind that some of the times might be from the last "run" of beats before we cleared.
     // If we used them in the average, then the average would start off far too slow!
     // (We still do the average calculation, above, because it keeps the code simple)
-    if(cleared && edge_index == 15) {
+    if(cleared && edge_index == 0) {
       cleared = false;
       next_on_frame = frame_counter;
       next_off_frame = frame_counter + BEAT_FLASH_LENGTH;
     }
-
-    edge_index = (edge_index + 1) & 15; // range 0 to 15
   }
 }
 
@@ -59,30 +59,30 @@ void record_rising_edge() {
 // Then we see if this frame is a transition to ON or OFF. If so, we update the next transition times.
 // Then, if we're currently "cleared", we return OFF (assuming that not enough beats have been recorded to predict the tempo)
 // However, if we're NOT cleared, we return our calculated ON or OFF.
-bool recalc_tempo() {
+//
+// bool is_tempo_output_high: if we were flashing an LED, was it on or off? (we only change this value at the on-off boundaries, otherwise leaving it the same)
+bool recalc_tempo(bool is_tempo_output_high) {
     if (!cleared && (frame_counter - rising_edge_times[edge_index]) > (beat_gap_avg * 4) ) {
         // we will miss four beats before we get scared and stop the tempo
         clear_tempo();
         return false;
     }
 
-    bool is_tempo_high = false;
-
     // basic on/off flash to the tempo
     if(frame_counter == next_on_frame) {
         // TODO: drift adjustment?
         next_on_frame = next_on_frame + beat_gap_avg;
-        is_tempo_high = true;
+        is_tempo_output_high = true;
     } else if(frame_counter == next_off_frame) {
         next_off_frame = next_off_frame + beat_gap_avg;
-        is_tempo_high = false;
+        is_tempo_output_high = false;
     }
 
     // don't flash tempos that are too slow.
     if(beat_gap_avg >= MIN_BPM_FRAMES) {
         // turn off all the lights if BPM is too low
-        is_tempo_high = false;
+        is_tempo_output_high = false;
     }
 
-    return is_tempo_high;
+    return is_tempo_output_high;
 }
