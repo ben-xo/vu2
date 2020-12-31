@@ -2,7 +2,7 @@
 #include "tempo.h"
 
 uint16_t rising_edge_times[16] = {0}; // frames (worth 8ms each at 125fps)
-uint16_t rising_edge_gap[16] = {0};   // frames
+uint16_t rising_edge_gap[16] = {0};   // frames. TOOD: work out if this worth 32 bytes of RAM, or if it would be better to calculate these on demand (used only in record_rising_edge!)
 
 uint8_t edge_index = 0;
 uint16_t beat_gap_sum = 0; // frames
