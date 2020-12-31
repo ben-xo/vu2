@@ -71,10 +71,10 @@ bool recalc_tempo(bool is_tempo_output_high) {
     // basic on/off flash to the tempo
     if(frame_counter == next_on_frame) {
         // TODO: drift adjustment?
+        next_off_frame = next_on_frame + BEAT_FLASH_LENGTH;
         next_on_frame = next_on_frame + beat_gap_avg;
         is_tempo_output_high = true;
     } else if(frame_counter == next_off_frame) {
-        next_off_frame = next_off_frame + beat_gap_avg;
         is_tempo_output_high = false;
     }
 
