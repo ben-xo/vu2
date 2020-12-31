@@ -1,157 +1,88 @@
 #include <Arduino.h>
 #include "tempo.h"
 
-#define BEAT_FLASH_COUNT (BEAT_FLASH_LENGTH * (SAMP_FREQ / 1000))
+uint16_t rising_edge_times[16] = {0}; // frames (worth 8ms each at 125fps)
+uint16_t rising_edge_gap[16] = {0};   // frames
 
-unsigned int rising_edge_times[16] = {0}; // millis
-unsigned int rising_edge_gap[16] = {0};   // millis
-unsigned int beat_gap_sum = 0; 
-unsigned int beat_gap_avg = 0;            // millis
 uint8_t edge_index = 0;
+uint16_t beat_gap_sum = 0; // frames
+uint16_t beat_gap_avg = 0; // frames
 
-// at 125fps each frame is 8ms
-uint16_t frames_to_beat_on      = 0;
-uint16_t frames_to_beat_off     = 0;
-uint16_t frames_to_cancel_tempo = 0;
+uint16_t next_on_frame = 0;
+uint16_t next_off_frame = 0;
 
-// whether tempo calculation is ready yet
 static bool cleared = true;
-
-bool tempo_beat = false;
-
-uint8_t on_for = 0;
- 
-
-unsigned int inline short_millis() {
-  return (unsigned int)millis();
-}
 
 void setup_tempo() {
 
 }
 
 void clear_tempo() {
-# ifdef SERIAL_DEBUG_TEMPO
-   Serial.println("C");
-# endif
-  beat_gap_sum = 0;
-  beat_gap_avg = 0;
   cleared = true;
   edge_index = 0;
-  for(uint8_t i = 0; i < 16; i++) {
-    rising_edge_gap[i] = 0;
-  }
 }
 
+// records the rising edge of a beat, filtering edges that are too close together
 void record_rising_edge() {
-  unsigned int now = short_millis();
-  unsigned int gap;
-  gap = now - rising_edge_times[edge_index];
 
-  // 150ms is slightly less than a half beat at 180bpm ((60/180/2)*1000 == ~167ms)
-  if(gap > 150) { // don't record beats which are too close together
+  gap = frame_counter - rising_edge_times[edge_index];
+
+  // 160ms is slightly less than a half beat at 180bpm ((60/180/2)*1000 == ~167ms)
+  if(gap > (160 / FRAME_LENGTH_MILLIS)) { // don't record beats which are too close together
     
-    edge_index = (edge_index + 1) & 15; // range 0 to 15
-    rising_edge_times[edge_index] = now;
+    rising_edge_times[edge_index] = frame_counter;
     
     beat_gap_sum -= rising_edge_gap[edge_index];
     rising_edge_gap[edge_index] = gap;
     beat_gap_sum += gap;
     beat_gap_avg = beat_gap_sum/16;
 
-    // only show tempo estimate after we have accrued enough beats to make it possibly accurate.
+    // Only show tempo estimate after we have accrued enough beats to make it possibly accurate.
+    // Bear in mind that some of the times might be from the last "run" of beats before we cleared.
+    // If we used them in the average, then the average would start off far too slow!
+    // (We still do the average calculation, above, because it keeps the code simple)
     if(cleared && edge_index == 15) {
       cleared = false;
-      frames_to_beat_on = 0;
-      frames_to_beat_off = (beat_gap_avg >> 1) >> FRAME_DIVISOR; // half the period, in frames.
-#     ifdef SERIAL_DEBUG_TEMPO
-        Serial.println("UC");
-#     endif
+      next_on_frame = frame_counter;
+      next_off_frame = frame_counter + BEAT_FLASH_LENGTH;
     }
+
+    edge_index = (edge_index + 1) & 15; // range 0 to 15
   }
 }
 
-uint8_t recalc_tempo() {
-  // this method recalculates if there should be a change in the tempo signal status.
-  // this method is called once every FRAME so (default) 125 times a second.
 
-  // ** next clear ** 
-  uint16_t clear_on = frames_to_cancel_tempo - 1;
-  if(clear_on > frames_to_cancel_tempo) {
-    // underflow: time has elapsed: too long without a beat
-    clear_tempo();
-  }
-  frames_to_cancel_tempo = clear_on;
-
-  if(cleared) {
-    // silent for too long: lights off
-    return TEMPO_FALL;
-  }
-
-  // decrement the next-flash and next off counters, flashing on or off if they underflow.
-  // There's approx. 13s of headroom here at 5kHz (65536 * 200 microseconds = 13.1s) which means
-  // that the slowest we can flash would be about 6.5 BPM without errors. 
-  // However, we don't go that slow - a timeout should put us into "cleared" mode
-
-  // ** next on ** 
-  uint16_t beat_on = frames_to_beat_on - 1;
-  if(beat_on > frames_to_beat_on) {
-    // underflow: time has elapsed: rising edge
-
-    on_for = 0;
-
-    // estimate next flash times from tempo
-    uint16_t last_edge = rising_edge_times[edge_index];
-    uint16_t now = short_millis();
-    uint16_t last_beat = 0; // now
-
-    // if we're rising >1/8 beat from the last rising edge, assume we've drifted and adjust
-    // TODO: verify this
-    if(now - last_edge > (beat_gap_avg >> 3)) {
-      last_beat = (last_edge - now); // this will underflow, but that's on purpose
-    } else {
-      frames_to_beat_on = 0;
+// This method is called once every FRAME
+// The return value is 1 if frame has a tempo high, and 0 if the frame has a tempo low.
+// Heuristic:
+// If we're NOT cleared, but we haven't seen a real beat in a while, we assume the calculation is probably invalid and clear the tempo
+// Then we see if this frame is a transition to ON or OFF. If so, we update the next transition times.
+// Then, if we're currently "cleared", we return OFF (assuming that not enough beats have been recorded to predict the tempo)
+// However, if we're NOT cleared, we return our calculated ON or OFF.
+bool recalc_tempo() {
+    if (!cleared && (frame_counter - rising_edge_times[edge_index]) > (beat_gap_avg * 4) ) {
+        // we will miss four beats before we get scared and stop the tempo
+        clear_tempo();
+        return false;
     }
-    
-    frames_to_beat_on  = (last_beat + beat_gap_avg) >> FRAME_DIVISOR;
-    frames_to_beat_off = ((beat_gap_avg >> 1) >> FRAME_DIVISOR);
 
-#   ifdef SERIAL_DEBUG_TEMPO
-      Serial.println(frames_to_beat_on);
-#   endif
+    bool is_tempo_high = false;
 
-    return TEMPO_RISE;
-  } else {
-    frames_to_beat_on = beat_on;
-  }
+    // basic on/off flash to the tempo
+    if(frame_counter == next_on_frame) {
+        // TODO: drift adjustment?
+        next_on_frame = next_off_frame + beat_gap_avg;
+        is_tempo_high = true;
+    } else if(frame_counter == next_off_frame) {
+        next_off_frame = next_on_frame + beat_gap_avg;
+        is_tempo_high = false;
+    }
 
-  // ** next off ** 
-  uint16_t beat_off = frames_to_beat_off - 1;
-  if(on_for < BEAT_FLASH_COUNT) {
-      on_for++;
-  }
-  if(beat_off > frames_to_beat_off) {
-    // underflow: time has elapsed: falling edge
-#   ifdef SERIAL_DEBUG_TEMPO
-      Serial.println("v");
-#   endif
+    // don't flash tempos that are too slow.
+    if(beat_gap_avg >= MIN_BPM_FRAMES) {
+        // turn off all the lights if BPM is too low
+        is_tempo_high = false;
+    }
 
-    frames_to_beat_on  = ((beat_gap_avg >> 1) >> FRAME_DIVISOR);
-    frames_to_beat_off = beat_gap_avg >> FRAME_DIVISOR;
-    return TEMPO_FALL;
-  } else {
-    frames_to_beat_off = beat_off;
-  }
-
-  if(beat_gap_avg >= MIN_BPM_MILLIS) {
-    // turn off all the lights if BPM is too low
-    return TEMPO_FALL;
-  }
-
-  if(on_for >= BEAT_FLASH_COUNT) {
-    // turn off all the lights after 30ms (or whatever) so they pulse
-    return TEMPO_FALL;
-  }
-
-  return TEMPO_NO_CHANGE;
+    return is_tempo_high;
 }
