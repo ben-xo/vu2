@@ -27,7 +27,7 @@ CRGB leds[STRIP_LENGTH];
 DigitalPin<BEAT_PIN_1> beat_pin;
 DigitalPin<BEAT_PIN_2> tempo_pin;
 
-static uint16_t frame_counter = 0;
+uint16_t frame_counter = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -205,24 +205,12 @@ void loop() {
         record_rising_edge();
     }
 
-    // TODO: need to do this incrementally per sample
-    // we do this calc every sample, otherwise it's weirdly quantised
-//    switch(recalc_tempo()) {
-//      case TEMPO_RISE:
-//        tempo_beat = true;
-//        tempo_pin.high();
-//        break;
-//
-//      case TEMPO_FALL:
-//        tempo_beat = false;
-//        tempo_pin.low();
-//        break;
-//
-//      default:
-//        break;
-//    }
-
-    is_beat_2 = tempo_beat;
+    is_beat_2 = recalc_tempo();
+    if(is_beat_2) {
+        tempo_pin.high();
+    } else {
+        tempo_pin.low();
+    }
 
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_HIGH();
@@ -237,7 +225,7 @@ void loop() {
         portb_val = (mode << 1); // writes directly to pins 9-12.
       }
 
-      render(vu_width, is_beat_1, mode, is_beat_1, current_sample, min_vu, max_vu);
+      render(vu_width, is_beat_1, mode, is_beat_2, current_sample, min_vu, max_vu);
     }
 
     DEBUG_FRAME_RATE_LOW();
