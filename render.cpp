@@ -163,7 +163,7 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
     const CRGB DARK_GOLD(0x7F, 0x7F, 0x37);
 
     uint8_t adjPeak = qsub8(peakToPeak, 2); // if it's close to 0, make it 0, so it doesn't flicker
-    uint8_t index = map8(adjPeak>>1, 0, STRIP_LENGTH/2);
+    uint8_t index = map8(adjPeak>>2, 0, STRIP_LENGTH/4);
     uint8_t random_table[STRIP_LENGTH];
 
     // even though strictly speaking we don't need to generate the table if index is < 1,
