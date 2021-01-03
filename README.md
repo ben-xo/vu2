@@ -5,6 +5,7 @@ This is a self indulgent project by Ben XO https://github.com/ben-xo
 
 The idea is that you feed line level audio into a pin on an arduino, and you get pretty lights out on a strip of Neopixels (WS2812 or compatible).
 
+
 License
 -------
 
@@ -23,24 +24,61 @@ Features
 ========
 
 * Works from line-in
-* If you give it external beat signals, it will use those for beat detection. Beat source NOT required (but spices it up)
-* 6 (or 7? or 8?) different visualisers. Some aren't really finished but see what you think.
-* Auto change after a certain number of beats
-* Screensaver when silent for more then 15(?) seconds
+* Interrupt driven audio sampling - even with WS2812s (requires a slightly modified FastLED library at https://github.com/ben-xo/FastLED)
+* A solid 180 frame per second with 60 WS2812s (or 125fps with 100 WS2812s) with no slow frames or dropped samples
+* Beat detection and tempo estimation in realtime. Yep! All on a single Arduino
+* 8 cool sound-reactive visualisers. These have been endlessly tinkered with so that they look okay at a range of input volumes and aren't TOO jarring when they change
+* Automatic mode changing after a certain number of beats
+* Effects work well for a range of music from house and techno to drum & bass
+* Visualisers cope with things like DC Offset on the line-in
+* push button to change modes
+* Status LEDs driven using interrupt driven PWM (so no need for resistors on the status LEDs)
+* Screensaver when the audio goes quiet. Because why not!
 * Nice rainbow when you turn it on
 
 How to use
 ==========
 
-The basic hardware is simple:
 
-* Arduino
-* Strip of 60 Neopixels (but can be configured up to 100 before it gets too slow / runs out of RAM)
-* 330ohm resistor for Neopixels
-* 10k resistor and a push button (for changing modes)
-* another 10k resistor pull-down for the audio (or it's noisy)
-* anything else is optional, but you might want a buffer cap for the line-in otherwise it can be quite noisy. There are more complicated configurations possible
-* 5v power supply of your choice.
+Circuit
+-------
+
+First of all this should go without saying but LEAVE THE POWER DISCONNECTED until you're ready
+
+You should load up config.h as that's where the pins are assigned - and double check these instructions against it.
+
+Also, I refuse to draw an ASCII diagram so you'll have to interpret my words.
+
+Audio Input
+-----------
+
+The audio input stage expects "0" to be at around 2.5v (i.e the mid range of the analog input).
+
+Minimum would be something like:
+* ground of audio connected to ground of arduino
+* signal (left or right audio channel) connected to A0 through a 3.3uF electrolytic cap
+* signal connected to ground via a 103 cap
+* signal connected to ground and +5v through 100k resistors (to create a potential divider to get the signal to sit at 2.5v)
+
+That's it.
+
+Output LEDs
+-----------
+
+* connect 5 LEDs from D8, D9, D10, D11 and D12 to ground. (no resistor needed). These show the current mode in binary
+* connect 2 LEDs from D3 and D2 to ground via 220 resistor. These flash in time for the beats.
+
+Mode Button
+-----------
+
+* Pull D4 to ground through a 10k resistor (if you don't and it floats the mode will go haywire)
+* Connect a push button from D4 to pull up to 5v. That's it
+
+LED light strip
+---------------
+
+Connect some WS2812s or whatever through a 330 resistor to D6, in "the usual way".
+
 
 Notes on Power
 --------------
@@ -55,31 +93,11 @@ You can power the Arduino and lights separately, but if you do, you must conenct
 
 You'll know if you don't have enough power because the thing will keep rebooting (you get a nice rainbow every time it starts up)
 
-Circuit
--------
 
-First of all this should go without saying but LEAVE THE POWER DISCONNECTED until you're ready
+Debug monitoring
+----------------
 
-Very similar (BUT NOT IDENTICAL) to https://elmwoodelectronics.ca/blogs/news/maker-festival-projects-giant-neopixel-vu-meter 
-
-Here's some FRITZ
-
-![a circuit diagram](vu2%20basic.png?raw=true)
-
-You should load up config.h as that's where the pins are assigned - and double check these instructions against it.
-
-* attach 1uF decoupling cap across to your strip. (This stops the lights browning out the Arduino when they flash brightly.) This is a standard NeoPixel wiring.
-* attach PSU GND to BOTH your NeoPixels AND the GND of arduino
-* attach 5v of your PSU to BOTH your NeoPixels AND the GND of Arduino (OR ignore this and see "Notes On Power" above)
-* attach the 330 resistor to digital output 6 (as in config.h) and the other end to the pixel strip "signal in".
-* attach a 10k resistor from A0 analog input to GND (it's to prevent a noisy input when the audio is disconencted)
-* attach your line-in GND to Arduino GND
-* attach your line-in signal to A0
-* connect BEAT_PIN_1 and BEAT_PIN_2 (pins 2 and 3) directly to GND (otherwise they'll float, and do weird shit). See "Enhancements" for using these for more fun purposes.
-* connect BUTTON_PIN (4) to 10k resistor then that to GND (pull it down, otherwise it will float and press the button randomly.)
-* wire your push button from 5v to the button, and then other site of the button to BUTTON_PIN (so it's pull-up when pushed).
-
-The BEAT_PIN_* pins are designed to spice up the visualisers when low pass analog beats are sent to them. experiment...
+If you wanna watch the frame rate (and time taken to do various stages in the main loop) on an oscilloscope, you should pull A1 and A2 to ground via 10k resistors and then hook your scope up to those pins.
 
 Software
 --------
@@ -122,15 +140,16 @@ Whilst this project has evolved (slowly) from some sketches I found online, the 
 How It Works
 ------------
 
-The main loop of the code has three phases:
-1) Processing samples (to calculate the VU), beat detection based on current "beat" input status, and see if the button was pushed to change modes.
-2) Rendering patterns into the pattern buffer to be shown on the lights, based on those samples, and then displaying them
-3) wasting whatever time remains to stay at 125FPS.
+This is "what can I squeeze out of an Arduino" project the architecture is quite Arduino specific and heavily timer interrupt driven.
 
-There are also a series of interrupts used to process inputs.
-* We use TIMER1 set at 5kHz to trigger the onboard ADC to sample from line-in, and store it in a sample buffer. (This ensures we can catch up on missed samples, even though rendering the lights takes longer than 1 sample).
-* We use TIMER2 and some very tight ASM code to PWM-flash the LEDs, so that they don't get hot and explode. (Miraculously, even at 20,000 interrupts a second, this takes <2% CPU time)
-* We use INT0 and INT1 to record if we're currently in a "beat" or not. This is used for tempo detection or just to augment the visualisers. (To be honest this part isn't as good as i'd like).
+The main loop does does the following:
+* processes all samples queued up in the sample buffer to calculate a rolling VU, DC offset and beat detection filter
+* stores sample-accurate "beat" information, and recalculates the estimates tempo (which looks a lot better for drum & bass than just the kick detection on its own)
+* renders a frame of visualiser
+* outputs the LEDs using FastLED
+
+Meanwhile, there are very fast interrupt handlers for sampling the audio, doing PWM on the status LEDs, and maintaining an accurate FPS.
+
 
 Want to work on it?
 -------------------
@@ -145,8 +164,13 @@ History
 
 * Worked on it throughout 2017 to 2019
 * Made it public in a fit of GitHub and Twitter dopamine-seeking on 11th June 2020
+* Made it all-in-one with no second arduino required for beat detect and very fast 180fps Jan 2021
 
 
+Thanks
+======
+
+Have fun and no you can't use it commercially
 
 
 
