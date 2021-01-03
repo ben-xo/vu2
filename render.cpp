@@ -192,20 +192,11 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
 
     // these look better if they're darker around the "mid value", so offset down and then scale up whatever's left for contrast.
-    uint8_t r = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
-    uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
-    uint8_t b = samples[(sample_ptr + j*1) % SAMP_BUFF_LEN];
-
-    b = qmul8(b,4);
-    if(b <= 128) { 
-      b = 128 - b;
-    } else {
-      b = b - 127;
-    }
-//    b = qmul8(b, 1);
+    uint8_t r = qsub8(samples[(sample_ptr + j*1) % SAMP_BUFF_LEN], DC_OFFSET);
+    uint8_t g = qsub8(samples[(sample_ptr + j*2) % SAMP_BUFF_LEN], DC_OFFSET);
+    uint8_t b = qsub8(samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], DC_OFFSET);
 
     is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
-    is_beat_2 = false;
 
     if(is_beat && is_beat_2) {
       // V1
