@@ -113,14 +113,14 @@ void loop() {
     debug_loop();
   }
   
-  bool is_beat_1 = false;
-  bool is_beat_2 = false;
+  F.is_beat_1 = false;
+  F.is_beat_2 = false;
   F.vu_width = 0;
   F.mode = random8(MAX_MODE+1);
   F.last_mode = 0;
-  bool auto_mode = true;
-  bool is_silent = false;
-  bool is_attract_mode = false;
+  F.auto_mode = true;
+  F.is_silent = false;
+  F.is_attract_mode = false;
   bool filter_beat = false;
 
   do_banner();
@@ -137,10 +137,10 @@ void loop() {
       F.mode++;
       if(F.mode > MAX_MODE) F.mode = 0;
       portb_val = (F.mode); // writes directly to pins 9-12
-      auto_mode = false;
-      is_attract_mode = false;
+      F.auto_mode = false;
+      F.is_attract_mode = false;
     } else if(pushed == LONG_PUSH) {
-      auto_mode = true;
+      F.auto_mode = true;
       F.mode = 0;
       portb_val = 0;
     }
@@ -148,8 +148,8 @@ void loop() {
 #ifdef BEAT_WITH_INTERRUPTS
     // this won't be much use unless you also rip out the IIR code below…
     byte is_beats = beats_from_interrupt;
-    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+    F.is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+    F.is_beat_2 = is_beats & (1 << BEAT_PIN_2);
 #endif
 
     F.min_vu = 0;
@@ -160,18 +160,18 @@ void loop() {
 
     if (pushed || F.vu_width > ATTRACT_MODE_THRESHOLD) {
       // loudness: cancel attract mode, and so does a button press.
-      is_silent = false;
-      is_attract_mode = false;
+      F.is_silent = false;
+      F.is_attract_mode = false;
     } else {
       // quiet: short or long?
-      if(!is_silent) {
+      if(!F.is_silent) {
         // first loop of silence. Record time.
         silent_since = start_time; // note start time of silence
-        is_silent = true;
+        F.is_silent = true;
       } else {
         // 2nd+ loop of silence. Long enough for attract mode?
-        if (!is_attract_mode && ((start_time - silent_since)/1024 > ATTRACT_MODE_TIMEOUT)) {
-          is_attract_mode = true;
+        if (!F.is_attract_mode && ((start_time - silent_since)/1024 > ATTRACT_MODE_TIMEOUT)) {
+          F.is_attract_mode = true;
         }
       }
     }
@@ -189,7 +189,7 @@ void loop() {
 
     bool was_beat = filter_beat;
 
-    is_beat_1 = false; // start calculation assuming no beat in this frame
+    F.is_beat_1 = false; // start calculation assuming no beat in this frame
 
     uint8_t my_sample_base = my_current_sample - new_sample_count;
     uint8_t offset = 0;
@@ -203,24 +203,24 @@ void loop() {
       // If there was a beat edge detected at any point, set is_beat_1.
       // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
       // If we only checked the end of the frame, we might miss a beat that was very short.
-      is_beat_1 |= filter_beat;
+      F.is_beat_1 |= filter_beat;
     } while(offset < my_new_sample_count);
     new_sample_count -= my_new_sample_count; // decrement the global new sample count
 
     DEBUG_SAMPLE_RATE_LOW();
 
-    if(is_beat_1) {
+    if(F.is_beat_1) {
       beat_pin.high();
     } else {
       beat_pin.low();
     }
 
-    if(!was_beat && is_beat_1) {
+    if(!was_beat && F.is_beat_1) {
         record_rising_edge();
     }
 
-    is_beat_2 = recalc_tempo(is_beat_2);
-    if(is_beat_2) {
+    F.is_beat_2 = recalc_tempo(F.is_beat_2);
+    if(F.is_beat_2) {
         tempo_pin.high();
     } else {
         tempo_pin.low();
@@ -229,17 +229,17 @@ void loop() {
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_HIGH();
 
-    if(is_attract_mode) {
+    if(F.is_attract_mode) {
       render_attract();
     } else {
       
-      if(auto_mode && auto_mode_change(is_beat_1)) {
+      if(F.auto_mode && auto_mode_change(F.is_beat_1)) {
         F.last_mode = F.mode;
         while(F.mode == F.last_mode) F.mode = random8(MAX_MODE+1); // max is exclusive
         portb_val = (F.mode << 1); // writes directly to pins 9-12.
       }
 
-      render(F.vu_width, is_beat_1, F.mode, is_beat_2, current_sample, F.min_vu, F.max_vu, sample_sum);
+      render(F.vu_width, F.is_beat_1, F.mode, F.is_beat_2, current_sample, F.min_vu, F.max_vu, sample_sum);
     }
 
     DEBUG_FRAME_RATE_LOW();
