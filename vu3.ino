@@ -121,6 +121,7 @@ void loop() {
   bool auto_mode = true;
   bool is_silent = false;
   bool is_attract_mode = false;
+  bool filter_beat = false;
 
   do_banner();
 

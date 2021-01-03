@@ -12,7 +12,6 @@ byte beat_bitmap[SAMP_BUFF_LEN >> 3] __attribute__((__aligned__(SAMP_BUFF_LEN >>
 volatile uint8_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
 volatile uint16_t sample_sum = 0; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
-volatile bool filter_beat = false;
 
 /**
  * timer_counter = (F_CPU / (1 * desired_sample_frequency) - 1)
@@ -72,7 +71,6 @@ ISR(TIMER1_COMPA_vect)
 //  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
 //#endif
 
-//  ADCSRA = (1 << ADSC) | (1 << ADPS1) | (1 << ADEN); // trigger a sample.
   ADCSRA |= (1 << ADSC); // trigger a sample.
   // we know what ADCSRA should be set to, so we can do this in 2 cycles instead of the 4 it would take with ADCSRA |= (1 << ADSC)
   
@@ -85,16 +83,14 @@ ISR(TIMER1_COMPA_vect)
   *the_sample = sample;
   new_sample_count++;
 
-//  sei(); // enable interrupts and process the filter
-//  PeckettIIRFixedPoint(sample, &filter_beat);
-  
 //#ifdef DEBUG_SAMPLE_RATE
 //  DEBUG_SAMPLE_RATE_PORT &= ~(1 << DEBUG_SAMPLE_RATE_PIN);
 //#endif
 }
 
-//// This optimised version saves 12 cycles from the C code above. 
+//// This optimised version saves 12 cycles from the C code above.
 //// Not sure if it was worth it to save 12 cycles per sample, but it was fun…
+//// TODO: **WARNING** it does not include the sample summing!
 //ISR(ADC_vect) __attribute__((naked));
 //ISR(ADC_vect)
 //{
