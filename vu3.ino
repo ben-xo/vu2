@@ -154,7 +154,16 @@ void loop() {
 
     F.min_vu = 0;
     F.max_vu = 255;
+
+    // Currently, the lookbehind for the VU is always the number of samples queued up since the last VU (i.e. a whole Frame's worth)
+    // With 5kHz sample rate and 125fps, this is usually 40 samples. But because the interrupts are staggered so they don't all fire at once,
+    // occassionally it's 39 or 41.
+#ifdef VU_LOOKBEHIND
     F.vu_width = calculate_vu(sample_ptr, &F.min_vu, &F.max_vu, new_sample_count);
+#else
+    F.vu_width = calculate_vu(sample_ptr, &F.min_vu, &F.max_vu, VU_LOOKBEHIND);
+#endif
+
     uint8_t recent_max_vu = calculate_auto_gain_bonus(F.vu_width);
     F.vu_width = F.vu_width + scale8(F.vu_width, 255 - recent_max_vu);
 
