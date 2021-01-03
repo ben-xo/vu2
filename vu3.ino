@@ -78,7 +78,6 @@ void setup() {
 #endif
 
   setup_debug();
-//  Serial.begin(2000000);
 }
 
 // auto change every 8 bars

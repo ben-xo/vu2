@@ -17,7 +17,6 @@ void debug_loop() {
   uint8_t vu_width = 0;
   uint8_t mode = 1;
 
-  Serial.begin(2000000);
   while(true) {
 
     uint8_t pushed = false;
