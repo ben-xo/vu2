@@ -9,8 +9,6 @@
 
 #ifndef DEBUG_ONLY
 
-uint8_t static phase = 0;
-
 static const uint8_t PROGMEM _gammaTable[256] = {
   0,   3,   5,   7,   9,  11,  13,  14,  16,  18,  19,  21,  22,  24,  25,  26,
  28,  29,  31,  32,  33,  35,  36,  37,  39,  40,  41,  42,  44,  45,  46,  47,
@@ -125,10 +123,10 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
     }  
 }
 
-void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
+void render_vu_plus_beat_interleave() {
   static uint8_t beat_brightness;
-  uint8_t adjPeak = gamma8(peakToPeak);
-  int led = map8(adjPeak, 0, STRIP_LENGTH);
+  uint8_t adjPeak = gamma8(F.vu_width);
+  uint8_t led = map8(adjPeak, 0, STRIP_LENGTH);
   uint8_t color = 0;
   beat_brightness = qadd8(beat_brightness/2, adjPeak);
   
@@ -140,29 +138,33 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
       if(j <= led*2) {
         // set VU color up to peak
         color -= VU_PER_PIXEL + VU_PER_PIXEL; // double it because half the range is beat flash
-        leds[j] = Wheel(color);
+        if (j > led) {
+          leds[j] = Wheel(color);
+        } else {
+          fade_pixel_slow(j);
+        }
       } else {
         fade_pixel_fast(j);
       }
     } else {
-      if(is_beat) {
+      if(F.is_beat_1 && random8() < 10) {
       // beats
         leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
       } else {
-        fade_pixel_slow(j);
+        fade_pixel_fast(j);
       }      
     }
   }
 }
 
 
-void render_sparkles(uint8_t peakToPeak, bool is_beat) {
+void render_sparkles() {
     const CRGB SILVER(0xFF, 0xFF, 0xFF);
     const CRGB GOLD(0xFF, 0xFF, 0x77);
     const CRGB DARK_SILVER(0x7F, 0x7F, 0x7F);
     const CRGB DARK_GOLD(0x7F, 0x7F, 0x37);
 
-    uint8_t adjPeak = qsub8(peakToPeak, 2); // if it's close to 0, make it 0, so it doesn't flicker
+    uint8_t adjPeak = qsub8(F.vu_width, 2); // if it's close to 0, make it 0, so it doesn't flicker
     uint8_t index = map8(adjPeak>>2, 0, STRIP_LENGTH/4);
     uint8_t random_table[STRIP_LENGTH];
 
@@ -170,8 +172,8 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
     // we do it anyway because it keeps the frame rate consistent.
     generate_sparkle_table(random_table);
 
-    CRGB gold   = is_beat ? GOLD   : DARK_GOLD;
-    CRGB silver = is_beat ? SILVER : DARK_SILVER;
+    CRGB gold   = F.is_beat_1 ? GOLD   : DARK_GOLD;
+    CRGB silver = F.is_beat_1 ? SILVER : DARK_SILVER;
 
     for (uint8_t j = 0; j < index; j++) {
       leds[random_table[j]] = j%2 ? gold : silver;
@@ -188,7 +190,7 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
 }
 
 // Manually unrolled version seems to give better ASM code...
-void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr, uint16_t sample_sum) {
+void render_combo_samples_with_beat(uint8_t sample_ptr, uint16_t sample_sum) {
   uint8_t dc_offset = sample_sum/SAMP_BUFF_LEN;
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
 
@@ -196,15 +198,15 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
     uint8_t g = qsub8(samples[(sample_ptr + j*2) % SAMP_BUFF_LEN], dc_offset);
     uint8_t b = qsub8(samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], dc_offset);
 
-    is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
+    bool is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
 
-    if(is_beat && is_beat_2) {
+    if(is_beat && F.is_beat_2) {
       // V1
       leds[j].setRGB(r,g,b);
     } else if(is_beat) {
       // V2
       leds[j].setRGB(0,g,b);
-    } else if(is_beat_2) {
+    } else if(F.is_beat_2) {
       // V3
       leds[j].setRGB(r,0,b);
     } else {
@@ -214,15 +216,30 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
   }
 }
 
-void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
+/**
+ * FastLED is doing too much work here - and we can't therefore have 4 binsin8s in a single frame.
+ * So, instead, we'll take advantage of the fact that the BPM is fixed (and irrelevant) and just do stuff using the frame counter instead
+ */
+uint8_t frame_beatsin8( uint8_t beat, uint8_t phase_offset = 0)
+{
+    uint8_t beatsin = sin8( beat + phase_offset);
+    return beatsin;
+}
+
+void render_beat_line() {
+    uint8_t static phase = 0;
     uint8_t reverse_speed = 2; // range 2 to 5
     uint8_t j=0,k=0,l=0,m=0;
 
-    if(is_beat) {
-      phase -= scale8(peakToPeak, 32);
+    if(F.is_beat_1) {
+      phase -= scale8(F.vu_width, 32);
     } else {
-      phase += scale8(peakToPeak, 64)+1;
+      phase += scale8(F.vu_width, 64)+1;
     }
+
+    uint32_t now = millis();
+    uint32_t now2 = now;
+    uint8_t brightness = qadd8(F.vu_width,128);
 
     for(uint8_t p = 0; p < STRIP_LENGTH; p++)
     {
@@ -238,12 +255,18 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
 //        sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
 //      }
 
-      uint8_t sine1 = beatsin8 (30, 0, 255, p, j+phase);
-      uint8_t sine2 = beatsin8 (30, 0, 255, p, k+phase);
-      uint8_t sine3 = beatsin8 (30, 0, 255, p, l+phase);
-      uint8_t sine4 = beatsin8 (30, 0, 255, p<<8, phase);
+      now  -= 1; // iteratively decrement rather than calculating it by subtracting p on every loop. 
+      now2 -= (1<<8);
+      uint8_t beat1 = ((now)  * (30) * 280) >> 16;
+      uint8_t beat2 = ((now2) * (30) * 280) >> 16;
+
+      uint8_t sine1 = frame_beatsin8 (beat1, j+phase);
+      uint8_t sine2 = frame_beatsin8 (beat1, k+phase);
+      uint8_t sine3 = frame_beatsin8 (beat1, l+phase);
+      uint8_t sine4 = frame_beatsin8 (beat2, phase);
       leds[p].setRGB(scale8(sine1,sine4), scale8(sine2,sine4), scale8(sine3,sine4));
-      if(is_beat) {
+      leds[p].nscale8(brightness);
+      if(F.is_beat_1) {
         j -= 7;
         k -= 13;
         l -= 17;
@@ -302,7 +325,7 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
     CRGB crgb_color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
     uint8_t adjPeak = gamma8(peakToPeak);
-    uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/3);
+    uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/4);
 
     static bool was_beat_2 = false; 
     static uint8_t fade_type = 0;
@@ -337,10 +360,10 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
       }
       else {
         if(is_beat) {
-          fade_pixel(j);
+          fade_pixel_fast(j);
           fade_pixel_slow((STRIP_LENGTH/2)+j);
           fade_pixel_slow((STRIP_LENGTH/2)-j-1);
-          fade_pixel((STRIP_LENGTH  )-j-1);
+          fade_pixel_fast((STRIP_LENGTH  )-j-1);
         } else {
           fade_pixel(j);
           fade_pixel((STRIP_LENGTH/2)+j);
@@ -348,7 +371,7 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
           fade_pixel((STRIP_LENGTH  )-j-1);          
         }
       }
-    }  
+    }
 }
 
 void render_beat_flash_1_pixel(bool is_beat) {
@@ -461,39 +484,39 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
   hue = (hue + 1) % 2048;
 }
  
-void render(unsigned int peakToPeak, bool is_beat, byte mode, bool is_beat_2, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu, uint16_t sample_sum) {
+void render(uint8_t sample_ptr, uint16_t sample_sum) {
 
-    switch(mode) {
+    switch(F.mode) {
       default:
       case 0:
-        render_vu_with_beat_strobe(peakToPeak, is_beat, is_beat_2);
+        render_vu_with_beat_strobe(F.vu_width, F.is_beat_1, F.is_beat_2);
         break;
       case 1:
-        render_stream_pixels(peakToPeak, is_beat);
+        render_stream_pixels();
         break;
       case 2:
-        render_double_vu(peakToPeak, is_beat, is_beat_2);
+        render_double_vu(F.vu_width, F.is_beat_1, F.is_beat_2);
         break;
       case 3:
-        render_vu_plus_beat_interleave(peakToPeak, is_beat);
+        render_vu_plus_beat_interleave();
         break;
       case 4:
-        render_fire(is_beat, peakToPeak);
+        render_fire(F.is_beat_1, F.vu_width);
         break;
       case 5:
-        render_sparkles(peakToPeak, is_beat);
+        render_sparkles();
         break;
       case 6:
-        render_beat_line(peakToPeak, is_beat, is_beat_2);
+        render_beat_line();
         break;
       case 7:
-        render_bar_segments(peakToPeak, is_beat);
+        render_bar_segments(F.vu_width, F.is_beat_1);
         break;
       case 8:
-        render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr, sample_sum);
+        render_combo_samples_with_beat(sample_ptr, sample_sum);
         break;
       case 9:
-        render_beat_bounce_flip(is_beat_2, peakToPeak, sample_ptr, min_vu, max_vu);
+        render_beat_bounce_flip(F.is_beat_2, F.vu_width, sample_ptr, F.min_vu, F.min_vu);
     }
 }
 

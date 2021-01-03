@@ -31,14 +31,14 @@ void clear_tempo() {
 // records the rising edge of a beat, filtering edges that are too close together
 void record_rising_edge() {
 
-  uint16_t gap = frame_counter - rising_edge_times[edge_index];
+  uint16_t gap = F.frame_counter - rising_edge_times[edge_index];
 
   // 160ms is slightly less than a half beat at 180bpm ((60/180/2)*1000 == ~167ms)
   if(gap > (160 / FRAME_LENGTH_MILLIS)) { // don't record beats which are too close together
 
     edge_index = (edge_index + 1) & 15; // range 0 to 15
 
-    rising_edge_times[edge_index] = frame_counter;
+    rising_edge_times[edge_index] = F.frame_counter;
     
     beat_gap_sum -= rising_edge_gap[edge_index];
     rising_edge_gap[edge_index] = gap;
@@ -51,8 +51,8 @@ void record_rising_edge() {
     // (We still do the average calculation, above, because it keeps the code simple)
     if(cleared && edge_index == 0) {
       cleared = false;
-      next_on_frame = frame_counter;
-      next_off_frame = frame_counter + BEAT_FLASH_LENGTH;
+      next_on_frame = F.frame_counter;
+      next_off_frame = F.frame_counter + BEAT_FLASH_LENGTH;
     }
   }
 }
@@ -68,19 +68,19 @@ void record_rising_edge() {
 //
 // bool is_tempo_output_high: if we were flashing an LED, was it on or off? (we only change this value at the on-off boundaries, otherwise leaving it the same)
 bool recalc_tempo(bool is_tempo_output_high) {
-    if (!cleared && (frame_counter - rising_edge_times[edge_index]) > (beat_gap_avg * 4) ) {
+    if (!cleared && (F.frame_counter - rising_edge_times[edge_index]) > (beat_gap_avg * 4) ) {
         // we will miss four beats before we get scared and stop the tempo
         clear_tempo();
         return false;
     }
 
     // basic on/off flash to the tempo
-    if(frame_counter == next_on_frame) {
+    if(F.frame_counter == next_on_frame) {
         // TODO: drift adjustment?
         next_off_frame = next_on_frame + BEAT_FLASH_LENGTH;
         next_on_frame = next_on_frame + beat_gap_avg;
         is_tempo_output_high = true;
-    } else if(frame_counter == next_off_frame) {
+    } else if(F.frame_counter == next_off_frame) {
         is_tempo_output_high = false;
     }
 

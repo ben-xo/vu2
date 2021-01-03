@@ -6,19 +6,19 @@
 
 // fades pixels more the closer they are the start, so that peaks stay visible
 
-/*
- * This version is commented out because map() is slow. Instead, we precalculate the plume fade in plume_map.h
- */
 static void fade_pixel_plume(uint8_t pixel) {
   uint8_t fade_factor;
   if(pixel < STRIP_LENGTH >> 1) {
-    fade_factor = map(pixel, 0, STRIP_LENGTH >> 1, 51, 0);  
+    fade_factor = map8(pixel * VU_PER_PIXEL, 51, 0);  
   } else {
-    fade_factor = map(pixel, STRIP_LENGTH >> 1, STRIP_LENGTH, 0, 51);  
+    fade_factor = map8(pixel * VU_PER_PIXEL, 0, 51);  
   }
-  leds[pixel].fadeLightBy(fade_factor);
+  leds[pixel].fadeToBlackBy(fade_factor);
 }
 
+/*
+ * This version is commented out because previously map() was too slow but then I discovered FastLED
+ */
 //static void fade_pixel_plume(uint8_t pixel) {
 //  if(pixel < STRIP_LENGTH/2) {
 //    leds[pixel].fadeLightBy(pgm_read_byte(&fade_pixel_plume_map[pixel]));
@@ -29,27 +29,14 @@ static void fade_pixel_plume(uint8_t pixel) {
 
 // this effect needs to be rendered from the end of the strip backwards
 static void stream_pixel(uint8_t pixel) {
-  CRGB old_color[4];
-  
   if(pixel > 3) {
-    for (uint8_t i = 0; i<4; i++) {
-      old_color[i] = leds[pixel-i];
-      
-      // Rotate and mask all colours at once.
-      // Each of the 4 previous pixels contributes 1/4 brightness
-      // so we divide each colour by 2.
-      old_color[i].r = (old_color[i].r >> 2);
-      old_color[i].g = (old_color[i].g >> 2);
-      old_color[i].b = (old_color[i].b >> 2);
-      old_color[i].r &= 0x3F;
-      old_color[i].g &= 0x3F;
-      old_color[i].b &= 0x3F;
-    }
-
-    leds[pixel] = old_color[0] + old_color[1] + old_color[2] + old_color[3];  
+    leds[pixel].setRGB((leds[pixel].r >> 2) + (leds[pixel-1].r >> 2) + (leds[pixel-2].r >> 2) + (leds[pixel-3].r >> 2),
+                       (leds[pixel].g >> 2) + (leds[pixel-1].g >> 2) + (leds[pixel-2].g >> 2) + (leds[pixel-3].g >> 2),
+                       (leds[pixel].b >> 2) + (leds[pixel-1].b >> 2) + (leds[pixel-2].b >> 2) + (leds[pixel-3].b >> 2));
   } else {
     fade_pixel(pixel);
   }
+
 }
 
 // like stream pixel but with a sharper fade
@@ -73,20 +60,21 @@ static void shoot_pixel(uint8_t pixel) {
   leds[pixel] = color;  
 }
 
-void render_stream_pixels(uint8_t peakToPeak, bool is_beat) {
-    int led = map(peakToPeak, 0, 160, -2, STRIP_LENGTH/3*2 - 1) - 1;
+void render_stream_pixels() {
+    uint8_t led = map8(F.vu_width, 0, STRIP_LENGTH/3*2 - 1);
+    led = qsub8(led, 2);
 
     uint8_t j = STRIP_LENGTH;
     do {
       j--;
       if(j <= led && led >= 0) {
         // set VU color up to peak
-        uint8_t color = map(j, 0, STRIP_LENGTH, 0, 255);
+        uint8_t color = j * VU_PER_PIXEL;
         leds[j] = Wheel(-color);
       }
       else {
         stream_pixel(j);
-        if(!is_beat) {
+        if(!F.is_beat_1) {
           fade_pixel_plume(j);
         }
      }
