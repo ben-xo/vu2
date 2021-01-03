@@ -188,7 +188,7 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
 }
 
 // Manually unrolled version seems to give better ASM code...
-void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr, uint16_t sample_sum) {
+void render_combo_samples_with_beat(uint8_t sample_ptr, uint16_t sample_sum) {
   uint8_t dc_offset = sample_sum/SAMP_BUFF_LEN;
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
 
@@ -196,15 +196,15 @@ void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample
     uint8_t g = qsub8(samples[(sample_ptr + j*2) % SAMP_BUFF_LEN], dc_offset);
     uint8_t b = qsub8(samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], dc_offset);
 
-    is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
+    bool is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
 
-    if(is_beat && is_beat_2) {
+    if(is_beat && F.is_beat_2) {
       // V1
       leds[j].setRGB(r,g,b);
     } else if(is_beat) {
       // V2
       leds[j].setRGB(0,g,b);
-    } else if(is_beat_2) {
+    } else if(F.is_beat_2) {
       // V3
       leds[j].setRGB(r,0,b);
     } else {
@@ -461,39 +461,39 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
   hue = (hue + 1) % 2048;
 }
  
-void render(unsigned int peakToPeak, bool is_beat, byte mode, bool is_beat_2, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu, uint16_t sample_sum) {
+void render(uint8_t sample_ptr, uint16_t sample_sum) {
 
-    switch(mode) {
+    switch(F.mode) {
       default:
       case 0:
-        render_vu_with_beat_strobe(peakToPeak, is_beat, is_beat_2);
+        render_vu_with_beat_strobe(F.vu_width, F.is_beat_1, F.is_beat_2);
         break;
       case 1:
-        render_stream_pixels(peakToPeak, is_beat);
+        render_stream_pixels();
         break;
       case 2:
-        render_double_vu(peakToPeak, is_beat, is_beat_2);
+        render_double_vu(F.vu_width, F.is_beat_1, F.is_beat_2);
         break;
       case 3:
-        render_vu_plus_beat_interleave(peakToPeak, is_beat);
+        render_vu_plus_beat_interleave(F.vu_width, F.is_beat_1);
         break;
       case 4:
-        render_fire(is_beat, peakToPeak);
+        render_fire(F.is_beat_1, F.vu_width);
         break;
       case 5:
-        render_sparkles(peakToPeak, is_beat);
+        render_sparkles(F.vu_width, F.is_beat_1);
         break;
       case 6:
-        render_beat_line(peakToPeak, is_beat, is_beat_2);
+        render_beat_line(F.vu_width, F.is_beat_1, F.is_beat_2);
         break;
       case 7:
-        render_bar_segments(peakToPeak, is_beat);
+        render_bar_segments(F.vu_width, F.is_beat_1);
         break;
       case 8:
-        render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr, sample_sum);
+        render_combo_samples_with_beat(sample_ptr, sample_sum);
         break;
       case 9:
-        render_beat_bounce_flip(is_beat_2, peakToPeak, sample_ptr, min_vu, max_vu);
+        render_beat_bounce_flip(F.is_beat_2, F.vu_width, sample_ptr, F.min_vu, F.min_vu);
     }
 }
 
