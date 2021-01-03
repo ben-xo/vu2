@@ -112,8 +112,6 @@ void loop() {
     debug_loop();
   }
   
-//  uint8_t beat_sustain = 0;
-//  byte is_beats = 0;
   bool is_beat_1 = false;
   bool is_beat_2 = false;
   uint8_t vu_width = 0;
@@ -148,7 +146,7 @@ void loop() {
     
 #ifdef BEAT_WITH_INTERRUPTS
     // this won't be much use unless you also rip out the IIR code below…
-    is_beats = beats_from_interrupt;
+    byte is_beats = beats_from_interrupt;
     is_beat_1 = is_beats & (1 << BEAT_PIN_1);
     is_beat_2 = is_beats & (1 << BEAT_PIN_2);
 #endif
