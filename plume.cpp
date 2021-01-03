@@ -50,6 +50,7 @@ static void stream_pixel(uint8_t pixel) {
   } else {
     fade_pixel(pixel);
   }
+
 }
 
 // like stream pixel but with a sharper fade

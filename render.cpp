@@ -128,7 +128,7 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
 void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
   static uint8_t beat_brightness;
   uint8_t adjPeak = gamma8(peakToPeak);
-  int led = map8(adjPeak, 0, STRIP_LENGTH);
+  uint8_t led = map8(adjPeak, 0, STRIP_LENGTH);
   uint8_t color = 0;
   beat_brightness = qadd8(beat_brightness/2, adjPeak);
   
@@ -140,16 +140,20 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
       if(j <= led*2) {
         // set VU color up to peak
         color -= VU_PER_PIXEL + VU_PER_PIXEL; // double it because half the range is beat flash
-        leds[j] = Wheel(color);
+        if (j > led) {
+          leds[j] = Wheel(color);
+        } else {
+          fade_pixel_slow(j);
+        }
       } else {
         fade_pixel_fast(j);
       }
     } else {
-      if(is_beat) {
+      if(is_beat && random8() < 10) {
       // beats
         leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
       } else {
-        fade_pixel(j);
+        fade_pixel_fast(j);
       }      
     }
   }
@@ -348,7 +352,7 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
           fade_pixel((STRIP_LENGTH  )-j-1);          
         }
       }
-    }  
+    }
 }
 
 void render_beat_flash_1_pixel(bool is_beat) {
