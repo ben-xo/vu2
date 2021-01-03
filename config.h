@@ -66,7 +66,10 @@
 #define ATTRACT_MODE_THRESHOLD 8 // vu value
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
-#define VU_LOOKBEHIND 20
+
+// By default it uses an entire frame's worth of samples, i.e everything not yet included in a VU.
+// But you can override that to suit your taste, especially as upping the FPS would reduce the number of samples in the calculation.
+//#define VU_LOOKBEHIND 20
 
 
 /*** random debug stuff ***/
