@@ -9,8 +9,6 @@
 
 #ifndef DEBUG_ONLY
 
-uint8_t static phase = 0;
-
 static const uint8_t PROGMEM _gammaTable[256] = {
   0,   3,   5,   7,   9,  11,  13,  14,  16,  18,  19,  21,  22,  24,  25,  26,
  28,  29,  31,  32,  33,  35,  36,  37,  39,  40,  41,  42,  44,  45,  46,  47,
@@ -229,6 +227,7 @@ uint8_t frame_beatsin8( uint8_t beat, uint8_t phase_offset = 0)
 }
 
 void render_beat_line() {
+    uint8_t static phase = 0;
     uint8_t reverse_speed = 2; // range 2 to 5
     uint8_t j=0,k=0,l=0,m=0;
 
@@ -263,7 +262,7 @@ void render_beat_line() {
       uint8_t sine1 = frame_beatsin8 (beat1, j+phase);
       uint8_t sine2 = frame_beatsin8 (beat1, k+phase);
       uint8_t sine3 = frame_beatsin8 (beat1, l+phase);
-      uint8_t sine4 = frame_beatsin8 (beat2, phase>>1);
+      uint8_t sine4 = frame_beatsin8 (beat2, phase);
       leds[p].setRGB(scale8(sine1,sine4), scale8(sine2,sine4), scale8(sine3,sine4));
       if(F.is_beat_1) {
         j -= 7;
