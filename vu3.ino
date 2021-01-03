@@ -4,6 +4,9 @@
 
 #include "config.h"
 
+// this define is for FastLED
+#define NO_CORRECTION 1
+
 //#include "framestate.h"
 
 #include "ledpwm.h"
@@ -15,9 +18,6 @@
 #include "debug.h"
 
 //volatile uint8_t beats_from_interrupt = 0;
-
-#define NO_CORRECTION 1
-#include <FastLED.h>
 
 #include <DigitalIO.h>
 
