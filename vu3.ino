@@ -183,8 +183,9 @@ void loop() {
     cli();
     uint8_t my_current_sample = current_sample;
     uint8_t my_new_sample_count = new_sample_count;
-    bool was_beat = filter_beat;
     sei();
+
+    bool was_beat = filter_beat;
 
     is_beat_1 = false; // start calculation assuming no beat in this frame
 
