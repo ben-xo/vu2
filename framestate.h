@@ -16,11 +16,11 @@ struct Framestate
   uint8_t last_mode = 0;
   uint8_t min_vu = 0;
   uint8_t max_vu = 255;
-  bool auto_mode: 1;
-  bool is_silent: 1;
-  bool is_attract_mode: 1;
-  bool is_beat_1: 1;
-  bool is_beat_2: 1;
+  bool auto_mode;
+  bool is_silent;
+  bool is_attract_mode;
+  bool is_beat_1;
+  bool is_beat_2;
 };
 
 extern Framestate F;
