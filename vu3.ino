@@ -67,16 +67,17 @@ void setup() {
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
   FastLED.setDither( 0 );
   
-//  setup_filter();
   setup_render();
   setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
   setup_tempo();
   setup_fps();
   setup_ledpwm();
-//  setup_beatdetect();
+
+#ifdef BEAT_WITH_INTERRUPTS
+  setup_beatdetect();
+#endif
 
   setup_debug();
-//  randomSeed(analogRead(2));
 //  Serial.begin(2000000);
 }
 
