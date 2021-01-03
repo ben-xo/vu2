@@ -188,24 +188,13 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
 }
 
 // Manually unrolled version seems to give better ASM code...
-void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
+void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr, uint16_t sample_sum) {
+  uint8_t dc_offset = sample_sum/SAMP_BUFF_LEN;
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
 
-    // these look better if they're darker around the "mid value".
-    // however, the audio signal may have DC offset (i.e. "silence" may not be at the mid point of the range),
-    // so instead of rendering the sample buffer, we render the difference in value between samples so that no matter what,
-    // silence will show up around 0. This effectively halves the sample rate, but means it copes better with imperfect inputs
-    
-    uint8_t r0 = samples[((sample_ptr + j*1)-1) % SAMP_BUFF_LEN];
-    uint8_t g0 = samples[((sample_ptr + j*2)-1) % SAMP_BUFF_LEN];
-    uint8_t b0 = samples[((sample_ptr + j*3)-1) % SAMP_BUFF_LEN];
-    uint8_t r1 = samples[(sample_ptr + j*1) % SAMP_BUFF_LEN];
-    uint8_t g1 = samples[(sample_ptr + j*2) % SAMP_BUFF_LEN];
-    uint8_t b1 = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
-
-    uint8_t r = (r0 > r1) ? (r0 - r1) : (r1 - r0);
-    uint8_t g = (g0 > g1) ? (g0 - g1) : (g1 - g0);
-    uint8_t b = (b0 > b1) ? (b0 - b1) : (b1 - b0);
+    uint8_t r = qsub8(samples[(sample_ptr + j*1) % SAMP_BUFF_LEN], dc_offset);
+    uint8_t g = qsub8(samples[(sample_ptr + j*2) % SAMP_BUFF_LEN], dc_offset);
+    uint8_t b = qsub8(samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], dc_offset);
 
     is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
 
@@ -472,7 +461,7 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
   hue = (hue + 1) % 2048;
 }
  
-void render(unsigned int peakToPeak, bool is_beat, byte mode, bool is_beat_2, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
+void render(unsigned int peakToPeak, bool is_beat, byte mode, bool is_beat_2, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu, uint16_t sample_sum) {
 
     switch(mode) {
       default:
@@ -501,7 +490,7 @@ void render(unsigned int peakToPeak, bool is_beat, byte mode, bool is_beat_2, ui
         render_bar_segments(peakToPeak, is_beat);
         break;
       case 8:
-        render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr);
+        render_combo_samples_with_beat(is_beat_2, is_beat, sample_ptr, sample_sum);
         break;
       case 9:
         render_beat_bounce_flip(is_beat_2, peakToPeak, sample_ptr, min_vu, max_vu);

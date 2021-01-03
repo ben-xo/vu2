@@ -11,6 +11,7 @@ byte samples[SAMP_BUFF_LEN] __attribute__((__aligned__(SAMP_BUFF_LEN)));
 byte beat_bitmap[SAMP_BUFF_LEN >> 3] __attribute__((__aligned__(SAMP_BUFF_LEN >> 3)));
 volatile uint8_t current_sample = 0;
 volatile uint8_t new_sample_count = 0;
+volatile uint16_t sample_sum = 0; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
 volatile bool filter_beat = false;
 
 /**
@@ -80,6 +81,7 @@ ISR(TIMER1_COMPA_vect)
   
   byte sample = ADCH;
   volatile byte* the_sample = samples + sample_idx;
+  sample_sum = sample_sum - *the_sample + sample;
   *the_sample = sample;
   new_sample_count++;
 
@@ -136,6 +138,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_
     if(int_sample < min_val) min_val = int_sample;
     i++;
   } while(i < new_sample_count);
+
   *min_val_out = min_val;
   *max_val_out = max_val;
   return max_val - min_val;

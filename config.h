@@ -26,7 +26,7 @@
 
 
 /*** Neopixel configuration ***/
-#define STRIP_LENGTH 60 // don't recommend >100
+#define STRIP_LENGTH 100 // don't recommend >100
 #define FPS 125 // if you change this, you'll need to change FRAME_DIVISOR as well. Basically, don't change this if you want fast tempo calculations
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_MILLIS (1000 / FPS) // 8000us
@@ -38,9 +38,6 @@
 /*** Audio sampling config ***/
 #define SAMP_BUFF_LEN 128 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
 #define SAMP_FREQ 5000 // Hz
-
-#define DC_OFFSET 83 // seems like the mid-line for the sample is not exactly 127...
-
 
 /*** Beat Detect config ***/
 #define AUTO_BEATS 128 // beats before change
