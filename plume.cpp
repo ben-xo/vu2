@@ -13,7 +13,7 @@ static void fade_pixel_plume(uint8_t pixel) {
   } else {
     fade_factor = map8(pixel * VU_PER_PIXEL, 0, 51);  
   }
-  leds[pixel].fadeLightBy(fade_factor);
+  leds[pixel].fadeToBlackBy(fade_factor);
 }
 
 /*
@@ -29,24 +29,10 @@ static void fade_pixel_plume(uint8_t pixel) {
 
 // this effect needs to be rendered from the end of the strip backwards
 static void stream_pixel(uint8_t pixel) {
-  CRGB old_color[4];
-  
   if(pixel > 3) {
-    for (uint8_t i = 0; i<4; i++) {
-      old_color[i] = leds[pixel-i];
-      
-      // Rotate and mask all colours at once.
-      // Each of the 4 previous pixels contributes 1/4 brightness
-      // so we divide each colour by 2.
-      old_color[i].r = (old_color[i].r >> 2);
-      old_color[i].g = (old_color[i].g >> 2);
-      old_color[i].b = (old_color[i].b >> 2);
-      old_color[i].r &= 0x3F;
-      old_color[i].g &= 0x3F;
-      old_color[i].b &= 0x3F;
-    }
-
-    leds[pixel] = old_color[0] + old_color[1] + old_color[2] + old_color[3];  
+    leds[pixel].setRGB((leds[pixel].r >> 2) + (leds[pixel-1].r >> 2) + (leds[pixel-2].r >> 2) + (leds[pixel-3].r >> 2),
+                       (leds[pixel].g >> 2) + (leds[pixel-1].g >> 2) + (leds[pixel-2].g >> 2) + (leds[pixel-3].g >> 2),
+                       (leds[pixel].b >> 2) + (leds[pixel-1].b >> 2) + (leds[pixel-2].b >> 2) + (leds[pixel-3].b >> 2));
   } else {
     fade_pixel(pixel);
   }
