@@ -39,6 +39,8 @@
 #define SAMP_BUFF_LEN 128 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
 #define SAMP_FREQ 5000 // Hz
 
+#define DC_OFFSET 83 // seems like the mid-line for the sample is not exactly 127...
+
 
 /*** Beat Detect config ***/
 #define AUTO_BEATS 128 // beats before change
