@@ -191,10 +191,21 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
 void render_combo_samples_with_beat(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
 
-    // these look better if they're darker around the "mid value", so offset down and then scale up whatever's left for contrast.
-    uint8_t r = qsub8(samples[(sample_ptr + j*1) % SAMP_BUFF_LEN], DC_OFFSET);
-    uint8_t g = qsub8(samples[(sample_ptr + j*2) % SAMP_BUFF_LEN], DC_OFFSET);
-    uint8_t b = qsub8(samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], DC_OFFSET);
+    // these look better if they're darker around the "mid value".
+    // however, the audio signal may have DC offset (i.e. "silence" may not be at the mid point of the range),
+    // so instead of rendering the sample buffer, we render the difference in value between samples so that no matter what,
+    // silence will show up around 0. This effectively halves the sample rate, but means it copes better with imperfect inputs
+    
+    uint8_t r0 = samples[((sample_ptr + j*1)-1) % SAMP_BUFF_LEN];
+    uint8_t g0 = samples[((sample_ptr + j*2)-1) % SAMP_BUFF_LEN];
+    uint8_t b0 = samples[((sample_ptr + j*3)-1) % SAMP_BUFF_LEN];
+    uint8_t r1 = samples[(sample_ptr + j*1) % SAMP_BUFF_LEN];
+    uint8_t g1 = samples[(sample_ptr + j*2) % SAMP_BUFF_LEN];
+    uint8_t b1 = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
+
+    uint8_t r = (r0 > r1) ? (r0 - r1) : (r1 - r0);
+    uint8_t g = (g0 > g1) ? (g0 - g1) : (g1 - g0);
+    uint8_t b = (b0 > b1) ? (b0 - b1) : (b1 - b0);
 
     is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
 
