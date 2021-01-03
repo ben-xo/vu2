@@ -7,8 +7,6 @@
 
 /*** Pin configuration ***/
 #define AUDIO_INPUT_PIN 0
-#define BEAT_PIN_1 2 // must be an interrupt pin
-#define BEAT_PIN_2 3 // must be an interrupt pin
 #define BUTTON_PIN 4
 #define NEOPIXEL_PIN 6
 #define DUTY_CYCLE_LED 7
@@ -19,6 +17,11 @@
 #define MODE_LED_PIN_5 12
 #define BUTTON_LED_PIN 13
 
+/*** Optional beat detection using interrupts (would require a bit of a rework of the main ino) ***/
+//#define BEAT_WITH_INTERRUPTS 1
+#define BEAT_PIN_1 2 // must be an interrupt pin if BEAT_WITH_INTERRUPTS is 1
+#define BEAT_PIN_2 3 // must be an interrupt pin if BEAT_WITH_INTERRUPTS is 1
+
 
 /*** LED PWM configuration ***/
 #define PWM_LED_FRQ      10000 // 10kHz
@@ -26,7 +29,7 @@
 
 
 /*** Neopixel configuration ***/
-#define STRIP_LENGTH 100 // don't recommend >100
+#define STRIP_LENGTH 60 // don't recommend >100
 #define FPS 125 // if you change this, you'll need to change FRAME_DIVISOR as well. Basically, don't change this if you want fast tempo calculations
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_MILLIS (1000 / FPS) // 8000us

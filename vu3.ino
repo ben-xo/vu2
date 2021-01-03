@@ -12,12 +12,18 @@
 #include "ledpwm.h"
 #include "sampler.h"
 #include "tempo.h"
-//#include "beatdetect.h"
+
+#ifdef BEAT_WITH_INTERRUPTS
+// This mode doesn't currently work, because it's all been integrated into this project and isn't needed
+// If you want to trigger the beats with interrupts, you'll need to reconfigure the BEAT_PIN_1 and 2 to inputs
+// and take out the IIR filter etc down below.
+#include "beatdetect.h"
+volatile uint8_t beats_from_interrupt = 0;
+#endif
+
 #include "buttons.h"
 #include "fps.h"
 #include "debug.h"
-
-//volatile uint8_t beats_from_interrupt = 0;
 
 #include <DigitalIO.h>
 
@@ -138,9 +144,12 @@ void loop() {
       portb_val = 0;
     }
     
-//    is_beats = beats_from_interrupt;
-//    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-//    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+#ifdef BEAT_WITH_INTERRUPTS
+    // this won't be much use unless you also rip out the IIR code below…
+    is_beats = beats_from_interrupt;
+    is_beat_1 = is_beats & (1 << BEAT_PIN_1);
+    is_beat_2 = is_beats & (1 << BEAT_PIN_2);
+#endif
 
     uint8_t min_vu = 0, max_vu = 255;
     vu_width = calculate_vu(sample_ptr, &min_vu, &max_vu, new_sample_count);
