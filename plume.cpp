@@ -6,9 +6,6 @@
 
 // fades pixels more the closer they are the start, so that peaks stay visible
 
-/*
- * This version is commented out because map() is slow. Instead, we precalculate the plume fade in plume_map.h
- */
 static void fade_pixel_plume(uint8_t pixel) {
   uint8_t fade_factor;
   if(pixel < STRIP_LENGTH >> 1) {
@@ -19,6 +16,9 @@ static void fade_pixel_plume(uint8_t pixel) {
   leds[pixel].fadeLightBy(fade_factor);
 }
 
+/*
+ * This version is commented out because previously map() was too slow but then I discovered FastLED
+ */
 //static void fade_pixel_plume(uint8_t pixel) {
 //  if(pixel < STRIP_LENGTH/2) {
 //    leds[pixel].fadeLightBy(pgm_read_byte(&fade_pixel_plume_map[pixel]));

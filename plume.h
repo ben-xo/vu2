@@ -4,7 +4,7 @@
 
 #include "framestate.h"
 #include "effects.h"
-#include "plume_map.h"
+//#include "plume_map.h"
 #include "color_wheels.h"
 
 void render_stream_pixels();

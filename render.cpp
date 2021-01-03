@@ -149,7 +149,7 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
       // beats
         leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
       } else {
-        fade_pixel_slow(j);
+        fade_pixel(j);
       }      
     }
   }
@@ -302,7 +302,7 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
     CRGB crgb_color;
     // 2 "pixels" "below" the strip, to exclude the noise floor from the VU
     uint8_t adjPeak = gamma8(peakToPeak);
-    uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/3);
+    uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/4);
 
     static bool was_beat_2 = false; 
     static uint8_t fade_type = 0;
@@ -337,10 +337,10 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
       }
       else {
         if(is_beat) {
-          fade_pixel(j);
+          fade_pixel_fast(j);
           fade_pixel_slow((STRIP_LENGTH/2)+j);
           fade_pixel_slow((STRIP_LENGTH/2)-j-1);
-          fade_pixel((STRIP_LENGTH  )-j-1);
+          fade_pixel_fast((STRIP_LENGTH  )-j-1);
         } else {
           fade_pixel(j);
           fade_pixel((STRIP_LENGTH/2)+j);
