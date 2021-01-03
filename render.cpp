@@ -125,9 +125,9 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
     }  
 }
 
-void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
+void render_vu_plus_beat_interleave() {
   static uint8_t beat_brightness;
-  uint8_t adjPeak = gamma8(peakToPeak);
+  uint8_t adjPeak = gamma8(F.vu_width);
   uint8_t led = map8(adjPeak, 0, STRIP_LENGTH);
   uint8_t color = 0;
   beat_brightness = qadd8(beat_brightness/2, adjPeak);
@@ -149,7 +149,7 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
         fade_pixel_fast(j);
       }
     } else {
-      if(is_beat && random8() < 10) {
+      if(F.is_beat_1 && random8() < 10) {
       // beats
         leds[j].setRGB(beat_brightness,beat_brightness,beat_brightness);
       } else {
@@ -160,13 +160,13 @@ void render_vu_plus_beat_interleave(uint8_t peakToPeak, bool is_beat) {
 }
 
 
-void render_sparkles(uint8_t peakToPeak, bool is_beat) {
+void render_sparkles() {
     const CRGB SILVER(0xFF, 0xFF, 0xFF);
     const CRGB GOLD(0xFF, 0xFF, 0x77);
     const CRGB DARK_SILVER(0x7F, 0x7F, 0x7F);
     const CRGB DARK_GOLD(0x7F, 0x7F, 0x37);
 
-    uint8_t adjPeak = qsub8(peakToPeak, 2); // if it's close to 0, make it 0, so it doesn't flicker
+    uint8_t adjPeak = qsub8(F.vu_width, 2); // if it's close to 0, make it 0, so it doesn't flicker
     uint8_t index = map8(adjPeak>>2, 0, STRIP_LENGTH/4);
     uint8_t random_table[STRIP_LENGTH];
 
@@ -174,8 +174,8 @@ void render_sparkles(uint8_t peakToPeak, bool is_beat) {
     // we do it anyway because it keeps the frame rate consistent.
     generate_sparkle_table(random_table);
 
-    CRGB gold   = is_beat ? GOLD   : DARK_GOLD;
-    CRGB silver = is_beat ? SILVER : DARK_SILVER;
+    CRGB gold   = F.is_beat_1 ? GOLD   : DARK_GOLD;
+    CRGB silver = F.is_beat_1 ? SILVER : DARK_SILVER;
 
     for (uint8_t j = 0; j < index; j++) {
       leds[random_table[j]] = j%2 ? gold : silver;
@@ -479,13 +479,13 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         render_double_vu(F.vu_width, F.is_beat_1, F.is_beat_2);
         break;
       case 3:
-        render_vu_plus_beat_interleave(F.vu_width, F.is_beat_1);
+        render_vu_plus_beat_interleave();
         break;
       case 4:
         render_fire(F.is_beat_1, F.vu_width);
         break;
       case 5:
-        render_sparkles(F.vu_width, F.is_beat_1);
+        render_sparkles();
         break;
       case 6:
         render_beat_line(F.vu_width, F.is_beat_1, F.is_beat_2);
