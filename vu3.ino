@@ -110,7 +110,7 @@ void loop() {
   bool is_beat_1 = false;
   bool is_beat_2 = false;
   uint8_t vu_width = 0;
-  uint8_t mode = 0;
+  uint8_t mode = random8(MAX_MODE+1);
   uint8_t last_mode = 0;
   bool auto_mode = true;
   bool is_silent = false;
