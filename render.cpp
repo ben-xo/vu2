@@ -255,15 +255,15 @@ void render_beat_line() {
 //        sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
 //      }
 
-      now  -= 1;
+      now  -= 1; // iteratively decrement rather than calculating it by subtracting p on every loop. 
       now2 -= (1<<8);
-      uint8_t beat1 = (now)  * (30) * 280 >> 16;
-      uint8_t beat2 = (now2) * (30) * 280 >> 16;
+      uint8_t beat1 = ((now)  * (30) * 280) >> 16;
+      uint8_t beat2 = ((now2) * (30) * 280) >> 16;
 
       uint8_t sine1 = frame_beatsin8 (beat1, j+phase);
       uint8_t sine2 = frame_beatsin8 (beat1, k+phase);
       uint8_t sine3 = frame_beatsin8 (beat1, l+phase);
-      uint8_t sine4 = frame_beatsin8 (beat2, phase);
+      uint8_t sine4 = frame_beatsin8 (beat2, phase>>1);
       leds[p].setRGB(scale8(sine1,sine4), scale8(sine2,sine4), scale8(sine3,sine4));
       if(F.is_beat_1) {
         j -= 7;
