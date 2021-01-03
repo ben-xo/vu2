@@ -218,15 +218,28 @@ void render_combo_samples_with_beat(uint8_t sample_ptr, uint16_t sample_sum) {
   }
 }
 
-void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
+/**
+ * FastLED is doing too much work here - and we can't therefore have 4 binsin8s in a single frame.
+ * So, instead, we'll take advantage of the fact that the BPM is fixed (and irrelevant) and just do stuff using the frame counter instead
+ */
+uint8_t frame_beatsin8( uint8_t beat, uint8_t phase_offset = 0)
+{
+    uint8_t beatsin = sin8( beat + phase_offset);
+    return beatsin;
+}
+
+void render_beat_line() {
     uint8_t reverse_speed = 2; // range 2 to 5
     uint8_t j=0,k=0,l=0,m=0;
 
-    if(is_beat) {
-      phase -= scale8(peakToPeak, 32);
+    if(F.is_beat_1) {
+      phase -= scale8(F.vu_width, 32);
     } else {
-      phase += scale8(peakToPeak, 64)+1;
+      phase += scale8(F.vu_width, 64)+1;
     }
+
+    uint32_t now = millis();
+    uint32_t now2 = now;
 
     for(uint8_t p = 0; p < STRIP_LENGTH; p++)
     {
@@ -242,12 +255,17 @@ void render_beat_line(unsigned int peakToPeak, bool is_beat, bool is_beat_2) {
 //        sine3 = adjustment + (sine3 / 4); if(sine3 > 255) sine3 = 255; // saturate
 //      }
 
-      uint8_t sine1 = beatsin8 (30, 0, 255, p, j+phase);
-      uint8_t sine2 = beatsin8 (30, 0, 255, p, k+phase);
-      uint8_t sine3 = beatsin8 (30, 0, 255, p, l+phase);
-      uint8_t sine4 = beatsin8 (30, 0, 255, p<<8, phase);
+      now  -= 1;
+      now2 -= (1<<8);
+      uint8_t beat1 = (now)  * (30) * 280 >> 16;
+      uint8_t beat2 = (now2) * (30) * 280 >> 16;
+
+      uint8_t sine1 = frame_beatsin8 (beat1, j+phase);
+      uint8_t sine2 = frame_beatsin8 (beat1, k+phase);
+      uint8_t sine3 = frame_beatsin8 (beat1, l+phase);
+      uint8_t sine4 = frame_beatsin8 (beat2, phase);
       leds[p].setRGB(scale8(sine1,sine4), scale8(sine2,sine4), scale8(sine3,sine4));
-      if(is_beat) {
+      if(F.is_beat_1) {
         j -= 7;
         k -= 13;
         l -= 17;
@@ -488,7 +506,7 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         render_sparkles();
         break;
       case 6:
-        render_beat_line(F.vu_width, F.is_beat_1, F.is_beat_2);
+        render_beat_line();
         break;
       case 7:
         render_bar_segments(F.vu_width, F.is_beat_1);
