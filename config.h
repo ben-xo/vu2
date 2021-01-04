@@ -27,6 +27,9 @@
 #define PWM_LED_FRQ      10000 // 10kHz
 #define PWM_DUTY_PERCENT 10
 
+/*** If you connect A, B, G and F of a 7 segment display to PORTB (that is, D8-D11) then you can have a cute shape instead of a binary counter ***/
+#define SEVEN_SEG_MODE_DISPLAY 1
+
 
 /*** Neopixel configuration ***/
 #define STRIP_LENGTH 60 // don't recommend >100
@@ -35,8 +38,6 @@
 #define FRAME_LENGTH_MILLIS (1000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 128000 @ 16MHz
 #define FRAME_RATE_LIMIT 1 // limitless is fun!
-
-
 
 /*** Audio sampling config ***/
 #define SAMP_BUFF_LEN 128 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
