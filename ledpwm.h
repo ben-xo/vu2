@@ -5,6 +5,14 @@
 // LED PWM using interrupts.
 // Makes a huge assumption that you're using the entirety of PORTB for LEDs.
 
+#ifndef _LEDPWM_H
+#define _LEDPWM_H
+
+#include <DigitalIO.h>
+
+#include "render.h"
+#include "framestate.h"
+
 extern uint8_t pwm_duty;
 extern uint8_t volatile portb_val;
 void setup_ledpwm();
@@ -21,3 +29,5 @@ void enable_ledpwm();
 #ifndef PWM_DUTY_PERCENT
 #  define PWM_DUTY_PERCENT 10
 #endif
+
+#endif /* _LEDPWM_H */

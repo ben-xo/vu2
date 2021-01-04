@@ -32,6 +32,9 @@
 
 uint8_t volatile portb_val = 0;
 
+static DigitalPin<BEAT_PIN_1> beat_pin;
+static DigitalPin<BEAT_PIN_2> tempo_pin;
+
 void setup_ledpwm() {
   cli();
   // Clear registers
@@ -77,6 +80,8 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t");
   asm volatile( "ldi     r24, 0                          \n\t"); // ldi doesn't affect SREG
   asm volatile( "out     %0, r24     ; PORTB             \n\t" :: "I" (_SFR_IO_ADDR(PORTB)));
+  beat_pin.low();
+  tempo_pin.low();
   asm volatile( "pop     r24                             \n\t");
   asm volatile( "reti                                    \n\t");
 }
@@ -87,8 +92,19 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
 
 ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t");
+  asm volatile( "in      r24, 0x3f                       \n\t");
+  asm volatile( "push    r24                             \n\t");
   asm volatile( "lds     r24, %0     ; portb_val         \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(portb_val)));
   asm volatile( "out     %0, r24     ; PORTB             \n\t" :: "I" (_SFR_IO_ADDR(PORTB)));
+
+  register bool is_beat_1 asm ("r24") = F.is_beat_1;
+  is_beat_1 ? beat_pin.high() : beat_pin.low();
+  
+  register bool is_beat_2 asm ("r24") = F.is_beat_2;
+  is_beat_2 ? tempo_pin.high() : tempo_pin.low();
+  
+  asm volatile( "pop     r24                             \n\t");
+  asm volatile( "out     0x3f, r24                       \n\t");
   asm volatile( "pop     r24                             \n\t");
   asm volatile( "reti                                    \n\t");
 }
