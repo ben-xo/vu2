@@ -35,14 +35,19 @@ void debug_loop() {
         vu_width = calculate_vu(sample_index, &min_vu, &max_vu, new_sample_count);
 
         if(pushed == SHORT_PUSH) {
-          uint8_t start = sample_index - VU_LOOKBEHIND + 1;
-          uint8_t which_samples[VU_LOOKBEHIND];
+#ifdef VU_LOOKBEHIND
+          uint8_t lookbehind = VU_LOOKBEHIND;
+#else
+          uint8_t lookbehind = 20;
+#endif
+          uint8_t start = sample_index - lookbehind + 1;
+          uint8_t which_samples[lookbehind];
 
           uint8_t i = 0;
           do {
             which_samples[i] = samples[(start + i) % SAMP_BUFF_LEN];
             i++;
-          } while(i < VU_LOOKBEHIND);
+          } while(i < lookbehind);
           
           i = 0;
           Serial.print(vu_width, HEX);
@@ -53,7 +58,7 @@ void debug_loop() {
             Serial.print(" ");
             Serial.print(which_samples[i], HEX);
             i++;
-          } while(i < VU_LOOKBEHIND);
+          } while(i < lookbehind);
           Serial.println("");
         }
     
