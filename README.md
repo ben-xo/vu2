@@ -66,7 +66,7 @@ Output LEDs
 -----------
 
 * connect 5 LEDs from D8, D9, D10, D11 and D12 to ground. (no resistor needed). These show the current mode in binary
-* connect 2 LEDs from D3 and D2 to ground via 220 resistor. These flash in time for the beats.
+* connect 2 LEDs from A1 and A2 to ground. These flash in time for the beats.
 
 Mode Button
 -----------
@@ -97,7 +97,7 @@ You'll know if you don't have enough power because the thing will keep rebooting
 Debug monitoring
 ----------------
 
-If you wanna watch the frame rate (and time taken to do various stages in the main loop) on an oscilloscope, you should pull A1 and A2 to ground via 10k resistors and then hook your scope up to those pins.
+If you wanna watch the frame rate (and time taken to do various stages in the main loop) on an oscilloscope, you should pull D2 and D3 to ground via 10k resistors and then hook your scope up to those pins.
 
 Software
 --------
