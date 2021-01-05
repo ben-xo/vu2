@@ -231,7 +231,7 @@ void loop() {
 
     bool was_beat = filter_beat;
 
-    F.is_beat_1 = false; // start calculation assuming no beat in this frame
+    bool is_beat_1 = false; // start calculation assuming no beat in this frame
 
     uint8_t my_sample_base = my_current_sample - new_sample_count;
     uint8_t offset = 0;
@@ -245,28 +245,18 @@ void loop() {
       // If there was a beat edge detected at any point, set is_beat_1.
       // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
       // If we only checked the end of the frame, we might miss a beat that was very short.
-      F.is_beat_1 |= filter_beat;
+      is_beat_1 |= filter_beat;
     } while(offset < my_new_sample_count);
     new_sample_count -= my_new_sample_count; // decrement the global new sample count
 
     DEBUG_SAMPLE_RATE_LOW();
 
-    if(F.is_beat_1) {
-      beat_pin.high();
-    } else {
-      beat_pin.low();
-    }
-
+    F.is_beat_1 = is_beat_1;
     if(!was_beat && F.is_beat_1) {
         record_rising_edge();
     }
 
     F.is_beat_2 = recalc_tempo(F.is_beat_2);
-    if(F.is_beat_2) {
-        tempo_pin.high();
-    } else {
-        tempo_pin.low();
-    }
 
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_HIGH();
@@ -286,6 +276,7 @@ void loop() {
 
     DEBUG_FRAME_RATE_LOW();
     DEBUG_SAMPLE_RATE_HIGH();
+
     FastLED.show();
     
     DEBUG_FRAME_RATE_HIGH();

@@ -19,9 +19,8 @@
 
 /*** Optional beat detection using interrupts (would require a bit of a rework of the main ino) ***/
 //#define BEAT_WITH_INTERRUPTS 1
-#define BEAT_PIN_1 2 // must be an interrupt pin if BEAT_WITH_INTERRUPTS is 1
-#define BEAT_PIN_2 3 // must be an interrupt pin if BEAT_WITH_INTERRUPTS is 1
-
+#define BEAT_PIN_1 A1 // must be an interrupt pin e.g. 2 if BEAT_WITH_INTERRUPTS is 1
+#define BEAT_PIN_2 A2 // must be an interrupt pin e.g. 3 if BEAT_WITH_INTERRUPTS is 1
 
 /*** LED PWM configuration ***/
 #define PWM_LED_FRQ      10000 // 10kHz
@@ -76,11 +75,11 @@
 /*** random debug stuff ***/
 //#define DEBUG_ONLY 1
 #define DEBUG_SAMPLE_RATE 1
-#define DEBUG_SAMPLE_RATE_PORT PORTC
-#define DEBUG_SAMPLE_RATE_PIN PC1
+#define DEBUG_SAMPLE_RATE_PORT PORTD
+#define DEBUG_SAMPLE_RATE_PIN PD2
 #define DEBUG_FRAME_RATE 1
-#define DEBUG_FRAME_RATE_PORT PORTC
-#define DEBUG_FRAME_RATE_PIN PC2
+#define DEBUG_FRAME_RATE_PORT PORTD
+#define DEBUG_FRAME_RATE_PIN PD3
 
 //#define LONGCLI 1
 
