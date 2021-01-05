@@ -89,22 +89,24 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
 //ISR(TIMER2_COMPB_vect) {
 //  PORTB = portb_val;
 //}
+//
+
 
 ISR(TIMER2_COMPB_vect, ISR_NAKED) {
+  asm volatile( "push    r1                              \n\t");
   asm volatile( "push    r24                             \n\t");
-  asm volatile( "in      r24, 0x3f                       \n\t");
-  asm volatile( "push    r24                             \n\t");
+  asm volatile( "ldi     r24, 0                          \n\t"); // loading 0 into r24 and then copying it to r1 means we don't have to push and pop the SREG.
+  asm volatile( "mov     r1, r24                         \n\t");
   asm volatile( "lds     r24, %0     ; portb_val         \n\t" :: "X" ((uint8_t)_SFR_MEM_ADDR(portb_val)));
   asm volatile( "out     %0, r24     ; PORTB             \n\t" :: "I" (_SFR_IO_ADDR(PORTB)));
 
   register bool is_beat_1 asm ("r24") = F.is_beat_1;
-  is_beat_1 ? beat_pin.high() : beat_pin.low();
-  
+  if(is_beat_1) beat_pin.high(); // this compiles to a `cpse` which doesn't affect the S reg!
+
   register bool is_beat_2 asm ("r24") = F.is_beat_2;
-  is_beat_2 ? tempo_pin.high() : tempo_pin.low();
+  if(is_beat_2) tempo_pin.high(); // this compiles to a `cpse` which doesn't affect the S reg!
   
   asm volatile( "pop     r24                             \n\t");
-  asm volatile( "out     0x3f, r24                       \n\t");
-  asm volatile( "pop     r24                             \n\t");
+  asm volatile( "pop     r1                              \n\t");
   asm volatile( "reti                                    \n\t");
 }
