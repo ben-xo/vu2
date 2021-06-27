@@ -6,7 +6,9 @@
 
 // this define is for FastLED
 #define NO_CORRECTION 1
-
+#define FASTLED_ALLOW_INTERRUPTS 1
+#define FASTLED_ACCURATE_CLOCK 1
+#define DITHER 0
 #include "framestate.h"
 
 struct Framestate F; // the global instance
@@ -64,8 +66,7 @@ void setup() {
   pinMode (DEBUG_FRAME_RATE_PIN, OUTPUT);
 #endif
 
-  FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
-  FastLED.setDither( 0 );
+  FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, 0, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
   
   setup_render();
   setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
