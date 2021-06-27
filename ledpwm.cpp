@@ -36,6 +36,7 @@ static DigitalPin<BEAT_PIN_1> beat_pin;
 static DigitalPin<BEAT_PIN_2> tempo_pin;
 
 void setup_ledpwm() {
+#ifndef LEDPWM_NO_ISRS
   cli();
   // Clear registers
   TCCR2A = 0;
@@ -55,7 +56,10 @@ void setup_ledpwm() {
   // this clears the timer and sets the right pre-scaler, starting the timer.
   enable_ledpwm();
   sei();
+#endif /* LEDPWM_NO_ISRS */
 }
+
+#ifndef LEDPWM_NO_ISRS
 
 void disable_ledpwm() {
   // disable the timer entirely, then make sure the lights are off.
@@ -110,3 +114,5 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   asm volatile( "pop     r1                              \n\t");
   asm volatile( "reti                                    \n\t");
 }
+
+#endif /* LEDPWM_NO_ISRS */

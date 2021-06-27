@@ -20,6 +20,8 @@ volatile uint16_t sample_sum = 0; // (DC offset approximated by sample_sum / SAM
  */
 void setup_sampler(uint16_t timer_counter) {
 
+#ifndef SAMPLER_NO_ISRS
+
   cli();
   ADCSRA = 0;             // clear ADCSRA register
   ADCSRB = 0;             // clear ADCSRB register
@@ -63,7 +65,12 @@ void setup_sampler(uint16_t timer_counter) {
 #endif
   
   sei();
+
+#endif /* SAMPLER_NO_ISRS */
+
 }
+
+#ifndef SAMPLER_NO_ISRS
 
 ISR(TIMER1_COMPA_vect)
 {
@@ -123,6 +130,7 @@ ISR(TIMER1_COMPA_vect)
 //  );
 //}
 
+#endif /* SAMPLER_NO_ISRS */
 
 uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out, uint8_t vu_lookbehind) {
   uint8_t max_val=0, min_val=255, i=0;
