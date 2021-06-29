@@ -12,14 +12,6 @@
 #include "config.h"
 #include "ledpwm.h"
 
-#define PWM_PRESCALER 8 // must match what enable_ledpwm() does
-
-// e.g. at 16MHz, overflow val will be 200. At 20Mhz, 250. At 8MHz, 100.
-#define PWM_OVERFLOW_VALUE (F_CPU / PWM_LED_FRQ / PWM_PRESCALER)
-
-// e.g. at 16MHz, duty val will be 180. At 20Mhz, 225. At 8MHz, 90.
-#define PWM_DUTY_VALUE     (PWM_OVERFLOW_VALUE - (PWM_OVERFLOW_VALUE / (100 / PWM_DUTY_PERCENT)))
-
 /* definition to expand macro then apply to pragma message */
 /* from https://stackoverflow.com/questions/1562074/how-do-i-show-the-value-of-a-define-at-compile-time */
 #define VALUE_TO_STRING(x) #x
