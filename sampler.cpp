@@ -20,7 +20,6 @@ volatile uint16_t sample_sum = 0; // (DC offset approximated by sample_sum / SAM
  */
 void setup_sampler(uint16_t timer_counter) {
 
-#ifndef SAMPLER_NO_ISRS
 
   cli();
   ADCSRA = 0;             // clear ADCSRA register
@@ -46,6 +45,7 @@ void setup_sampler(uint16_t timer_counter) {
 //       |  (1 << ADSC)  // start ADC measurements
   ;
 
+#ifndef SAMPLER_NO_ISRS
   // TIMER 1 for interrupt frequency 5000 Hz:  
   TCCR1A = 0; // set entire TCCR1A register to 0
   TCCR1B = 0; // same for TCCR1B
@@ -63,10 +63,10 @@ void setup_sampler(uint16_t timer_counter) {
   // debugging pin for checking sample rate
   pinMode (DEBUG_SAMPLE_RATE_PIN, OUTPUT);
 #endif
-  
-  sei();
 
 #endif /* SAMPLER_NO_ISRS */
+  
+  sei();
 
 }
 
