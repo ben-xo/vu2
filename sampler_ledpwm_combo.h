@@ -11,4 +11,7 @@
 #include "sampler.h"
 #include "ledpwm.h"
 
+void setup_sampler_ledpwm_combo();
+
+
 #endif /* _SAMPLER_LEDPWM_COMBO_H */
