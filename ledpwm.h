@@ -30,7 +30,8 @@ void enable_ledpwm();
 #  define PWM_DUTY_PERCENT 10
 #endif
 
-#define PWM_PRESCALER 1 // must match what enable_ledpwm() does
+// must match what enable_ledpwm() does.
+#define PWM_PRESCALER 1
 
 // e.g. at 16MHz, overflow val will be 200. At 20Mhz, 250. At 8MHz, 100.
 #define PWM_OVERFLOW_VALUE (F_CPU / PWM_LED_FRQ / PWM_PRESCALER)

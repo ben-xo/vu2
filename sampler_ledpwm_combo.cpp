@@ -22,33 +22,64 @@ void setup_sampler_ledpwm_combo() {
     * - set WGM13, WGM12, WGM11, WGM10 = 1 1 1 0
     * - TCCR1A = 0 | (1 << WGM11)
     * - TCCR1B = 0 | (1 << WGM13) | (1 << WGM12)
-    * timer1 to 10KHz with prescaler 1 
+    * timer1 to 10KHz with prescaler 1
     * The correct formula here is (F_CPU / ((ICR1+1)*PRESCALER)) - google why
-    * - ICR1 = 3199 // two 10kHz clocks
-    * - OCR1A = 1599 // first 10kHz clock duty stop
-    * - OCR1B = 1439 // first 10kHz clock duty start (next would be 3039)
-    * - TCCR1B |= (1 << CS10)
+    * - ICR1 = (PWM_OVERFLOW_VALUE * 2) - 1 // 399 // two 10kHz clocks
+    * - OCR1A = PWM_OVERFLOW_VALUE - 1 // 199 first 10kHz clock duty stop
+    * - OCR1B = PWM_DUTY_CYCLE // 180 // first 10kHz clock duty start (next would be 3039)
+    * - TCCR1B |= (1 << CS10) // set prescaler 1
     * enable compA, compB and overflow interrupts in TIMSK
     * - TIMSK |= (1 << OCIE1A) | (1 << OCIE1B) | (1 << TOIE1);
   */  
 
   cli();
-  // Clear registers
-  TCCR2A = 0;
-  TCCR2B = 0;
+  // Set WGM to Fast PWM
+  TCCR1A = 0 | (1 << WGM11)
+  TCCR1B = 0 | (1 << WGM13) | (1 << WGM12) | (1 << CS10)
+
+  // set overflow value
+  ICR1 = (PWM_OVERFLOW_VALUE * 2) - 1 // 399 // two 10kHz clocks - should be equal to SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ)
+  // TODO: abort if they're different
 
   // The correct formula here is (F_CPU / ((ICR1+1)*PRESCALER)) - google why
-  OCR2A = PWM_OVERFLOW_VALUE - 1; // 24 for 10kHz with prescaler 64, 199 for 10kHz with prescaler 8
-  OCR2B = PWM_DUTY_VALUE;         // duty cycle 10% of OCR2A
-  
-  // CTC
-  TCCR2A = (1 << WGM21);
-  
-  // Output Compare Match A & B Interrupt Enable
-  // TIMER2_COMPA_vect clears the LEDs, TIMER2_COMPB_vect lights them.
-  TIMSK2 |= (1 << OCIE2A) | (1 << OCIE2B); 
+  OCR2A = PWM_OVERFLOW_VALUE - 1; // 199 first 10kHz clock duty stop
+  OCR2B = PWM_DUTY_CYCLE;         // 180 // first 10kHz clock duty start (next would be 380)
 
-  // this clears the timer and sets the right pre-scaler, starting the timer.
-  enable_ledpwm();
+  // Output Compare Match A & B and Overflow Interrupt Enable
+  TIMSK1 |= (1 << OCIE1A) | (1 << OCIE1B) | (1 << TOIE1);
+
   sei();
 }
+
+/*
+Interrupts
+
+We have 4 interrupt points, but only 3 interrupts; so we move COMPB between two values.
+
+          1 2          3 4
+|---------B-A------------O|
+          ^
+compA (high)
+
+
+|---------B-A------------O|
+            ^
+compB (low)
+move compB to 3
+* ld value
+* sts OCR1B (change compB to 3)
+
+
+|-----------A----------B-S|
+                       ^
+compA (high)
+
+
+
+|-----------L----------H-S|
+                         ^
+compB does low + sampling, compB to 1
+* ld value
+* sts OCR1B (change compB to 1)
+
+*/

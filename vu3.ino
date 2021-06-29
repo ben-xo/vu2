@@ -73,7 +73,7 @@ void setup() {
 
   setup_sampler_ledpwm_combo();
 
-  setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
+  //setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
   setup_tempo();
   setup_fps();
   //setup_ledpwm();
