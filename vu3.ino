@@ -13,8 +13,9 @@
 
 struct Framestate F; // the global instance
 
-#include "ledpwm.h"
-#include "sampler.h"
+//#include "ledpwm.h"
+//#include "sampler.h"
+#include "sampler_ledpwm_combo.h"
 #include "tempo.h"
 
 #ifdef BEAT_WITH_INTERRUPTS
@@ -69,10 +70,13 @@ void setup() {
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, 0, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
   
   setup_render();
+
+  setup_sampler_ledpwm_combo();
+
   setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
   setup_tempo();
   setup_fps();
-  setup_ledpwm();
+  //setup_ledpwm();
 
 #ifdef BEAT_WITH_INTERRUPTS
   setup_beatdetect();
