@@ -12,6 +12,9 @@
 #include "config.h"
 #include "ledpwm.h"
 
+// we're attaching the FPS calculation to the ledpwm interrupt so lower the number of interrupts.
+#include "fps.h"
+
 #define PWM_PRESCALER 8 // must match what enable_ledpwm() does
 
 // e.g. at 16MHz, overflow val will be 200. At 20Mhz, 250. At 8MHz, 100.
@@ -72,7 +75,7 @@ void enable_ledpwm() {
 //  TCCR2B = (1 << CS22); // re-enable the timer (with pre-scaler 64) - change PWM_PRESCALER if you change this
 }
 
-
+int8_t fps_interrupt_count = PWM_LED_FRQ / FPS;
 
 ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t");
@@ -86,6 +89,13 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
 
   beat_pin.low();
   tempo_pin.low();
+
+  // unfortunately we need to backup SREG for fps_count
+  asm volatile( "push    r25                             \n\t");
+  asm volatile( "in      r25, %0                         \n\t" :: "I" (_SFR_IO_ADDR(SREG)));
+  fps_count(PWM_LED_FRQ / FPS);
+  asm volatile( "out     %0, r25                         \n\t" :: "I" (_SFR_IO_ADDR(SREG)));
+  asm volatile( "pop     r25                             \n\t");
 
   asm volatile( "pop     r24                             \n\t");
   asm volatile( "reti                                    \n\t");
