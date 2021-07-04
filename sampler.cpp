@@ -71,15 +71,16 @@ ISR(TIMER1_COMPA_vect)
 //  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
 //#endif
 
-  ADCSRA |= (1 << ADSC); // trigger a sample.
+  ADCSRA = (1 << ADPS1) | (1 << ADEN) | (1 << ADSC); // trigger a sample. Spell out the settings to save clock cycles.
   // we know what ADCSRA should be set to, so we can do this in 2 cycles instead of the 4 it would take with ADCSRA |= (1 << ADSC)
   
-  uint8_t sample_idx = (current_sample + 1) % SAMP_BUFF_LEN;
+  uint8_t sample_idx = (current_sample + 1) & ~SAMP_BUFF_LEN;
   current_sample = sample_idx;
   
   byte sample = ADCH;
-  volatile byte* the_sample = samples + sample_idx;
-  sample_sum = sample_sum - *the_sample + sample;
+  byte* the_sample = samples + sample_idx;
+  uint8_t old_sample_at_position = *the_sample;
+  sample_sum = sample_sum - old_sample_at_position + sample;
   *the_sample = sample;
   new_sample_count++;
 
