@@ -72,14 +72,16 @@ void enable_ledpwm() {
 //  TCCR2B = (1 << CS22); // re-enable the timer (with pre-scaler 64) - change PWM_PRESCALER if you change this
 }
 
-//ISR(TIMER2_COMPA_vect) {
-//  PORTB = 0;
-//}
+
 
 ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t");
 
-  asm volatile( "ldi     r24, 0                          \n\t"); // ldi doesn't affect SREG, and we can't guarantee r1 = 0
+  // "PORTB = 0" would set PORTB from r1, but we can't guarantee that's 0.
+  // ldi rN, 0 doesn't affect SREG, but we can't ldi into r1 (has to be r15+)
+  // so, do it manually
+
+  asm volatile( "ldi     r24, 0                          \n\t"); 
   asm volatile( "out     %0, r24     ; PORTB             \n\t" :: "I" (_SFR_IO_ADDR(PORTB)));
 
   beat_pin.low();
@@ -88,11 +90,6 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "pop     r24                             \n\t");
   asm volatile( "reti                                    \n\t");
 }
-//
-//ISR(TIMER2_COMPB_vect) {
-//  PORTB = portb_val;
-//}
-//
 
 
 ISR(TIMER2_COMPB_vect, ISR_NAKED) {
@@ -101,10 +98,10 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   PORTB = portb_val;
 
   register bool is_beat_1 asm ("r24") = F.is_beat_1;
-  if(is_beat_1) beat_pin.high(); // this compiles to a `sbrc` which doesn't affect the S reg!
+  if(is_beat_1) beat_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
 
   register bool is_beat_2 asm ("r24") = F.is_beat_2;
-  if(is_beat_2) tempo_pin.high(); // this compiles to a `sbrc` which doesn't affect the S reg!
+  if(is_beat_2) tempo_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
   
   asm volatile( "pop     r24                             \n\t");
   asm volatile( "reti                                    \n\t");

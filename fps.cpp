@@ -9,7 +9,6 @@ uint32_t silent_since = 0; // time we've been silent since.
 volatile bool slow = false; // track render time
 
 int8_t fps_interrupt_count = SAMP_FREQ / FPS; // 
-volatile bool new_frame = false;
 
 uint32_t last_delay=0;
 
@@ -24,16 +23,16 @@ ISR(TIMER1_COMPB_vect)
 {
   fps_interrupt_count--;
   if(!fps_interrupt_count) {
-    new_frame = true;
+    GPIOR0 |= 1;
     fps_interrupt_count = SAMP_FREQ / FPS;
   }
 }
 
 void reach_target_fps() {
   uint32_t end_time = micros();
-  while(!new_frame) {
+  while(!(GPIOR0 & (1<<1))) {
     asm("");
   }
-  new_frame = false;
+  GPIOR0 &= ~1;
   start_time = end_time;
 }
