@@ -8,8 +8,6 @@ uint32_t start_time = 0; // time each loop started.
 uint32_t silent_since = 0; // time we've been silent since.
 volatile bool slow = false; // track render time
 
-int8_t fps_interrupt_count = SAMP_FREQ / FPS; // 
-
 uint32_t last_delay=0;
 
 void setup_fps() {
@@ -19,13 +17,11 @@ void setup_fps() {
   TIMSK1 |= (1 << OCIE1B);
 }
 
+int8_t fps_interrupt_count = SAMP_FREQ / FPS;
+
 ISR(TIMER1_COMPB_vect)
 {
-  fps_interrupt_count--;
-  if(!fps_interrupt_count) {
-    GPIOR0 |= 1;
-    fps_interrupt_count = SAMP_FREQ / FPS;
-  }
+  fps_count();
 }
 
 void reach_target_fps() {
@@ -33,6 +29,6 @@ void reach_target_fps() {
   while(!(GPIOR0 & (1<<1))) {
     asm("");
   }
-  GPIOR0 &= ~1;
+  GPIOR0 &= ~(1<<1);
   start_time = end_time;
 }

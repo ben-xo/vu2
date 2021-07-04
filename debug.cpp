@@ -6,7 +6,7 @@
 
 void setup_debug() {
   Serial.begin(2000000);
-}
+} 
 
 void debug_loop() {
 
