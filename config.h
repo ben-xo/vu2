@@ -32,7 +32,7 @@
 
 /*** Neopixel configuration ***/
 #define STRIP_LENGTH 60 // don't recommend >100
-#define FPS 180 // you can get up to about 180fps with a 60 strip, 125 with a 100-strip
+#define FPS 150 // you can get up to about 180fps with a 60 strip, 125 with a 100-strip
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_MILLIS (1000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 128000 @ 16MHz

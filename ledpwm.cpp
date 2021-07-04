@@ -69,7 +69,7 @@ void disable_ledpwm() {
 void enable_ledpwm() {
   // start at an offset so that PWM interrupts don't coincide with Sampler interrupts
   // Without this, sometimes we get unstable PWM when interrupts pile up.
-  TCNT2 = 30;
+  TCNT2 = 70;
   
   TCCR2B = (1 << CS21); // re-enable the timer (with pre-scaler 8) - change PWM_PRESCALER if you change this
 //  TCCR2B = (1 << CS22); // re-enable the timer (with pre-scaler 64) - change PWM_PRESCALER if you change this
