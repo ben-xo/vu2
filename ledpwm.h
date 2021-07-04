@@ -14,7 +14,10 @@
 #include "framestate.h"
 
 extern uint8_t pwm_duty;
-extern uint8_t volatile portb_val;
+
+//extern uint8_t volatile portb_val;
+#define portb_val GPIOR2
+
 void setup_ledpwm();
 void disable_ledpwm();
 void enable_ledpwm();
