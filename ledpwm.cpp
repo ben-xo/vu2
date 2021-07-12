@@ -40,9 +40,11 @@ static DigitalPin<BEAT_PIN_2> tempo_pin;
 
 void __inline__ fps_count()
 {
+  // clobbers r24 and SREG so they must be saved before use.
+  // stores overflow in GPIOR0. So, that must be reset when read at point of use.
 
   static int8_t fps_interrupt_count = PWM_LED_FRQ / FPS;
-  volatile uint8_t* fic = &fps_interrupt_count; 
+
   // // using an intermediate variable makes the compiled output much more efficient.
   // int8_t new_interrupt_count = fps_interrupt_count - 1;
   // if(!new_interrupt_count) {
@@ -51,12 +53,23 @@ void __inline__ fps_count()
   // }
   // fps_interrupt_count = new_interrupt_count;
 
+  volatile uint8_t* fic = &fps_interrupt_count; 
   asm volatile( 
+    // int8_t new_interrupt_count = fps_interrupt_count - 1;
     "lds r24, %[fic]            \n\t" 
     "subi  r24, 0x01            \n\t" 
+
+    // if(!new_interrupt_count) {
     "brne  .+4            \n\t" 
+
+    //   GPIOR0 |= (1<<1);
     "sbi %0, 1            \n\t" 
+
+    //   new_interrupt_count = interrupt_reset_val;
     "ldi r24, %1        \n\t" 
+    // }
+
+    // fps_interrupt_count = new_interrupt_count;
     "sts %[fic], r24        \n\t" 
     : 
     : 
@@ -65,20 +78,6 @@ void __inline__ fps_count()
     [fic] "i" (fic)
 
   );
-
-  // // using an intermediate variable makes the compiled output much more efficient.
-  // int8_t new_interrupt_count = fps_interrupt_count - 1;
-  //   156c: 80 91 00 01   lds r24, 0x0100 ; 0x800100 <fps_interrupt_count>
-  //   1570: 81 50         subi  r24, 0x01 ; 1
-  // if(!new_interrupt_count) {
-  //   1572: 11 f4         brne  .+4       ; 0x1578 <__vector_7+0x1a>
-  //   GPIOR0 |= (1<<1);
-  //   1574: f1 9a         sbi 0x1e, 1 ; 30
-  //   new_interrupt_count = interrupt_reset_val;
-  //   1576: 82 e4         ldi r24, 0x42 ; 66
-  // }
-  // fps_interrupt_count = new_interrupt_count;
-  //   1578: 80 93 00 01   sts 0x0100, r24 ; 0x800100 <fps_interrupt_count>  
 }
 
 void setup_ledpwm() {
