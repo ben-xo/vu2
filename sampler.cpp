@@ -44,18 +44,9 @@ void setup_sampler(uint16_t timer_counter) {
 //       |  (1 << ADSC)  // start ADC measurements
   ;
 
-  // TIMER 1 for interrupt frequency 5000 Hz:  
-  // TCCR1A = 0; // set entire TCCR1A register to 0
-  // TCCR1B = 0; // same for TCCR1B
-  // TCNT1  = 109; // initialize counter value to 0
-  // // set compare match register correctly (passed in)
-  // OCR1A = timer_counter;
-  // // turn on CTC mode
-  // TCCR1B |= (1 << WGM12);
-  // // Set CS12, CS11 and CS10 bits for 1 prescaler
-  // TCCR1B |= (0 << CS12) | (0 << CS11) | (1 << CS10);
-  // // enable timer compare interrupt
-  // TIMSK1 |= (1 << OCIE1A);
+
+  // XXX previous versions of this code used TIMER1 for the sampler, but now we hook onto LEDPWM timer2.
+
 
 #ifdef DEBUG_SAMPLE_RATE
   // debugging pin for checking sample rate
@@ -65,42 +56,10 @@ void setup_sampler(uint16_t timer_counter) {
   sei();
 }
 
-
-//// This optimised version saves 12 cycles from the C code above.
-//// Not sure if it was worth it to save 12 cycles per sample, but it was fun…
-//// TODO: **WARNING** it does not include the sample summing!
-//ISR(ADC_vect) __attribute__((naked));
-//ISR(ADC_vect)
-//{
-//  volatile uint8_t* cs = &current_sample;
-//  uint8_t* ss = samples;
-//  
-//  asm volatile (
-//    "push r24 \n\t"
-//    "in r24, 0x3f \n\t"
-//    "push r24 \n\t"
-//    "push  r30 \n\t"
-//    "push  r31 \n\t"
-//    "lds r30, %[cs] \n\t" // 0x800101 <current_sample>
-//    "subi  r30, 0xFF \n\t" 
-//    "sts current_sample, r30 \n\t" // 0x800101 <current_sample>
-//    "lds r24, 0x0079 \n\t" // 0x800079 <__TEXT_REGION_LENGTH__+0x7e0079>
-//    "ldi r31, 0x00 \n\t"
-//    "asr r30 \n\t"
-//    "subi  r31, 0xFD \n\t" // <samples> TOOD: i think this is an address?? careful!
-//    "st  Z, r24 \n\t"
-//    "pop r31 \n\t"
-//    "pop r30 \n\t"
-//    "pop r24 \n\t"
-//    "out  0x3f, r24 \n\t" // restore status register
-//    "pop r24 \n\t"
-//    "reti \n\t"
-//    :: 
-//    [cs] "i" (cs),
-//    [ss] "i" (ss)
-//  );
-//}
-
+/**
+ * N.B the actual sample() method is defined in the header file so that it can be hooked onto the ledpwm interrupt to share interrupts.
+ * LEDPWM goes at 10khz and our usual sample frequency is exactly half that. That frees TIMER1 for other uses.
+ */
 
 uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out, uint8_t vu_lookbehind) {
   uint8_t max_val=0, min_val=255, i=0;

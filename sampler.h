@@ -28,12 +28,12 @@ void set_beat_at(uint8_t offset, bool is_beat);
 bool get_beat_at(uint8_t offset);
 
 void __inline__ sample()
-// ISR(TIMER1_COMPA_vect)
 {
 //#ifdef DEBUG_SAMPLE_RATE
 //  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
 //#endif
 
+ /** C version **/
   // ADCSRA = (1 << ADPS1) | (1 << ADEN) | (1 << ADSC); // trigger a sample. Spell out the settings to save clock cycles.
   // // we know what ADCSRA should be set to, so we can do this in 2 cycles instead of the 4 it would take with ADCSRA |= (1 << ADSC)
   
@@ -46,6 +46,8 @@ void __inline__ sample()
   // sample_sum = sample_sum - old_sample_at_position + sample;
   // *the_sample = sample;
   // new_sample_count++;
+
+ /** assembler version of the above ^ **/
  uint8_t* ss = samples;
 
  asm volatile (
@@ -94,33 +96,6 @@ void __inline__ sample()
      :
      "r24", "r30", "r31", "r18", "r25", "r19"
    );
-//  volatile uint8_t* cs = &current_sample;
-//  uint8_t* ss = samples;
-//  
-//  asm volatile (
-//    "push r24 \n\t"
-//    "in r24, 0x3f \n\t"
-//    "push r24 \n\t"
-//    "push  r30 \n\t"
-//    "push  r31 \n\t"
-//    "lds r30, %[cs] \n\t" // 0x800101 <current_sample>
-//    "subi  r30, 0xFF \n\t" 
-//    "sts current_sample, r30 \n\t" // 0x800101 <current_sample>
-//    "lds r24, 0x0079 \n\t" // 0x800079 <__TEXT_REGION_LENGTH__+0x7e0079>
-//    "ldi r31, 0x00 \n\t"
-//    "asr r30 \n\t"
-//    "subi  r31, 0xFD \n\t" // <samples> TOOD: i think this is an address?? careful!
-//    "st  Z, r24 \n\t"
-//    "pop r31 \n\t"
-//    "pop r30 \n\t"
-//    "pop r24 \n\t"
-//    "out  0x3f, r24 \n\t" // restore status register
-//    "pop r24 \n\t"
-//    "reti \n\t"
-//    :: 
-//    [cs] "i" (cs),
-//    [ss] "i" (ss)
-//  );
 
 //#ifdef DEBUG_SAMPLE_RATE
 //  DEBUG_SAMPLE_RATE_PORT &= ~(1 << DEBUG_SAMPLE_RATE_PIN);
