@@ -12,8 +12,11 @@
 #include "config.h"
 #include "ledpwm.h"
 
-// we're attaching the FPS calculation to the ledpwm interrupt so lower the number of interrupts.
+// we're attaching the FPS calculation to the ledpwm interrupt to lower the number of interrupts.
 #include "fps.h"
+
+// we're attaching the sampler to the ledpwm interrupt to lower the number of interrupts.
+#include "sampler.h"
 
 #define PWM_PRESCALER 8 // must match what enable_ledpwm() does
 
@@ -32,11 +35,6 @@
 // compile time debug to see the PWM vals
 #pragma message(VAR_NAME_VALUE(PWM_OVERFLOW_VALUE))
 #pragma message(VAR_NAME_VALUE(PWM_DUTY_VALUE))
-
-// uint8_t volatile portb_val = 0;
-
-static DigitalPin<BEAT_PIN_1> beat_pin;
-static DigitalPin<BEAT_PIN_2> tempo_pin;
 
 void __inline__ fps_count()
 {
@@ -153,6 +151,12 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
 
   register bool is_beat_2 asm ("r24") = F.is_beat_2;
   if(is_beat_2) tempo_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
+
+  if(GPIOR0 & (1<<0)) {
+    sample();
+  } else {
+    GPIOR0 |= (1<<0);
+  }
   
   asm volatile( "pop     r24                             \n\t");
   asm volatile( "reti                                    \n\t");

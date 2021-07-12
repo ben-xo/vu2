@@ -65,29 +65,6 @@ void setup_sampler(uint16_t timer_counter) {
   sei();
 }
 
-ISR(TIMER1_COMPA_vect)
-{
-//#ifdef DEBUG_SAMPLE_RATE
-//  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
-//#endif
-
-  ADCSRA = (1 << ADPS1) | (1 << ADEN) | (1 << ADSC); // trigger a sample. Spell out the settings to save clock cycles.
-  // we know what ADCSRA should be set to, so we can do this in 2 cycles instead of the 4 it would take with ADCSRA |= (1 << ADSC)
-  
-  uint8_t sample_idx = (current_sample + 1) & ~SAMP_BUFF_LEN;
-  current_sample = sample_idx;
-  
-  byte sample = ADCH;
-  byte* the_sample = samples + sample_idx;
-  uint8_t old_sample_at_position = *the_sample;
-  sample_sum = sample_sum - old_sample_at_position + sample;
-  *the_sample = sample;
-  new_sample_count++;
-
-//#ifdef DEBUG_SAMPLE_RATE
-//  DEBUG_SAMPLE_RATE_PORT &= ~(1 << DEBUG_SAMPLE_RATE_PIN);
-//#endif
-}
 
 //// This optimised version saves 12 cycles from the C code above.
 //// Not sure if it was worth it to save 12 cycles per sample, but it was fun…
