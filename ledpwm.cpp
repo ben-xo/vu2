@@ -41,7 +41,7 @@ static DigitalPin<BEAT_PIN_2> tempo_pin;
 void __inline__ fps_count()
 {
   // clobbers r24 and SREG so they must be saved before use.
-  // stores overflow in GPIOR0. So, that must be reset when read at point of use.
+  // stores overflow in GPIOR0:1. So, that must be reset when read at point of use.
 
   static int8_t fps_interrupt_count = PWM_LED_FRQ / FPS;
 
