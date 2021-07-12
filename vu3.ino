@@ -11,8 +11,8 @@
 
 struct Framestate F; // the global instance
 
-#include "ledpwm.h"
 #include "sampler.h"
+#include "ledpwm.h"
 #include "tempo.h"
 
 #ifdef BEAT_WITH_INTERRUPTS
@@ -34,8 +34,6 @@ volatile uint8_t beats_from_interrupt = 0;
 
 CRGB leds[STRIP_LENGTH];
 
-DigitalPin<BEAT_PIN_1> beat_pin;
-DigitalPin<BEAT_PIN_2> tempo_pin;
 
 void setup() {
   // put your setup code here, to run once:

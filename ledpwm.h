@@ -33,4 +33,8 @@ void enable_ledpwm();
 #  define PWM_DUTY_PERCENT 10
 #endif
 
+extern DigitalPin<BEAT_PIN_1> beat_pin;
+extern DigitalPin<BEAT_PIN_2> tempo_pin;
+
+
 #endif /* _LEDPWM_H */
