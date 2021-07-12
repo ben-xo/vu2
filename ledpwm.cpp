@@ -152,35 +152,36 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   register bool is_beat_2 asm ("r24") = F.is_beat_2;
   if(is_beat_2) tempo_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
 
-  if(GPIOR0 & (1<<0)) {
-    asm volatile(
-      "push  r1 \t\n"
-      "in  r1, __SREG__ \t\n"
-      "push  r1 \t\n"
-      "eor r1, r1 \t\n"
-      "push  r18 \t\n"
-      "push  r19 \t\n"
-      // "push  r24 \t\n" // in ISR_NAKED prologue
-      "push  r25 \t\n"
-      "push  r30 \t\n"
-      "push  r31 \t\n"
-    );
-    sample();
-    asm volatile(
-      "pop r31 \t\n"
-      "pop r30 \t\n"
-      "pop r25 \t\n"
-      // "pop r24 \t\n" // in ISR_NAKED epilogue
-      "pop r19 \t\n"
-      "pop r18 \t\n"
-      "pop r1 \t\n"
-      "out __SREG__, r1\t\n"
-      "pop r1 \t\n"
-    );
-  } else {
+  if(!(GPIOR0 & (1<<0))) {
     GPIOR0 |= (1<<0);
+    asm volatile( "pop     r24                             \n\t");
+    asm volatile( "reti                                    \n\t");
   }
-  
+
+  asm volatile(
+    "push  r1 \t\n"
+    "in  r1, __SREG__ \t\n"
+    "push  r1 \t\n"
+    "eor r1, r1 \t\n"
+    "push  r18 \t\n"
+    "push  r19 \t\n"
+    // "push  r24 \t\n" // in ISR_NAKED prologue
+    "push  r25 \t\n"
+    "push  r30 \t\n"
+    "push  r31 \t\n"
+  );
+  sample();
+  asm volatile(
+    "pop r31 \t\n"
+    "pop r30 \t\n"
+    "pop r25 \t\n"
+    // "pop r24 \t\n" // in ISR_NAKED epilogue
+    "pop r19 \t\n"
+    "pop r18 \t\n"
+    "pop r1 \t\n"
+    "out __SREG__, r1\t\n"
+    "pop r1 \t\n"
+  );
   asm volatile( "pop     r24                             \n\t");
   asm volatile( "reti                                    \n\t");
 }
