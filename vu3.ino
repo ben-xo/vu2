@@ -159,7 +159,7 @@ void loop() {
   portb_val = seven_seg(F.mode); // writes directly to pins 9-12
 
   while(true) {
-    DEBUG_FRAME_RATE_LOW();
+    DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_LOW();
         
     // read these as they're volatile
@@ -218,7 +218,6 @@ void loop() {
       }
     }
 
-    DEBUG_FRAME_RATE_LOW();
     DEBUG_SAMPLE_RATE_HIGH();
 
     // now let's do some beat calculations
@@ -249,8 +248,6 @@ void loop() {
     } while(offset < my_new_sample_count);
     new_sample_count -= my_new_sample_count; // decrement the global new sample count
 
-    DEBUG_SAMPLE_RATE_LOW();
-
     F.is_beat_1 = is_beat_1;
     if(!was_beat && F.is_beat_1) {
         record_rising_edge();
@@ -258,8 +255,7 @@ void loop() {
 
     F.is_beat_2 = recalc_tempo(F.is_beat_2);
 
-    DEBUG_FRAME_RATE_HIGH();
-    DEBUG_SAMPLE_RATE_HIGH();
+    DEBUG_SAMPLE_RATE_LOW();
 
     if(F.is_attract_mode) {
       render_attract();
@@ -274,13 +270,12 @@ void loop() {
       render(current_sample, sample_sum);
     }
 
-    DEBUG_FRAME_RATE_LOW();
     DEBUG_SAMPLE_RATE_HIGH();
 
     FastLED.show();
     
-    DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_LOW();
+    DEBUG_FRAME_RATE_LOW();
     reach_target_fps();
     F.frame_counter++;
   }
