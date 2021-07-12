@@ -158,6 +158,8 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
     asm volatile( "reti                                    \n\t");
   }
 
+  GPIOR0 &= ~(1<<0);
+
   asm volatile(
     "push  r1 \t\n"
     "in  r1, __SREG__ \t\n"
