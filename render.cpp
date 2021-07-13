@@ -27,6 +27,40 @@ static const uint8_t PROGMEM _gammaTable[256] = {
 230, 231, 232, 232, 233, 234, 235, 236, 236, 237, 238, 239, 240, 240, 241, 242,
 243, 244, 245, 245, 246, 247, 248, 249, 249, 250, 251, 252, 253, 253, 254, 255};
 
+
+typedef struct {
+  uint8_t hue, beat_offset;
+} render_vu_with_beat_strobe_type;
+
+typedef struct {
+  uint8_t beat_brightness;
+} render_vu_plus_beat_interleave_type;
+
+typedef struct {
+  uint8_t phase;
+} render_beat_line_type;
+
+typedef struct {
+  bool was_beat_2;
+  uint8_t fade_type;
+} render_double_vu_type;
+
+typedef struct {
+  bool was_beat;
+  bool top;
+  uint16_t hue;
+} render_beat_bounce_flip_type;
+
+typedef union renderheap_t {
+  render_vu_with_beat_strobe_type     rvuwbs;
+  render_vu_plus_beat_interleave_type rvupbi;
+  render_beat_line_type               rbl;
+  render_double_vu_type               rdv;
+  render_beat_bounce_flip_type        rbbf;
+};
+
+renderheap_t r;
+
 uint8_t static gamma8(uint8_t x)  {
   return pgm_read_byte(&_gammaTable[x]); // 0-255 in, 0-255 out
 }
@@ -63,8 +97,8 @@ static void generate_sparkle_table(uint8_t* random_table) {
 // saturates to which on beat; beat is a multiplier which fade
 // 
 void render_vu_with_beat_strobe(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
-  static uint8_t hue = 0;
-  static uint8_t beat_offset = 0;
+  uint8_t hue = r.rvuwbs.hue;
+  uint8_t beat_offset = r.rvuwbs.beat_offset;
 
   if(is_beat_2) {
     beat_offset = 255; 
@@ -93,10 +127,13 @@ void render_vu_with_beat_strobe(uint8_t peakToPeak, bool is_beat, bool is_beat_2
   }
 
   if(is_beat) hue++;
+
+  r.rvuwbs.hue = hue;
+  r.rvuwbs.beat_offset = beat_offset;
 }
 
 void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade) {
-    static uint8_t beat_brightness;
+    uint8_t beat_brightness = r.rvupbi.beat_brightness;
     uint8_t adjPeak = gamma8(peakToPeak);
     int led = map8(adjPeak, 0, STRIP_LENGTH);
     uint8_t color = 0;
@@ -120,11 +157,12 @@ void render_vu_plus_beat_end(unsigned int peakToPeak, bool is_beat, bool do_fade
             fade_pixel_fast(j);
           }
         }
-    }  
+    }
+    r.rvupbi.beat_brightness = beat_brightness;
 }
 
 void render_vu_plus_beat_interleave() {
-  static uint8_t beat_brightness;
+  uint8_t beat_brightness = r.rvupbi.beat_brightness;
   uint8_t adjPeak = gamma8(F.vu_width);
   uint8_t led = map8(adjPeak, 0, STRIP_LENGTH);
   uint8_t color = 0;
@@ -155,6 +193,7 @@ void render_vu_plus_beat_interleave() {
       }      
     }
   }
+  r.rvupbi.beat_brightness = beat_brightness;
 }
 
 
@@ -227,7 +266,7 @@ uint8_t frame_beatsin8( uint8_t beat, uint8_t phase_offset = 0)
 }
 
 void render_beat_line() {
-    uint8_t static phase = 0;
+    uint8_t phase = r.rbl.phase;
     uint8_t reverse_speed = 2; // range 2 to 5
     uint8_t j=0,k=0,l=0,m=0;
 
@@ -276,6 +315,7 @@ void render_beat_line() {
         l += 5;
       }
     }
+    r.rbl.phase = phase;
 }
 
 uint32_t static was_beat_recently_time = 0;
@@ -327,8 +367,8 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
     uint8_t adjPeak = gamma8(peakToPeak);
     uint8_t led = map8(adjPeak, 0, STRIP_LENGTH/4);
 
-    static bool was_beat_2 = false; 
-    static uint8_t fade_type = 0;
+    bool was_beat_2 = r.rdv.was_beat_2; 
+    uint8_t fade_type = r.rdv.fade_type;
     
     if(is_beat_2) {
       if(!was_beat_2) {
@@ -372,6 +412,8 @@ void render_double_vu(uint8_t peakToPeak, bool is_beat, bool is_beat_2) {
         }
       }
     }
+    r.rdv.was_beat_2 = was_beat_2;
+    r.rdv.fade_type = fade_type;
 }
 
 void render_beat_flash_1_pixel(bool is_beat) {
@@ -430,10 +472,10 @@ void rainbowCycle(uint8_t wait) {
 static uint8_t current_pos = STRIP_LENGTH/2; // start in center
 #define HALF_CENTER = (STRIP_LENGTH/4) // one quarter of the way down the strip (which quarter flips on the beat)
 void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
-  static uint16_t hue = 0; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
+  uint16_t hue = r.rbbf.hue; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
   
-  static bool top = true; // which half?
-  static bool was_beat = false; // which half?
+  bool top = r.rbbf.top;
+  bool was_beat = r.rbbf.was_beat;
   uint8_t target_pos;
   uint8_t new_pos;
 
@@ -482,6 +524,10 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
   }
   current_pos = new_pos;
   hue = (hue + 1) % 2048;
+
+  r.rbbf.top = top;
+  r.rbbf.was_beat = was_beat;
+  r.rbbf.hue = hue;
 }
  
 void render(uint8_t sample_ptr, uint16_t sample_sum) {
