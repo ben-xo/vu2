@@ -2,6 +2,9 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
+#ifndef _RENDER_H
+#define _RENDER_H
+
 #ifndef DEBUG_ONLY
 
 #include "framestate.h"
@@ -22,3 +25,5 @@ void render_attract();
 
 // modes 0 to MAX_MODE are effects
 #define MAX_MODE 9
+
+#endif /* _RENDER_H */
