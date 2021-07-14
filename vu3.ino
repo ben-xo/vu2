@@ -6,6 +6,8 @@
 
 // this define is for FastLED
 #define NO_CORRECTION 1
+#define NO_MINIMUM_WAIT 1
+// #define TRINKET_SCALE 0
 
 #include "framestate.h"
 
@@ -270,7 +272,17 @@ void loop() {
 
     DEBUG_SAMPLE_RATE_HIGH();
 
-    FastLED.show();
+    static uint8_t X = 0;
+    FastLED[0].show2(
+      (CRGB *)(&leds[X]),
+      STRIP_LENGTH-X,
+      155,
+      (CRGB *)(&leds[0]),
+      X+1,
+      155
+    );
+    X++;
+    if(X>=STRIP_LENGTH) X=0;
     
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();

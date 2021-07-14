@@ -89,6 +89,7 @@ void debug_loop() {
           DEBUG_FRAME_RATE_PORT |= (1 << DEBUG_FRAME_RATE_PIN);
         #endif
             FastLED.show();
+            FastLED.show();
         #ifdef DEBUG_FRAME_RATE
           DEBUG_FRAME_RATE_PORT &= ~(1 << DEBUG_FRAME_RATE_PIN);
         #endif

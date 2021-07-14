@@ -67,8 +67,8 @@ uint8_t static gamma8(uint8_t x)  {
 
 void setup_render() {
   // Initialize all pixels to 'off'
-  FastLED.clear();
-  FastLED.show();
+  // FastLED.clear();
+  // FastLED.show();
   setup_attract();
 }
 
@@ -448,26 +448,26 @@ void render_black() {
     }  
 }
 
-void colorWipe(CRGB c, uint8_t wait) {
-  for (uint8_t i = 0; i < STRIP_LENGTH; i++) {
-    leds[i] = c;
-    FastLED.show();
-    FastLED.delay(wait);
-  }
-}
+// void colorWipe(CRGB c, uint8_t wait) {
+//   for (uint8_t i = 0; i < STRIP_LENGTH; i++) {
+//     leds[i] = c;
+//     FastLED.show();
+//     FastLED.delay(wait);
+//   }
+// }
 
-// from strandtest example.
-void rainbowCycle(uint8_t wait) {
-  uint16_t i, j;
+// // from strandtest example.
+// void rainbowCycle(uint8_t wait) {
+//   uint16_t i, j;
 
-  for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
-    for(i=0; i< STRIP_LENGTH; i++) {
-      leds[i] = Wheel(((i * 256 / STRIP_LENGTH) + j) & 255);
-    }
-    FastLED.show();
-    FastLED.delay(wait);
-  }
-}
+//   for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
+//     for(i=0; i< STRIP_LENGTH; i++) {
+//       leds[i] = Wheel(((i * 256 / STRIP_LENGTH) + j) & 255);
+//     }
+//     FastLED.show();
+//     FastLED.delay(wait);
+//   }
+// }
 
 static uint8_t current_pos = STRIP_LENGTH/2; // start in center
 #define HALF_CENTER = (STRIP_LENGTH/4) // one quarter of the way down the strip (which quarter flips on the beat)
