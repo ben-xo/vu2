@@ -24,7 +24,7 @@ Features
 ========
 
 * Works from line-in
-* Interrupt driven audio sampling - even with WS2812s (requires a slightly modified FastLED library at https://github.com/ben-xo/FastLED)
+* Interrupt driven audio sampling - even with WS2812s (requires a slightly modified FastLED library at https://github.com/ben-xo/FastLED - branch feature/experiment-show2-for-looping )
 * A solid 180 frame per second with 60 WS2812s (or 125fps with 100 WS2812s) with no slow frames or dropped samples
 * Beat detection and tempo estimation in realtime. Yep! All on a single Arduino
 * 8 cool sound-reactive visualisers. These have been endlessly tinkered with so that they look okay at a range of input volumes and aren't TOO jarring when they change
@@ -104,12 +104,20 @@ Software
 
 1) Set up Arduino Studio (or arduino-cli)
 2) Install FastLED lib
-3) REPLACE FastLED lib with the version from https://github.com/ben-xo/FastLED . My version has modifications to enable interrupts in certain places in order to not drop samples. *You need to be on the avr-interrupts branch.*
-4) Load vu3.ino into Arduino Studio
-5) edit config.h . set your strip length. maybe comment out the DEBUG defines if i left them uncommented
-6) program the arduino over USB. (or use ./build-and-upload.sh if you went with arduino-cli)
+3) REPLACE FastLED lib with the version from https://github.com/ben-xo/FastLED . My version has modifications to enable interrupts in certain places in order to not drop samples.
+4) Make sure the modified FastLED is checked out to the branch `feature/experiment-show2-for-looping`
+5) Load vu3.ino into Arduino Studio
+6) edit config.h . set your strip length. maybe comment out the DEBUG defines if i left them uncommented
+7) program the arduino over USB. (or use ./build-and-upload.sh if you went with arduino-cli)
 
-For extra performance, you can install avr-gcc@11 (e.g. from Mac Homebrew) and configure arduino-cli to use it. You get faster interrupts!
+*N.B* You may want to upgrade avr-gcc to version 11. Setting this up is out of scope of the README. 
+
+Rough instructions for that:
+* `brew install arduino-cli`
+* `brew install avr-gcc@11`
+* `brew link avr-gcc@11`
+* modify `~/Library/Arduino15/packages/arduino/hardware/avr/1.8.3/platform.txt` - change `compiler.path` to `/usr/local/bin/`
+* use `./build-and-upload.sh` instead of Arduio Studio to program the chip
 
 Finally
 -------
