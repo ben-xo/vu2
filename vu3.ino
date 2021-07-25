@@ -6,6 +6,7 @@
 
 // this define is for FastLED
 #define NO_CORRECTION 1
+#define NO_MINIMUM_WAIT 1
 // #define TRINKET_SCALE 0
 
 #include "framestate.h"
