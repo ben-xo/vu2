@@ -63,7 +63,7 @@
 
 
 /*** Attract mode config ***/
-#define ATTRACT_MODE_THRESHOLD 8 // vu value
+#define ATTRACT_MODE_THRESHOLD 24 // vu value
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
 

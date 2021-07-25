@@ -6,7 +6,6 @@
 
 uint32_t start_time = 0; // time each loop started.
 uint32_t silent_since = 0; // time we've been silent since.
-volatile bool slow = false; // track render time
 
 uint32_t last_delay=0;
 
