@@ -6,7 +6,6 @@
 
 // this define is for FastLED
 #define NO_CORRECTION 1
-#define NO_MINIMUM_WAIT 1
 // #define TRINKET_SCALE 0
 
 #include "framestate.h"
@@ -35,6 +34,8 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "render.h"
 
 CRGB leds[STRIP_LENGTH];
+
+CRGB middle[2];
 
 
 void setup() {
@@ -80,6 +81,13 @@ void setup() {
   setup_initial_framestate();
 
   setup_debug();
+
+  middle[0].r = 0;
+  middle[0].g = 255;
+  middle[0].b = 0;
+  middle[1].r = 0;
+  middle[1].g = 0;
+  middle[1].b = 0;
 }
 
 // auto change every 8 bars
@@ -272,17 +280,33 @@ void loop() {
 
     DEBUG_SAMPLE_RATE_HIGH();
 
+
+
     static uint8_t X = 0;
-    FastLED[0].show2(
-      (CRGB *)(&leds[X]),
-      STRIP_LENGTH-X,
+    static CRGB *led_parts[3] = {&leds[X], &middle[0], &leds[0]};
+    static int led_part_lens[3] = {STRIP_LENGTH-1-X, 0, X};
+
+    led_parts[0] = &leds[X];
+    led_part_lens[0] = STRIP_LENGTH-1-X;
+    led_parts[2] = &leds[0];
+    led_part_lens[2] = X;
+
+    FastLED[0].showN(
+      (CRGB **)&led_parts,
+      &led_part_lens[0],
       155,
-      (CRGB *)(&leds[0]),
-      X+1,
-      155
+      3
     );
-    X++;
-    if(X>=STRIP_LENGTH) X=0;
+
+    static uint32_t last_time = 0;
+    uint32_t this_time = micros();
+    if (this_time > last_time + 100000) {
+      X++;
+      last_time = this_time;
+    }
+    if(X==STRIP_LENGTH-1) X=0;
+
+    // FastLED.show();
     
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
