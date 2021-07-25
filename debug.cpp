@@ -17,6 +17,21 @@ void debug_loop() {
   uint8_t vu_width = 0;
   uint8_t mode = 1;
 
+
+  // stuff used to demonstrate the strip is working and FastLED with showN mod is working
+  CRGB middle[2];
+
+  middle[0].r = 0;
+  middle[0].g = 255;
+  middle[0].b = 0;
+  middle[1].r = 0;
+  middle[1].g = 0;
+  middle[1].b = 0;
+
+  uint8_t X = 0;
+  CRGB *led_parts[3] = {&leds[X], &middle[0], &leds[0]};
+  int led_part_lens[3] = {STRIP_LENGTH-1-X, 1, X};
+
   while(true) {
 
     uint8_t pushed = false;
@@ -88,8 +103,27 @@ void debug_loop() {
         #ifdef DEBUG_FRAME_RATE
           DEBUG_FRAME_RATE_PORT |= (1 << DEBUG_FRAME_RATE_PIN);
         #endif
-            FastLED.show();
-            FastLED.show();
+
+        led_parts[0] = &leds[X];
+        led_part_lens[0] = STRIP_LENGTH-1-X;
+        led_parts[2] = &leds[0];
+        led_part_lens[2] = X;
+
+        FastLED[0].showN(
+          (CRGB **)&led_parts,
+          &led_part_lens[0],
+          155,
+          3
+        );
+
+        static uint32_t last_time = 0;
+        uint32_t this_time = micros();
+        if (this_time > last_time + 100000) {
+          X++;
+          last_time = this_time;
+        }
+        if(X==STRIP_LENGTH-1) X=0;
+
         #ifdef DEBUG_FRAME_RATE
           DEBUG_FRAME_RATE_PORT &= ~(1 << DEBUG_FRAME_RATE_PIN);
         #endif
