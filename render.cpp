@@ -6,6 +6,7 @@
 #include "config.h"
 #include "render.h"
 #include "sampler.h"
+#include "renderheap.h"
 
 #ifndef DEBUG_ONLY
 
@@ -27,37 +28,6 @@ static const uint8_t PROGMEM _gammaTable[256] = {
 230, 231, 232, 232, 233, 234, 235, 236, 236, 237, 238, 239, 240, 240, 241, 242,
 243, 244, 245, 245, 246, 247, 248, 249, 249, 250, 251, 252, 253, 253, 254, 255};
 
-
-typedef struct {
-  uint8_t hue, beat_offset;
-} render_vu_with_beat_strobe_type;
-
-typedef struct {
-  uint8_t beat_brightness;
-} render_vu_plus_beat_interleave_type;
-
-typedef struct {
-  uint8_t phase;
-} render_beat_line_type;
-
-typedef struct {
-  bool was_beat_2;
-  uint8_t fade_type;
-} render_double_vu_type;
-
-typedef struct {
-  bool was_beat;
-  bool top;
-  uint16_t hue;
-} render_beat_bounce_flip_type;
-
-typedef union renderheap_t {
-  render_vu_with_beat_strobe_type     rvuwbs;
-  render_vu_plus_beat_interleave_type rvupbi;
-  render_beat_line_type               rbl;
-  render_double_vu_type               rdv;
-  render_beat_bounce_flip_type        rbbf;
-};
 
 renderheap_t r;
 
