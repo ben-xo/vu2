@@ -4,6 +4,10 @@
 
 #include "config.h"
 
+#include "sampler.h"
+#include "ledpwm.h"
+#include "tempo.h"
+
 // this define is for FastLED
 #define NO_CORRECTION 1
 #define NO_MINIMUM_WAIT 1
@@ -13,9 +17,6 @@
 
 struct Framestate F; // the global instance
 
-#include "sampler.h"
-#include "ledpwm.h"
-#include "tempo.h"
 
 #ifdef BEAT_WITH_INTERRUPTS
 // This mode doesn't currently work, because it's all been integrated into this project and isn't needed
