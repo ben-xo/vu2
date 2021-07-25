@@ -93,7 +93,7 @@ void debug_loop() {
             portb_val = local_portb_val;
             break;
           case 2:
-            local_portb_val = slow ? 62 : 0;
+            local_portb_val = 0;
             portb_val = local_portb_val;
             break;
         }
