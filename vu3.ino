@@ -37,9 +37,6 @@ volatile uint8_t beats_from_interrupt = 0;
 
 CRGB leds[STRIP_LENGTH];
 
-CRGB middle[2];
-
-
 void setup() {
   // put your setup code here, to run once:
 
@@ -84,12 +81,6 @@ void setup() {
 
   setup_debug();
 
-  middle[0].r = 0;
-  middle[0].g = 255;
-  middle[0].b = 0;
-  middle[1].r = 0;
-  middle[1].g = 0;
-  middle[1].b = 0;
 }
 
 // auto change every 8 bars
@@ -282,33 +273,7 @@ void loop() {
 
     DEBUG_SAMPLE_RATE_HIGH();
 
-
-
-    static uint8_t X = 0;
-    static CRGB *led_parts[3] = {&leds[X], &middle[0], &leds[0]};
-    static int led_part_lens[3] = {STRIP_LENGTH-1-X, 0, X};
-
-    led_parts[0] = &leds[X];
-    led_part_lens[0] = STRIP_LENGTH-1-X;
-    led_parts[2] = &leds[0];
-    led_part_lens[2] = X;
-
-    FastLED[0].showN(
-      (CRGB **)&led_parts,
-      &led_part_lens[0],
-      155,
-      3
-    );
-
-    static uint32_t last_time = 0;
-    uint32_t this_time = micros();
-    if (this_time > last_time + 100000) {
-      X++;
-      last_time = this_time;
-    }
-    if(X==STRIP_LENGTH-1) X=0;
-
-    // FastLED.show();
+    FastLED.show();
     
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
