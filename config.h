@@ -32,14 +32,14 @@
 
 /*** Neopixel configuration ***/
 #define STRIP_LENGTH 60 // don't recommend >100
-#define FPS 100 // you can get up to about 180fps with a 60 strip, 125 with a 100-strip
+#define FPS 150 // you can get up to about 180fps with a 60 strip, 125 with a 100-strip
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_MILLIS (1000 / FPS) // 8000us
 #define FRAME_LENGTH_CYCLES (F_CPU / FPS)   // 128000 @ 16MHz
 #define FRAME_RATE_LIMIT 1 // limitless is fun!
 
 /*** Audio sampling config ***/
-#define SAMP_BUFF_LEN 128 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
+#define SAMP_BUFF_LEN 128 // this needs to be a power of 2.
 #define SAMP_FREQ 5000 // Hz
 
 /*** Beat Detect config ***/
