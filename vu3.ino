@@ -67,7 +67,7 @@ void setup() {
   pinMode (DEBUG_FRAME_RATE_PIN, OUTPUT);
 #endif
 
-  FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH-1).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
 
   FastLED.setDither( 0 );
   
@@ -277,7 +277,8 @@ void loop() {
 
     DEBUG_SAMPLE_RATE_HIGH();
 
-    FastLED[0].show(&leds[X], STRIP_LENGTH-X 255);
+
+    FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
 
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
