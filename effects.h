@@ -14,7 +14,7 @@
 #include <FastLED.h>
 #include "color_wheels.h"
 
-extern CRGB leds[STRIP_LENGTH];
+extern CRGB leds[STRIP_LENGTH*2 + (STRIP_LENGTH/3)];
 extern byte samples[SAMP_BUFF_LEN];
 extern volatile uint8_t current_sample;
 
