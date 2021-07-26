@@ -2,16 +2,19 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
+// this define is for FastLED
+#define NO_CORRECTION 1
+#define FASTLED_ALLOW_INTERRUPTS 1
+#define NO_MINIMUM_WAIT 1
+// #define TRINKET_SCALE 0
+
+
 #include "config.h"
 
 #include "sampler.h"
 #include "ledpwm.h"
 #include "tempo.h"
 
-// this define is for FastLED
-#define NO_CORRECTION 1
-#define NO_MINIMUM_WAIT 1
-// #define TRINKET_SCALE 0
 
 #include "framestate.h"
 
@@ -35,7 +38,7 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "debugrender.h"
 #include "render.h"
 
-CRGB leds[STRIP_LENGTH];
+CRGB leds[STRIP_LENGTH*2 + (STRIP_LENGTH/3)];
 
 void setup() {
   // put your setup code here, to run once:
@@ -64,7 +67,8 @@ void setup() {
   pinMode (DEBUG_FRAME_RATE_PIN, OUTPUT);
 #endif
 
-  FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH-1).setCorrection(TypicalLEDStrip);
+
   FastLED.setDither( 0 );
   
   setup_render();
@@ -273,8 +277,8 @@ void loop() {
 
     DEBUG_SAMPLE_RATE_HIGH();
 
-    FastLED.show();
-    
+    FastLED[0].show(&leds[X], STRIP_LENGTH-X 255);
+
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
     reach_target_fps();
