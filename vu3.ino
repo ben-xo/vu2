@@ -278,7 +278,8 @@ void loop() {
     DEBUG_SAMPLE_RATE_HIGH();
 
 
-    FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
+    FastLED.show();
+    //FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
 
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();

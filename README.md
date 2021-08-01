@@ -24,7 +24,7 @@ Features
 ========
 
 * Works from line-in
-* Interrupt driven audio sampling - even with WS2812s (requires a slightly modified FastLED library at https://github.com/ben-xo/FastLED - branch feature/experiment-show2-for-looping )
+* Interrupt driven audio sampling - even with WS2812s (requires a slightly modified FastLED library at https://github.com/ben-xo/FastLED)
 * A solid 180 frame per second with 60 WS2812s (or 125fps with 100 WS2812s) with no slow frames or dropped samples
 * Beat detection and tempo estimation in realtime. Yep! All on a single Arduino
 * 8 cool sound-reactive visualisers. These have been endlessly tinkered with so that they look okay at a range of input volumes and aren't TOO jarring when they change
@@ -105,7 +105,7 @@ Software
 1) Set up Arduino Studio (or arduino-cli)
 2) Install FastLED lib
 3) REPLACE FastLED lib with the version from https://github.com/ben-xo/FastLED . My version has modifications to enable interrupts in certain places in order to not drop samples.
-4) Make sure the modified FastLED is checked out to the branch `feature/show2`
+4) Make sure the modified FastLED is checked out to the branch `feature/ben-xo-integration-branch`
 5) Load vu3.ino into Arduino Studio
 6) edit config.h . set your strip length. maybe comment out the DEBUG defines if i left them uncommented
 7) program the arduino over USB. (or use ./build-and-upload.sh if you went with arduino-cli)
