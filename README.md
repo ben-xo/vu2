@@ -102,12 +102,14 @@ If you wanna watch the frame rate (and time taken to do various stages in the ma
 Software
 --------
 
-1) Set up Arduino Studio
+1) Set up Arduino Studio (or arduino-cli)
 2) Install FastLED lib
-3) REPLACE FastLED lib with the version from https://github.com/ben-xo/FastLED . My version has modifications to enable interrupts in certain places in order to not drop samples.
+3) REPLACE FastLED lib with the version from https://github.com/ben-xo/FastLED . My version has modifications to enable interrupts in certain places in order to not drop samples. *You need to be on the avr-interrupts branch.*
 4) Load vu3.ino into Arduino Studio
 5) edit config.h . set your strip length. maybe comment out the DEBUG defines if i left them uncommented
-6) program the arduino over USB.
+6) program the arduino over USB. (or use ./build-and-upload.sh if you went with arduino-cli)
+
+For extra performance, you can install avr-gcc@11 (e.g. from Mac Homebrew) and configure arduino-cli to use it. You get faster interrupts!
 
 Finally
 -------

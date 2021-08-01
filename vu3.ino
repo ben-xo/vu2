@@ -6,6 +6,7 @@
 
 // this define is for FastLED
 #define NO_CORRECTION 1
+#define FASTLED_ALLOW_INTERRUPTS 1
 
 #include "framestate.h"
 
