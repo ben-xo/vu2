@@ -55,4 +55,4 @@ typedef union renderheap_t {
 
 extern renderheap_t r;
 
-#endif /* _EFFECTS_H */
+#endif /* _RENDERHEAP_H */
