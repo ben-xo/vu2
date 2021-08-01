@@ -38,7 +38,7 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "debugrender.h"
 #include "render.h"
 
-CRGB leds[STRIP_LENGTH*2 + (STRIP_LENGTH/3)];
+CRGB leds[STRIP_LENGTH];
 
 void setup() {
   // put your setup code here, to run once:
