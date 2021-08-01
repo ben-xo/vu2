@@ -17,6 +17,16 @@ void debug_loop() {
   uint8_t vu_width = 0;
   uint8_t mode = 1;
 
+
+  // stuff used to demonstrate the strip is working and FastLED with showN mod is working
+  // CRGB middle[1];
+
+  // middle[0].r = 0;
+  // middle[0].g = 255;
+  // middle[0].b = 0;
+
+  // uint8_t X = 0;
+
   while(true) {
 
     uint8_t pushed = false;
@@ -78,7 +88,7 @@ void debug_loop() {
             portb_val = local_portb_val;
             break;
           case 2:
-            local_portb_val = slow ? 62 : 0;
+            local_portb_val = 0;
             portb_val = local_portb_val;
             break;
         }
@@ -88,7 +98,18 @@ void debug_loop() {
         #ifdef DEBUG_FRAME_RATE
           DEBUG_FRAME_RATE_PORT |= (1 << DEBUG_FRAME_RATE_PIN);
         #endif
-            FastLED.show();
+
+        FastLED.show();
+        // FastLED[0].show3(&leds[X], STRIP_LENGTH-X-1, &middle[0], 1, &leds[0], X, 255);
+
+        // static uint32_t last_time = 0;
+        // uint32_t this_time = micros();
+        // if (this_time > last_time + 100000) {
+        //   X++;
+        //   last_time = this_time;
+        // }
+        // if(X==STRIP_LENGTH-1) X=0;
+
         #ifdef DEBUG_FRAME_RATE
           DEBUG_FRAME_RATE_PORT &= ~(1 << DEBUG_FRAME_RATE_PIN);
         #endif

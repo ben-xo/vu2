@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "render.h"
+#include "renderheap.h"
 
 #define COOLING 65
 #define SPARKING 120
@@ -32,14 +33,14 @@ void setPixelHeatColor (int Pixel, byte temperature) {
 }
 
 void render_fire(bool is_beat, unsigned int peakToPeak) {
-  static byte heat[STRIP_LENGTH]; // todo: this is probably wasteful
+  byte *heat = r.fm.heat;
   int cooldown;
   
   // Step 1.  Cool down every cell a little
   for( uint8_t i = 0; i < STRIP_LENGTH; i++) {
     cooldown = random8(COOLING_RANDOM_FACTOR);
     
-    if(cooldown>heat[i]) {
+    if(cooldown>r.fm.heat[i]) {
       heat[i]=0;
     } else {
       heat[i]=heat[i]-cooldown;

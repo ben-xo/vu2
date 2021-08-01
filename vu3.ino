@@ -2,19 +2,24 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
-#include "config.h"
-
 // this define is for FastLED
 #define NO_CORRECTION 1
 #define FASTLED_ALLOW_INTERRUPTS 1
+#define NO_MINIMUM_WAIT 1
+// #define TRINKET_SCALE 0
+
+
+#include "config.h"
+
+#include "sampler.h"
+#include "ledpwm.h"
+#include "tempo.h"
+
 
 #include "framestate.h"
 
 struct Framestate F; // the global instance
 
-#include "sampler.h"
-#include "ledpwm.h"
-#include "tempo.h"
 
 #ifdef BEAT_WITH_INTERRUPTS
 // This mode doesn't currently work, because it's all been integrated into this project and isn't needed
@@ -34,7 +39,6 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "render.h"
 
 CRGB leds[STRIP_LENGTH];
-
 
 void setup() {
   // put your setup code here, to run once:
@@ -64,6 +68,7 @@ void setup() {
 #endif
 
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
+
   FastLED.setDither( 0 );
   
   setup_render();
@@ -79,6 +84,7 @@ void setup() {
   setup_initial_framestate();
 
   setup_debug();
+
 }
 
 // auto change every 8 bars
@@ -271,8 +277,10 @@ void loop() {
 
     DEBUG_SAMPLE_RATE_HIGH();
 
+
     FastLED.show();
-    
+    //FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
+
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
     reach_target_fps();

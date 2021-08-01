@@ -39,7 +39,7 @@
 #define FRAME_RATE_LIMIT 1 // limitless is fun!
 
 /*** Audio sampling config ***/
-#define SAMP_BUFF_LEN 128 // this needs to be a power of 2. Also, if it's not 256, we get glitches!
+#define SAMP_BUFF_LEN 128 // this needs to be a power of 2.
 #define SAMP_FREQ 5000 // Hz
 
 /*** Beat Detect config ***/
@@ -63,7 +63,7 @@
 
 
 /*** Attract mode config ***/
-#define ATTRACT_MODE_THRESHOLD 8 // vu value
+#define ATTRACT_MODE_THRESHOLD 24 // vu value
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
 
