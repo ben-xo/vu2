@@ -3,7 +3,7 @@
  */
 
 // this define is for FastLED
-#define NO_CORRECTION 1
+#define NO_CLOCK_CORRECTION 1
 #define FASTLED_ALLOW_INTERRUPTS 1
 #define NO_MINIMUM_WAIT 1
 // #define TRINKET_SCALE 0
@@ -39,6 +39,7 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "render.h"
 
 CRGB leds[STRIP_LENGTH];
+
 
 void setup() {
   // put your setup code here, to run once:
