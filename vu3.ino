@@ -228,27 +228,29 @@ void loop() {
 
     // now let's do some beat calculations
 
+    uint8_t my_current_sample = sampler.current_sample;
+    uint8_t my_new_sample_count = (my_current_sample - last_processed_sample) & ~SAMP_BUFF_LEN;
+
     bool was_beat = filter_beat;
 
     bool is_beat_1 = false; // start calculation assuming no beat in this frame
 
-    uint8_t new_samples = new_sample_count();
-    uint8_t sample_idx = last_processed_sample;
-    sampler.last_processed_sample = (sample_idx + new_samples) % SAMP_BUFF_LEN;
-
-    while(new_samples) {
-      sample_idx = next_sample_index(sample_idx);
+    uint8_t my_sample_base = my_current_sample - my_new_sample_count;
+    uint8_t offset = 0;
+    uint8_t sample_idx;
+    do {
+      sample_idx = (my_sample_base + offset) & ~SAMP_BUFF_LEN;
       uint8_t val = sampler.samples[sample_idx];
       PeckettIIRFixedPoint(val, &filter_beat);
       set_beat_at(sample_idx, filter_beat);
+      offset++;
 
       // If there was a beat edge detected at any point, set is_beat_1.
       // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
       // If we only checked the end of the frame, we might miss a beat that was very short.
       is_beat_1 |= filter_beat;
-      new_samples--;
-    }
-
+    } while(offset < my_new_sample_count);
+    last_processed_sample = sample_idx;
 
     F.is_beat_1 = is_beat_1;
     if(!was_beat && F.is_beat_1) {
