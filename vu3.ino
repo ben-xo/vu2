@@ -169,7 +169,9 @@ void loop() {
     DEBUG_SAMPLE_RATE_LOW();
         
     // read these as they're volatile
-    uint8_t sample_ptr = sampler.current_sample;
+    uint8_t my_current_sample = sampler.current_sample;
+    uint8_t my_new_sample_count = (my_current_sample - last_processed_sample) & ~SAMP_BUFF_LEN;
+
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     
     if(pushed == SHORT_PUSH) {
@@ -198,9 +200,9 @@ void loop() {
     // With 5kHz sample rate and 125fps, this is usually 40 samples. But because the interrupts are staggered so they don't all fire at once,
     // occassionally it's 39 or 41.
 #ifndef VU_LOOKBEHIND
-    F.vu_width = calculate_vu(sample_ptr, &F.min_vu, &F.max_vu, new_sample_count());
+    F.vu_width = calculate_vu(my_current_sample, &F.min_vu, &F.max_vu, my_new_sample_count);
 #else
-    F.vu_width = calculate_vu(sample_ptr, &F.min_vu, &F.max_vu, VU_LOOKBEHIND);
+    F.vu_width = calculate_vu(my_current_sample, &F.min_vu, &F.max_vu, VU_LOOKBEHIND);
 #endif
 
     uint8_t recent_max_vu = calculate_auto_gain_bonus(F.vu_width);
@@ -228,8 +230,6 @@ void loop() {
 
     // now let's do some beat calculations
 
-    uint8_t my_current_sample = sampler.current_sample;
-    uint8_t my_new_sample_count = (my_current_sample - last_processed_sample) & ~SAMP_BUFF_LEN;
 
     bool was_beat = filter_beat;
 
