@@ -16,7 +16,6 @@
 
 struct Sampler {
   volatile uint8_t current_sample;
-  volatile uint8_t current_sample_val;
   uint8_t last_processed_sample;
   volatile uint16_t sample_sum; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
   byte samples[SAMP_BUFF_LEN];
@@ -61,63 +60,69 @@ void __inline__ sample()
   // ADCSRA = (1 << ADPS1) | (1 << ADEN) | (1 << ADSC); // trigger a sample. Spell out the settings to save clock cycles.
   // // we know what ADCSRA should be set to, so we can do this in 2 cycles instead of the 4 it would take with ADCSRA |= (1 << ADSC)
   
-  // uint8_t sample_idx = (current_sample + 1) & ~SAMP_BUFF_LEN;
-  // current_sample = sample_idx;
-  
+  // uint8_t sample_idx = (sampler.current_sample + 1) & ~SAMP_BUFF_LEN;
+  // uint8_t *ss = sampler.samples;
+  // sampler.current_sample = sample_idx;
+
   // byte sample = ADCH;
-  // byte* the_sample = samples + sample_idx;
+  // byte* the_sample = ss + sample_idx;
   // uint8_t old_sample_at_position = *the_sample;
-  // sample_sum = sample_sum - old_sample_at_position + sample;
+  // sampler.sample_sum = sampler.sample_sum - old_sample_at_position + sample;
   // *the_sample = sample;
 
  /** assembler version of the above ^ **/
- uint8_t* ss = sampler.samples;
 
  asm volatile (
 
   // ADCSRA = (1 << ADPS1) | (1 << ADEN) | (1 << ADSC); // trigger a sample. Spell out the settings to save clock cycles.
+  // // // we know what ADCSRA should be set to, so we can do this in 3 cycles instead of the 4 it would take with ADCSRA |= (1 << ADSC)
     "ldi r24, %[ADCSRA_val] ; 194 \t\n"
     "sts %[ADCSRA_addr], r24 \t\n"
-  // // // we know what ADCSRA should be set to, so we can do this in 2 cycles instead of the 4 it would take with ADCSRA |= (1 << ADSC)
   
-  // // uint8_t sample_idx = (current_sample + 1) & ~SAMP_BUFF_LEN;
-    "lds r30, current_sample \t\n"
-    "subi  r30, 0xFF ; 255 \t\n"
-    "andi  r30, 0x7F ; 127 \t\n"
-  // // current_sample = sample_idx;
-    "sts current_sample, r30 ; \t\n"
-  
-  // // byte sample = ADCH;
-    "lds r18, %[ADCH_addr] \t\n"
-  // // byte* the_sample = samples + sample_idx;
-    "ldi r31, 0x00 ; 0 \t\n"
-    "subi  r30, lo8(-(%[ss])) ; 128 \t\n"
-    "sbci  r31, hi8(-(%[ss])) ; 252 \t\n"
-  // // uint8_t old_sample_at_position = *the_sample;
-  // // sample_sum = sample_sum - old_sample_at_position + sample;
-    "lds r24, sample_sum  \t\n"
-    "lds r25, sample_sum+0x1  \t\n"
-    "add r24, r18 \t\n"
-    "adc r25, r1 \t\n"
-    "ld  r19, Z \t\n"
-    "sub r24, r19 \t\n"
-    "sbc r25, r1 \t\n"
-    "sts sample_sum+0x1, r25 \t\n"
-    "sts sample_sum, r24 \t\n"
-  // // *the_sample = sample;
-    "st  Z, r18 \t\n"
-  // // new_sample_count++;
-    "lds r24, new_sample_count \t\n"
-    "subi  r24, 0xFF  \t\n"
-    "sts new_sample_count, r24  \t\n"
+    "ldi r30, lo8(%[ss]) \t\n"
+    "ldi r31, hi8(%[ss]) \t\n"
+    "ld r24, Z \t\n" // current_sample is offset 0
+    "subi r24, 0xFF \t\n"
+    "andi r24, 0x7F \t\n"
+    "st Z, r24 \t\n"
+
+    // instead of ldi / add / adc (which means we need a 0 reg), do add / brcc / subi (no reg needed)
+    "add r30, r24 \t\n"
+    // "ldi r25, 0x00 \t\n"
+    // "adc r31, r25 \t\n"
+    "brcc .+2 \t\n"
+    "subi r31, 0xFF \t\n"
+
+    "ldd r24, Z+4 \t\n"
+    "out %[GPIOR1_addr], r24 \t\n"
+
+    "lds r24, %[ADCH_addr] \t\n"
+    "std Z+4, r24 \t\n"
+    "lds r30, %[sample_sum]  \t\n"
+    "lds r31, %[sample_sum]+0x1  \t\n"
+
+    "add r30, r24 \t\n"
+    // "ldi r24, 0x00 \t\n"
+    // "adc r31, r24 \t\n"
+    "brcc .+2 \t\n"
+    "subi r31, 0xFF \t\n"
+
+    "in r24, %[GPIOR1_addr] \t\n"
+    "sub r30, r24 \t\n"
+    "sbci r31, 0x00 \t\n"
+
+    "sts %[sample_sum]+0x1, r31 \t\n"
+    "sts %[sample_sum], r30 \t\n"
      :
      : 
      [ADCSRA_addr] "M" (_SFR_IO_ADDR(ADCSRA) + 0x20),
      [ADCSRA_val] "M" ((1 << ADPS1) | (1 << ADEN) | (1 << ADSC)),
      [ADCH_addr] "M" (_SFR_IO_ADDR(ADCH) + 0x20),
-     [ss] "i" (ss)
+     [GPIOR1_addr] "I" (_SFR_IO_ADDR(GPIOR1)),
+     [ss] "i" (&sampler.current_sample),
+     [sample_sum] "i" (&sampler.sample_sum)
      :
-     "r24", "r30", "r31", "r18", "r25", "r19"
+     "r24", "r30", "r31"
    );
 
 //#ifdef DEBUG_SAMPLE_RATE
