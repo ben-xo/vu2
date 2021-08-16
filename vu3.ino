@@ -158,6 +158,7 @@ void loop() {
   F.auto_mode = true;
   F.is_silent = false;
   F.is_attract_mode = false;
+  F.pushed = 0;
   bool filter_beat = false;
 
   do_banner();
@@ -172,19 +173,7 @@ void loop() {
     uint8_t my_current_sample = sampler.current_sample;
     uint8_t my_new_sample_count = (my_current_sample - last_processed_sample) & ~SAMP_BUFF_LEN;
 
-    uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
-    
-    if(pushed == SHORT_PUSH) {
-      F.mode++;
-      if(F.mode > MAX_MODE) F.mode = 0;
-      portb_val = seven_seg(F.mode); // writes directly to pins 9-12
-      F.auto_mode = false;
-      F.is_attract_mode = false;
-    } else if(pushed == LONG_PUSH) {
-      F.auto_mode = true;
-      F.mode = 0;
-      portb_val = 0;
-    }
+
     
 #ifdef BEAT_WITH_INTERRUPTS
     // this won't be much use unless you also rip out the IIR code below…
@@ -208,7 +197,7 @@ void loop() {
     uint8_t recent_max_vu = calculate_auto_gain_bonus(F.vu_width);
     F.vu_width = F.vu_width + scale8(F.vu_width, 255 - recent_max_vu);
 
-    if (pushed || F.vu_width > ATTRACT_MODE_THRESHOLD) {
+    if (F.pushed || F.vu_width > ATTRACT_MODE_THRESHOLD) {
       // loudness: cancel attract mode, and so does a button press.
       F.is_silent = false;
       F.is_attract_mode = false;
@@ -279,6 +268,23 @@ void loop() {
 
     FastLED.show();
     //FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
+
+    // do post-frame-render stuff
+    uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    
+    if(pushed == SHORT_PUSH) {
+      F.mode++;
+      if(F.mode > MAX_MODE) F.mode = 0;
+      portb_val = seven_seg(F.mode); // writes directly to pins 9-12
+      F.auto_mode = false;
+      F.is_attract_mode = false;
+    } else if(pushed == LONG_PUSH) {
+      F.auto_mode = true;
+      F.mode = 0;
+      portb_val = 0;
+    }
+
+    F.pushed = pushed;
 
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
