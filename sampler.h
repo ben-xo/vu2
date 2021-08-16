@@ -14,12 +14,23 @@
 
 #define SAMPLER_TIMER_COUNTER_FOR(desired_sample_frequency) ((F_CPU / (1 * desired_sample_frequency) - 1))
 
+struct Sampler {
+  volatile uint8_t current_sample;
+  volatile uint8_t current_sample_val;
+  uint8_t last_processed_sample;
+  volatile uint16_t sample_sum; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
+  byte samples[SAMP_BUFF_LEN];
+  byte beat_bitmap[SAMP_BUFF_LEN >> 3];
+};
+
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
-extern byte samples[SAMP_BUFF_LEN];
-extern byte beat_bitmap[SAMP_BUFF_LEN >> 3];
-extern volatile uint8_t current_sample;
-extern volatile uint8_t new_sample_count;
-extern volatile uint16_t sample_sum;
+extern Sampler sampler;
+// extern byte samples[SAMP_BUFF_LEN];
+// extern byte beat_bitmap[SAMP_BUFF_LEN >> 3];
+// extern volatile uint8_t current_sample;
+// extern volatile uint8_t last_processed_sample;
+// extern volatile uint16_t sample_sum;
+
 void setup_sampler(uint16_t timer_counter);
 uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out, uint8_t vu_lookbehind);
 uint8_t calculate_auto_gain_bonus(uint8_t vu_width);
@@ -45,10 +56,9 @@ void __inline__ sample()
   // uint8_t old_sample_at_position = *the_sample;
   // sample_sum = sample_sum - old_sample_at_position + sample;
   // *the_sample = sample;
-  // new_sample_count++;
 
  /** assembler version of the above ^ **/
- uint8_t* ss = samples;
+ uint8_t* ss = sampler.samples;
 
  asm volatile (
 

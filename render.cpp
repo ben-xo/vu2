@@ -203,9 +203,9 @@ void render_combo_samples_with_beat(uint8_t sample_ptr, uint16_t sample_sum) {
   uint8_t dc_offset = sample_sum/SAMP_BUFF_LEN;
   for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
 
-    uint8_t r = qsub8(samples[(sample_ptr + j*1) % SAMP_BUFF_LEN], dc_offset);
-    uint8_t g = qsub8(samples[(sample_ptr + j*2) % SAMP_BUFF_LEN], dc_offset);
-    uint8_t b = qsub8(samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], dc_offset);
+    uint8_t r = qsub8(sampler.samples[(sample_ptr + j*1) % SAMP_BUFF_LEN], dc_offset);
+    uint8_t g = qsub8(sampler.samples[(sample_ptr + j*2) % SAMP_BUFF_LEN], dc_offset);
+    uint8_t b = qsub8(sampler.samples[(sample_ptr + j*3) % SAMP_BUFF_LEN], dc_offset);
 
     bool is_beat = get_beat_at((sample_ptr + j*2) % SAMP_BUFF_LEN);
 

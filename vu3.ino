@@ -169,7 +169,7 @@ void loop() {
     DEBUG_SAMPLE_RATE_LOW();
         
     // read these as they're volatile
-    uint8_t sample_ptr = current_sample;
+    uint8_t sample_ptr = sampler.current_sample;
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     
     if(pushed == SHORT_PUSH) {

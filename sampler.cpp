@@ -7,11 +7,9 @@
 #include <FastLED.h> // for qsub8
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
-byte samples[SAMP_BUFF_LEN];
-byte beat_bitmap[SAMP_BUFF_LEN >> 3];
-volatile uint8_t current_sample = 0;
-volatile uint8_t new_sample_count = 0;
-volatile uint16_t sample_sum = 0; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
+
+Sampler sampler = { 0 };
+
 
 /**
  * timer_counter = (F_CPU / (1 * desired_sample_frequency) - 1)
@@ -65,7 +63,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_
   uint8_t max_val=0, min_val=255, i=0;
   uint8_t start = sample_ptr - vu_lookbehind + 1;
   do {
-    uint8_t int_sample = samples[(start + i) % SAMP_BUFF_LEN];
+    uint8_t int_sample = sampler.samples[(start + i) % SAMP_BUFF_LEN];
     if(int_sample > max_val) max_val = int_sample;
     if(int_sample < min_val) min_val = int_sample;
     i++;
@@ -99,14 +97,14 @@ void set_beat_at(uint8_t offset, bool is_beat) {
   uint8_t beat_bitmap_index = offset / 8;
   uint8_t beat_bitmap_shift = offset & 7;
   if(is_beat) {
-    beat_bitmap[beat_bitmap_index] |= (1 << beat_bitmap_shift);
+    sampler.beat_bitmap[beat_bitmap_index] |= (1 << beat_bitmap_shift);
   } else {
-    beat_bitmap[beat_bitmap_index] &= ~(1 << beat_bitmap_shift);
+    sampler.beat_bitmap[beat_bitmap_index] &= ~(1 << beat_bitmap_shift);
   }
 }
 
 bool get_beat_at(uint8_t offset) {
   uint8_t beat_bitmap_index = offset / 8;
   uint8_t beat_bitmap_shift = offset & 7;
-  return beat_bitmap[beat_bitmap_index] & (1 << beat_bitmap_shift);
+  return sampler.beat_bitmap[beat_bitmap_index] & (1 << beat_bitmap_shift);
 }

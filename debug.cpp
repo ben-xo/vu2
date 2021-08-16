@@ -55,7 +55,7 @@ void debug_loop() {
 
           uint8_t i = 0;
           do {
-            which_samples[i] = samples[(start + i) % SAMP_BUFF_LEN];
+            which_samples[i] = sampler.samples[(start + i) % SAMP_BUFF_LEN];
             i++;
           } while(i < lookbehind);
           
