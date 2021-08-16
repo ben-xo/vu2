@@ -38,6 +38,19 @@ uint8_t calculate_auto_gain_bonus(uint8_t vu_width);
 void set_beat_at(uint8_t offset, bool is_beat);
 bool get_beat_at(uint8_t offset);
 
+uint8_t __inline__ new_sample_count_since(uint8_t current_sample) {
+  return (current_sample - sampler.last_processed_sample) & ~SAMP_BUFF_LEN;
+}
+
+uint8_t __inline__ new_sample_count() {
+  return new_sample_count_since(sampler.current_sample);
+}
+
+uint8_t __inline__ consume_sample_index() {
+  sampler.last_processed_sample = (sampler.last_processed_sample + 1) & ~SAMP_BUFF_LEN;
+  return sampler.last_processed_sample;
+}
+
 void __inline__ sample()
 {
 //#ifdef DEBUG_SAMPLE_RATE

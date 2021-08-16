@@ -198,7 +198,7 @@ void loop() {
     // With 5kHz sample rate and 125fps, this is usually 40 samples. But because the interrupts are staggered so they don't all fire at once,
     // occassionally it's 39 or 41.
 #ifndef VU_LOOKBEHIND
-    F.vu_width = calculate_vu(sample_ptr, &F.min_vu, &F.max_vu, new_sample_count);
+    F.vu_width = calculate_vu(sample_ptr, &F.min_vu, &F.max_vu, new_sample_count());
 #else
     F.vu_width = calculate_vu(sample_ptr, &F.min_vu, &F.max_vu, VU_LOOKBEHIND);
 #endif
@@ -228,31 +228,21 @@ void loop() {
 
     // now let's do some beat calculations
 
-    // snapshot values.
-    cli();
-    uint8_t my_current_sample = current_sample;
-    uint8_t my_new_sample_count = new_sample_count;
-    sei();
-
     bool was_beat = filter_beat;
 
     bool is_beat_1 = false; // start calculation assuming no beat in this frame
 
-    uint8_t my_sample_base = my_current_sample - new_sample_count;
-    uint8_t offset = 0;
-    do {
-      uint8_t sample_idx = (my_sample_base + offset) % SAMP_BUFF_LEN;
-      uint8_t val = samples[sample_idx];
+    while(new_sample_count()) {
+      uint8_t sample_idx = consume_sample_index();
+      uint8_t val = sampler.samples[sample_idx];
       PeckettIIRFixedPoint(val, &filter_beat);
       set_beat_at(sample_idx, filter_beat);
-      offset++;
 
       // If there was a beat edge detected at any point, set is_beat_1.
       // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
       // If we only checked the end of the frame, we might miss a beat that was very short.
       is_beat_1 |= filter_beat;
-    } while(offset < my_new_sample_count);
-    new_sample_count -= my_new_sample_count; // decrement the global new sample count
+    }
 
     F.is_beat_1 = is_beat_1;
     if(!was_beat && F.is_beat_1) {
@@ -273,7 +263,7 @@ void loop() {
         portb_val = seven_seg(F.mode); // writes directly to pins 9-12.
       }
 
-      render(current_sample, sample_sum);
+      render(sampler.current_sample, sampler.sample_sum);
     }
 
     DEBUG_SAMPLE_RATE_HIGH();
