@@ -21,6 +21,7 @@ struct Framestate
   bool is_attract_mode:1;
   bool is_beat_1:1;
   bool is_beat_2:1;
+  bool pushed:2;
 };
 
 extern Framestate F;

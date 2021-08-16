@@ -9,9 +9,9 @@
 void debug_render_combo(bool is_beat, bool is_beat_2, uint8_t sample_ptr) {
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
       // the +1 and +2 just make it a bit more colourful on the strip…
-      uint8_t r = samples[(sample_ptr + j) % SAMP_BUFF_LEN];
-      uint8_t g = samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
-      uint8_t b = samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
+      uint8_t r = sampler.samples[(sample_ptr + j) % SAMP_BUFF_LEN];
+      uint8_t g = sampler.samples[(sample_ptr + j*3) % SAMP_BUFF_LEN];
+      uint8_t b = sampler.samples[(sample_ptr + j*5) % SAMP_BUFF_LEN];
       leds[j].setRGB(
         r == 1 ? 0 : is_beat_2 ? r : 0, 
         g == 1 ? 0 : is_beat ? g : 0, 
@@ -32,9 +32,9 @@ void debug_render_is_beat(bool is_beat_2, bool is_beat_1) {
 void debug_render_samples(uint8_t sample_ptr, bool colourful) {
     for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
       // the +1 and +2 just make it a bit more colourful on the strip…
-      int8_t r = (int8_t)(samples[(sample_ptr + j) % SAMP_BUFF_LEN] - 127);
-      int8_t g = (int8_t)(samples[(sample_ptr + (colourful ? j*3 : j)) % SAMP_BUFF_LEN] - 127);
-      int8_t b = (int8_t)(samples[(sample_ptr + (colourful ? j*5 : j)) % SAMP_BUFF_LEN] - 127);
+      int8_t r = (int8_t)(sampler.samples[(sample_ptr + j) % SAMP_BUFF_LEN] - 127);
+      int8_t g = (int8_t)(sampler.samples[(sample_ptr + (colourful ? j*3 : j)) % SAMP_BUFF_LEN] - 127);
+      int8_t b = (int8_t)(sampler.samples[(sample_ptr + (colourful ? j*5 : j)) % SAMP_BUFF_LEN] - 127);
 //      Serial.print(r); Serial.print("\n");
       uint8_t rr = (r < 0 ? 127+r : r);
       uint8_t gg = (g < 0 ? 127+g : g);

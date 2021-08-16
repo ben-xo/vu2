@@ -13,10 +13,9 @@
 #include "config.h"
 #include <FastLED.h>
 #include "color_wheels.h"
+#include "sampler.h"
 
 extern CRGB leds[STRIP_LENGTH];
-extern byte samples[SAMP_BUFF_LEN];
-extern volatile uint8_t current_sample;
 
 // effects.cpp
 void fade_pixel(uint8_t pixel);

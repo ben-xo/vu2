@@ -7,10 +7,11 @@
 #include <FastLED.h> // for qsub8
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
-byte samples[SAMP_BUFF_LEN];
-byte beat_bitmap[SAMP_BUFF_LEN >> 3];
-volatile uint8_t current_sample = 0;
-volatile uint8_t new_sample_count = 0;
+
+Sampler sampler = { 0 };
+byte beat_bitmap[SAMP_BUFF_LEN >> 3] = { 0 };
+uint8_t last_processed_sample_bd = 0;
+uint8_t last_processed_sample_vu = 0;
 volatile uint16_t sample_sum = 0; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
 
 /**
@@ -65,7 +66,7 @@ uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_
   uint8_t max_val=0, min_val=255, i=0;
   uint8_t start = sample_ptr - vu_lookbehind + 1;
   do {
-    uint8_t int_sample = samples[(start + i) % SAMP_BUFF_LEN];
+    uint8_t int_sample = sampler.samples[(start + i) & ~SAMP_BUFF_LEN];
     if(int_sample > max_val) max_val = int_sample;
     if(int_sample < min_val) min_val = int_sample;
     i++;

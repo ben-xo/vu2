@@ -32,17 +32,15 @@ void debug_loop() {
     uint8_t pushed = false;
     uint8_t min_vu = 0, max_vu = 255;
 
-    if(new_sample_count) {
+    uint8_t new_sample_count_val = new_sample_count();
+    if(new_sample_count_val) {
         // read these as they're volatile
 
         pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
         
-        cli();
-        uint8_t sample_index = current_sample;
-        new_sample_count--;
-        sei();
+        uint8_t sample_index = consume_sample_index();
 
-        vu_width = calculate_vu(sample_index, &min_vu, &max_vu, new_sample_count);
+        vu_width = calculate_vu(sample_index, &min_vu, &max_vu, new_sample_count_val);
 
         if(pushed == SHORT_PUSH) {
 #ifdef VU_LOOKBEHIND
@@ -55,7 +53,7 @@ void debug_loop() {
 
           uint8_t i = 0;
           do {
-            which_samples[i] = samples[(start + i) % SAMP_BUFF_LEN];
+            which_samples[i] = sampler.samples[(start + i) % SAMP_BUFF_LEN];
             i++;
           } while(i < lookbehind);
           
