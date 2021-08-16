@@ -232,8 +232,12 @@ void loop() {
 
     bool is_beat_1 = false; // start calculation assuming no beat in this frame
 
-    while(new_sample_count()) {
-      uint8_t sample_idx = consume_sample_index();
+    uint8_t new_samples = new_sample_count();
+    uint8_t sample_idx = last_processed_sample;
+    sampler.last_processed_sample = (sample_idx + new_samples) % SAMP_BUFF_LEN;
+
+    while(new_samples) {
+      sample_idx = next_sample_index(sample_idx);
       uint8_t val = sampler.samples[sample_idx];
       PeckettIIRFixedPoint(val, &filter_beat);
       set_beat_at(sample_idx, filter_beat);
@@ -242,7 +246,9 @@ void loop() {
       // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
       // If we only checked the end of the frame, we might miss a beat that was very short.
       is_beat_1 |= filter_beat;
+      new_samples--;
     }
+
 
     F.is_beat_1 = is_beat_1;
     if(!was_beat && F.is_beat_1) {
@@ -263,7 +269,7 @@ void loop() {
         portb_val = seven_seg(F.mode); // writes directly to pins 9-12.
       }
 
-      render(sampler.current_sample, sampler.sample_sum);
+      render(sampler.current_sample, sample_sum);
     }
 
     DEBUG_SAMPLE_RATE_HIGH();

@@ -9,7 +9,9 @@
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 
 Sampler sampler = { 0 };
-
+byte beat_bitmap[SAMP_BUFF_LEN >> 3] = { 0 };
+uint8_t last_processed_sample = 0;
+volatile uint16_t sample_sum = 0; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
 
 /**
  * timer_counter = (F_CPU / (1 * desired_sample_frequency) - 1)
@@ -97,14 +99,14 @@ void set_beat_at(uint8_t offset, bool is_beat) {
   uint8_t beat_bitmap_index = offset / 8;
   uint8_t beat_bitmap_shift = offset & 7;
   if(is_beat) {
-    sampler.beat_bitmap[beat_bitmap_index] |= (1 << beat_bitmap_shift);
+    beat_bitmap[beat_bitmap_index] |= (1 << beat_bitmap_shift);
   } else {
-    sampler.beat_bitmap[beat_bitmap_index] &= ~(1 << beat_bitmap_shift);
+    beat_bitmap[beat_bitmap_index] &= ~(1 << beat_bitmap_shift);
   }
 }
 
 bool get_beat_at(uint8_t offset) {
   uint8_t beat_bitmap_index = offset / 8;
   uint8_t beat_bitmap_shift = offset & 7;
-  return sampler.beat_bitmap[beat_bitmap_index] & (1 << beat_bitmap_shift);
+  return beat_bitmap[beat_bitmap_index] & (1 << beat_bitmap_shift);
 }

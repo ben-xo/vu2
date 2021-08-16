@@ -16,19 +16,16 @@
 
 struct Sampler {
   volatile uint8_t current_sample;
-  uint8_t last_processed_sample;
-  volatile uint16_t sample_sum; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
   byte samples[SAMP_BUFF_LEN];
-  byte beat_bitmap[SAMP_BUFF_LEN >> 3];
 };
 
 // sample buffer. this is written into by an interrupt handler serviced by the ADC interrupt.
 extern Sampler sampler;
 // extern byte samples[SAMP_BUFF_LEN];
-// extern byte beat_bitmap[SAMP_BUFF_LEN >> 3];
+extern byte beat_bitmap[SAMP_BUFF_LEN >> 3];
 // extern volatile uint8_t current_sample;
-// extern volatile uint8_t last_processed_sample;
-// extern volatile uint16_t sample_sum;
+extern uint8_t last_processed_sample;
+extern volatile uint16_t sample_sum;
 
 void setup_sampler(uint16_t timer_counter);
 uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out, uint8_t vu_lookbehind);
@@ -38,16 +35,20 @@ void set_beat_at(uint8_t offset, bool is_beat);
 bool get_beat_at(uint8_t offset);
 
 uint8_t __inline__ new_sample_count_since(uint8_t current_sample) {
-  return (current_sample - sampler.last_processed_sample) & ~SAMP_BUFF_LEN;
+  return (current_sample - last_processed_sample) & ~SAMP_BUFF_LEN;
 }
 
 uint8_t __inline__ new_sample_count() {
   return new_sample_count_since(sampler.current_sample);
 }
 
+uint8_t __inline__ next_sample_index(uint8_t index) {
+  return (index + 1) & ~SAMP_BUFF_LEN;
+}
+
 uint8_t __inline__ consume_sample_index() {
-  sampler.last_processed_sample = (sampler.last_processed_sample + 1) & ~SAMP_BUFF_LEN;
-  return sampler.last_processed_sample;
+  last_processed_sample = next_sample_index(last_processed_sample);
+  return last_processed_sample;
 }
 
 void __inline__ sample()
@@ -93,11 +94,11 @@ void __inline__ sample()
     "brcc .+2 \t\n"
     "subi r31, 0xFF \t\n"
 
-    "ldd r24, Z+4 \t\n"
+    "ldd r24, Z+1 \t\n"
     "out %[GPIOR1_addr], r24 \t\n"
 
     "lds r24, %[ADCH_addr] \t\n"
-    "std Z+4, r24 \t\n"
+    "std Z+1, r24 \t\n"
     "lds r30, %[sample_sum]  \t\n"
     "lds r31, %[sample_sum]+0x1  \t\n"
 
@@ -120,7 +121,7 @@ void __inline__ sample()
      [ADCH_addr] "M" (_SFR_IO_ADDR(ADCH) + 0x20),
      [GPIOR1_addr] "I" (_SFR_IO_ADDR(GPIOR1)),
      [ss] "i" (&sampler.current_sample),
-     [sample_sum] "i" (&sampler.sample_sum)
+     [sample_sum] "i" (&sample_sum)
      :
      "r24", "r30", "r31"
    );
