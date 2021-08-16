@@ -171,10 +171,41 @@ void loop() {
         
     // read these as they're volatile
     uint8_t my_current_sample = sampler.current_sample;
-    uint8_t my_new_sample_count = (my_current_sample - last_processed_sample) & ~SAMP_BUFF_LEN;
+    uint8_t my_new_sample_count = (my_current_sample - last_processed_sample_bd) & ~SAMP_BUFF_LEN;
+
+    DEBUG_SAMPLE_RATE_HIGH();
+
+    // now let's do some beat calculations
 
 
-    
+    bool was_beat = filter_beat;
+
+    bool is_beat_1 = false; // start calculation assuming no beat in this frame
+
+    uint8_t my_sample_base = my_current_sample - my_new_sample_count;
+    uint8_t offset = 0;
+    uint8_t sample_idx;
+    do {
+      sample_idx = (my_sample_base + offset) & ~SAMP_BUFF_LEN;
+      uint8_t val = sampler.samples[sample_idx];
+      PeckettIIRFixedPoint(val, &filter_beat);
+      set_beat_at(sample_idx, filter_beat);
+      offset++;
+
+      // If there was a beat edge detected at any point, set is_beat_1.
+      // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
+      // If we only checked the end of the frame, we might miss a beat that was very short.
+      is_beat_1 |= filter_beat;
+    } while(offset < my_new_sample_count);
+    last_processed_sample_bd = sample_idx;
+
+    F.is_beat_1 = is_beat_1;
+    if(!was_beat && F.is_beat_1) {
+        record_rising_edge();
+    }
+
+    F.is_beat_2 = recalc_tempo(F.is_beat_2);
+
 #ifdef BEAT_WITH_INTERRUPTS
     // this won't be much use unless you also rip out the IIR code below…
     byte is_beats = beats_from_interrupt;
@@ -184,6 +215,15 @@ void loop() {
 
     F.min_vu = 0;
     F.max_vu = 255;
+
+    // read these again, as the sampler probably sampled some stuff during the beat processing
+    cli();
+    my_current_sample = sampler.current_sample;
+    uint16_t my_sample_sum = sample_sum;
+    sei();
+    my_new_sample_count = (my_current_sample - last_processed_sample_vu) & ~SAMP_BUFF_LEN;
+    last_processed_sample_vu = my_current_sample;
+
 
     // Currently, the lookbehind for the VU is always the number of samples queued up since the last VU (i.e. a whole Frame's worth)
     // With 5kHz sample rate and 125fps, this is usually 40 samples. But because the interrupts are staggered so they don't all fire at once,
@@ -215,39 +255,6 @@ void loop() {
       }
     }
 
-    DEBUG_SAMPLE_RATE_HIGH();
-
-    // now let's do some beat calculations
-
-
-    bool was_beat = filter_beat;
-
-    bool is_beat_1 = false; // start calculation assuming no beat in this frame
-
-    uint8_t my_sample_base = my_current_sample - my_new_sample_count;
-    uint8_t offset = 0;
-    uint8_t sample_idx;
-    do {
-      sample_idx = (my_sample_base + offset) & ~SAMP_BUFF_LEN;
-      uint8_t val = sampler.samples[sample_idx];
-      PeckettIIRFixedPoint(val, &filter_beat);
-      set_beat_at(sample_idx, filter_beat);
-      offset++;
-
-      // If there was a beat edge detected at any point, set is_beat_1.
-      // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
-      // If we only checked the end of the frame, we might miss a beat that was very short.
-      is_beat_1 |= filter_beat;
-    } while(offset < my_new_sample_count);
-    last_processed_sample = sample_idx;
-
-    F.is_beat_1 = is_beat_1;
-    if(!was_beat && F.is_beat_1) {
-        record_rising_edge();
-    }
-
-    F.is_beat_2 = recalc_tempo(F.is_beat_2);
-
     DEBUG_SAMPLE_RATE_LOW();
 
     if(F.is_attract_mode) {
@@ -260,7 +267,7 @@ void loop() {
         portb_val = seven_seg(F.mode); // writes directly to pins 9-12.
       }
 
-      render(sampler.current_sample, sample_sum);
+      render(my_current_sample, my_sample_sum);
     }
 
     DEBUG_SAMPLE_RATE_HIGH();

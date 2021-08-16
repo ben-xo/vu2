@@ -10,7 +10,8 @@
 
 Sampler sampler = { 0 };
 byte beat_bitmap[SAMP_BUFF_LEN >> 3] = { 0 };
-uint8_t last_processed_sample = 0;
+uint8_t last_processed_sample_bd = 0;
+uint8_t last_processed_sample_vu = 0;
 volatile uint16_t sample_sum = 0; // (DC offset approximated by sample_sum / SAMP_BUFF_LEN)
 
 /**

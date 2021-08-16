@@ -24,7 +24,8 @@ extern Sampler sampler;
 // extern byte samples[SAMP_BUFF_LEN];
 extern byte beat_bitmap[SAMP_BUFF_LEN >> 3];
 // extern volatile uint8_t current_sample;
-extern uint8_t last_processed_sample;
+extern uint8_t last_processed_sample_bd;
+extern uint8_t last_processed_sample_vu;
 extern volatile uint16_t sample_sum;
 
 void setup_sampler(uint16_t timer_counter);
@@ -35,7 +36,7 @@ void set_beat_at(uint8_t offset, bool is_beat);
 bool get_beat_at(uint8_t offset);
 
 __attribute__((always_inline)) uint8_t inline new_sample_count_since(uint8_t current_sample) {
-  return (current_sample - last_processed_sample) & ~SAMP_BUFF_LEN;
+  return (current_sample - last_processed_sample_vu) & ~SAMP_BUFF_LEN;
 }
 
 __attribute__((always_inline)) uint8_t inline new_sample_count() {
@@ -47,8 +48,8 @@ __attribute__((always_inline)) uint8_t inline next_sample_index(uint8_t index) {
 }
 
 __attribute__((always_inline)) uint8_t inline consume_sample_index() {
-  last_processed_sample = next_sample_index(last_processed_sample);
-  return last_processed_sample;
+  last_processed_sample_vu = next_sample_index(last_processed_sample_vu);
+  return last_processed_sample_vu;
 }
 
 __attribute__((always_inline)) void inline sample()
