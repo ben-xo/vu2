@@ -89,11 +89,11 @@ void setup() {
 }
 
 // auto change every 8 bars
-uint32_t static last_beat;
-byte static beat_count = 0;
 static bool auto_mode_change(bool is_beat) {
+  uint16_t static last_beat;
+  byte static beat_count = 0;
   if(!is_beat) return false;
-  uint32_t now = millis();
+  uint16_t now = (uint16_t)millis();
   if(now - last_beat > AUTO_BEATS_SILENCE_THRESH) {
     // mode change anyway if this is the first beat in ages
     last_beat = now;
