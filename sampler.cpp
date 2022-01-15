@@ -35,7 +35,7 @@ void setup_sampler(uint16_t timer_counter) {
   // for Arduino Uno ADC clock is 16 MHz and a conversion takes 13 clock cycles
 
   ADCSRA  = 0
-//         | (1 << ADPS2) 
+         | (1 << ADPS2) 
          | (1 << ADPS1) 
          | (0 << ADPS0)
   ; // fastest prescaler it can do. Most precise timing for ADC.
