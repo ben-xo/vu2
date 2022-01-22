@@ -65,9 +65,8 @@ void setup_sampler(uint16_t timer_counter) {
 
 uint8_t calculate_vu(uint8_t sample_ptr, uint8_t *min_val_out, uint8_t *max_val_out, uint8_t vu_lookbehind) {
   uint8_t max_val=0, min_val=255, i=0;
-  uint8_t start = sample_ptr - vu_lookbehind + 1;
   do {
-    uint8_t int_sample = sampler.samples[(start + i) & ~SAMP_BUFF_LEN];
+    uint8_t int_sample = sampler.samples[(uint8_t)(sample_ptr - i) & ~SAMP_BUFF_LEN];
     if(int_sample > max_val) max_val = int_sample;
     if(int_sample < min_val) min_val = int_sample;
     i++;
