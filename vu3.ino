@@ -41,6 +41,8 @@ volatile uint8_t beats_from_interrupt = 0;
 CRGB leds[STRIP_LENGTH];
 
 
+void(* hard_reset) (void) = 0;
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -188,6 +190,7 @@ void loop() {
     do {
       sample_idx = (my_sample_base + offset) & ~SAMP_BUFF_LEN;
       uint8_t val = sampler.samples[sample_idx];
+      // Serial.println(val);
       PeckettIIRFixedPoint(val, &filter_beat);
       set_beat_at(sample_idx, filter_beat);
       offset++;
@@ -198,6 +201,7 @@ void loop() {
       is_beat_1 |= filter_beat;
     } while(offset < my_new_sample_count);
     last_processed_sample_bd = sample_idx;
+
 
     F.is_beat_1 = is_beat_1;
     if(!was_beat && F.is_beat_1) {
@@ -279,16 +283,32 @@ void loop() {
     // do post-frame-render stuff
     uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     
-    if(pushed == SHORT_PUSH) {
-      F.mode++;
-      if(F.mode > MAX_MODE) F.mode = 0;
-      portb_val = seven_seg(F.mode); // writes directly to pins 9-12
-      F.auto_mode = false;
-      F.is_attract_mode = false;
-    } else if(pushed == LONG_PUSH) {
-      F.auto_mode = true;
-      F.mode = 0;
-      portb_val = 0;
+    switch(pushed)
+    {
+      case SHORT_PUSH:
+        F.mode++;
+        if(F.mode > MAX_MODE) F.mode = 0;
+        portb_val = seven_seg(F.mode); // writes directly to pins 9-12
+        F.auto_mode = false;
+        F.is_attract_mode = false;
+        break;
+
+      case LONG_PUSH:
+        F.auto_mode = true;
+        F.mode = 0;
+        portb_val = 0;
+        break;
+
+      case DOUBLE_CLICK:
+        debug_loop();
+        break;
+
+      case TRIPLE_CLICK:
+        hard_reset();
+        break;
+
+      default:
+        break;
     }
 
     F.pushed = pushed;

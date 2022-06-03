@@ -7,9 +7,9 @@
 
 /*** Pin configuration ***/
 #define AUDIO_INPUT_PIN 0
-#define BUTTON_PIN 4
+#define BUTTON_PIN 7
 #define NEOPIXEL_PIN 6
-#define DUTY_CYCLE_LED 7
+#define DUTY_CYCLE_LED 4 
 #define MODE_LED_PIN_1 8
 #define MODE_LED_PIN_2 9
 #define MODE_LED_PIN_3 10 
@@ -31,7 +31,7 @@
 
 
 /*** Neopixel configuration ***/
-#define STRIP_LENGTH 60 // don't recommend >100
+#define STRIP_LENGTH 100 // don't recommend >100
 #define FPS 150 // you can get up to about 180fps with a 60 strip, 125 with a 100-strip
 #define FRAME_LENGTH_MICROS (1000000 / FPS) // 8000us
 #define FRAME_LENGTH_MILLIS (1000 / FPS) // 8000us
