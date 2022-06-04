@@ -5,6 +5,10 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+/*** whether to display a rainbow at startup ***/
+// #define DO_BANNER 1
+#define DO_BANNER 0
+
 /*** Pin configuration ***/
 #define AUDIO_INPUT_PIN 0
 #define BUTTON_PIN 7

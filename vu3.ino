@@ -163,7 +163,9 @@ void loop() {
   F.pushed = 0;
   bool filter_beat = false;
 
+#if DO_BANNER
   do_banner();
+#endif
 
   portb_val = seven_seg(F.mode); // writes directly to pins 9-12
 

@@ -92,11 +92,11 @@ void debug_loop()
 
   while(true) {
 
-    pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
-    if(pushed)
-    {
-      return;
-    }
+    // pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    // if(pushed)
+    // {
+    //   return;
+    // }
 
     // Call the current pattern function once, updating the 'leds' array
     gPatterns[gCurrentPatternNumber]();

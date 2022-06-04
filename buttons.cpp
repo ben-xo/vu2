@@ -4,10 +4,14 @@
 
 #include "buttons.h"
 
-// // returns true on the falling edge of a button push
+
+bool is_down = false;
+uint8_t clicks = 0;
+uint16_t last_push = 0;
+
+
+// returns true on the falling edge of a button push
 // uint8_t was_button_pressed(uint8_t pins) {
-//   static bool is_down = false;
-//   static uint16_t last_push;
 //   uint16_t now = (uint16_t) millis();
 
 //   if(is_down && !pins) {
@@ -27,18 +31,19 @@
 //   return NO_PUSH;
 // }
 
+// void reset_button_state() {
+//   is_down = false;
+//   last_push = (uint16_t) millis();
+// }
 
 uint8_t was_button_pressed(uint8_t pins) {
-  static bool is_down = false;
-  static uint8_t clicks = 0;
-  static uint16_t last_down = 0;
 
   uint16_t now = (uint16_t) millis();
 
   if(!is_down && pins) {
     // pressed
     is_down = true;
-    last_down = now;
+    last_push = now;
     clicks++;
     return NO_PUSH;
   }
@@ -47,23 +52,25 @@ uint8_t was_button_pressed(uint8_t pins) {
     // not pressed
     if(clicks) {
       // but was pressed recently
-      if(now - last_down > 3000) {
-        clicks = 0;
-        return LONG_PUSH;
-      } else if(now - last_down > 500) {
-        clicks = 0;
+      uint8_t retval = NO_PUSH;
+      if(now - last_push > 3000) {
+        retval = LONG_PUSH;
+      } else if(now - last_push > 500) {
         switch(clicks) {
           case 1:
-            return SHORT_PUSH;
+            retval = SHORT_PUSH;
+            break;
           case 2:
-            return DOUBLE_CLICK;
+            retval = DOUBLE_CLICK;
+            break;
           case 3:
           default:
-            return TRIPLE_CLICK;
+            retval = TRIPLE_CLICK;
         }
       }
+      clicks = 0;
+      return retval;
     }
-    return NO_PUSH;
   }
 
   if(is_down && !pins) {
