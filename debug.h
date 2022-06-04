@@ -15,6 +15,8 @@
 #include "buttons.h"
 #include "fps.h"
 
+#include "sevenseg.h"
+
 #include "debugrender.h"
 
 #ifdef DEBUG_SAMPLE_RATE

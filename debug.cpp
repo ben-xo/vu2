@@ -89,6 +89,7 @@ void setup_debug() {
 void debug_loop()
 {
   uint8_t pushed = NO_PUSH;
+  uint8_t mode = 4;
 
   while(true) {
 
@@ -110,6 +111,13 @@ void debug_loop()
     EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
     EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
 
+    EVERY_N_MILLISECONDS( 100 ) {
+      mode++;
+      if(mode > 7) {
+        mode = 4;
+      }
+      portb_val = seven_seg(mode);
+    }
   }
 }
 
