@@ -30,6 +30,7 @@ volatile uint8_t beats_from_interrupt = 0;
 #endif
 
 #include "buttons.h"
+#include "hardreset.h"
 #include "fps.h"
 #include "debug.h"
 
@@ -39,9 +40,6 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "render.h"
 
 CRGB leds[STRIP_LENGTH];
-
-
-void(* hard_reset) (void) = 0;
 
 void setup() {
   // put your setup code here, to run once:
