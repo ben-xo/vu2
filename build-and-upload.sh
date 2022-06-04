@@ -9,8 +9,10 @@ if [[ "$1" == "--clean" ]]; then
 fi
 
 arduino-cli compile -v $CLEAN --fqbn arduino:avr:nano .
-BOARD=$(arduino-cli board list | grep usbserial | awk '{print $1}' );
 if [[ "$BOARD" == "" ]]; then
-  echo "No board found."
+  BOARD=$(arduino-cli board list | grep usbserial | awk '{print $1}' );
+  if [[ "$BOARD" == "" ]]; then
+    echo "No board found."
+  fi
 fi
 arduino-cli upload -v --fqbn arduino:avr:nano -p "$BOARD" .
