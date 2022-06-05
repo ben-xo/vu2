@@ -271,15 +271,19 @@ void loop() {
         break;
 
       case DOUBLE_CLICK:
+        portb_val = 0;
         debug_loop();
+        portb_val = seven_seg(F.mode);
         break;
 
       case TRIPLE_CLICK:
+        portb_val = 0;
         sober_mode();
+        portb_val = seven_seg(F.mode);
         break;
 
       case QUADRUPLE_CLICK:
-        hard_reset();
+        hard_reset(); // this never returns
         break;
 
       default:

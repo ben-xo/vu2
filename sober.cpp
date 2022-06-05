@@ -25,7 +25,7 @@ void sober_mode() {
     // insert a delay to keep the framerate modest
     FastLED.delay(1000/FPS); 
 
-    EVERY_N_SECONDS( 2 ) {
+    EVERY_N_SECONDS( 1 ) {
       portb_val = seven_seg(mode);
       mode = (mode == 13) ? 14 : 13;
     }
