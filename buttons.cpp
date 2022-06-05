@@ -28,7 +28,7 @@ uint8_t was_button_pressed(uint8_t pins) {
       uint8_t retval = NO_PUSH;
       if(now - last_push > 2000) {
         retval = LONG_PUSH;
-      } else if(now - last_push > 250) {
+      } else if(now - last_push > 300) {
         switch(clicks) {
           case 1:
             retval = SINGLE_CLICK;
