@@ -31,6 +31,7 @@ volatile uint8_t beats_from_interrupt = 0;
 
 #include "buttons.h"
 #include "hardreset.h"
+#include "sober.h"
 #include "fps.h"
 #include "debug.h"
 
@@ -274,6 +275,10 @@ void loop() {
         break;
 
       case TRIPLE_CLICK:
+        sober_mode();
+        break;
+
+      case QUADRUPLE_CLICK:
         hard_reset();
         break;
 
