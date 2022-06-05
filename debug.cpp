@@ -156,7 +156,7 @@ void debug_loop()
 
 //         vu_width = calculate_vu(sample_index, &min_vu, &max_vu, new_sample_count_val);
 
-//         if(pushed == SHORT_PUSH) {
+//         if(pushed == SINGLE_CLICK) {
 // #ifdef VU_LOOKBEHIND
 //           uint8_t lookbehind = VU_LOOKBEHIND;
 // #else

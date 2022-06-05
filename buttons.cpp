@@ -31,14 +31,24 @@ uint8_t was_button_pressed(uint8_t pins) {
       } else if(now - last_push > 250) {
         switch(clicks) {
           case 1:
-            retval = SHORT_PUSH;
+            retval = SINGLE_CLICK;
             break;
           case 2:
             retval = DOUBLE_CLICK;
             break;
           case 3:
-          default:
             retval = TRIPLE_CLICK;
+            break;
+          case 4:
+            retval = QUADRUPLE_CLICK;
+            break;
+          case 5:
+            retval = QUINTUPLE_CLICK;
+            break;
+          case 6:
+          default:
+            retval = SEXTUPLE_CLICK;
+            break;
         }
       }
       if(retval) clicks = 0;

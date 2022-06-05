@@ -255,7 +255,7 @@ void loop() {
     
     switch(pushed)
     {
-      case SHORT_PUSH:
+      case SINGLE_CLICK:
         F.mode++;
         if(F.mode > MAX_MODE) F.mode = 0;
         portb_val = seven_seg(F.mode); // writes directly to pins 9-12
