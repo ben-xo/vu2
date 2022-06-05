@@ -4,32 +4,27 @@
 
 #include "buttons.h"
 
-
-bool is_down = false;
-uint8_t clicks = 0;
-uint16_t last_push = 0;
-
 uint8_t was_button_pressed(uint8_t pins) {
 
   uint16_t now = (uint16_t) millis();
 
-  if(!is_down && pins) {
+  if(!F.is_down && pins) {
     // pressed
-    is_down = true;
-    last_push = now;
-    clicks++;
+    F.is_down = true;
+    F.last_push = now;
+    F.clicks++;
     return NO_PUSH;
   }
 
-  if(!is_down && !pins) {
+  if(!F.is_down && !pins) {
     // not pressed
-    if(clicks) {
+    if(F.clicks) {
       // but was pressed recently
       uint8_t retval = NO_PUSH;
-      if(now - last_push > 2000) {
+      if(now - F.last_push > BUTTON_LONG_PUSH_SPEED) { // default 2000ms
         retval = LONG_PUSH;
-      } else if(now - last_push > 300) {
-        switch(clicks) {
+      } else if(now - F.last_push > BUTTON_CLICK_SPEED) { // default 300ms
+        switch(F.clicks) {
           case 1:
             retval = SINGLE_CLICK;
             break;
@@ -51,14 +46,14 @@ uint8_t was_button_pressed(uint8_t pins) {
             break;
         }
       }
-      if(retval) clicks = 0;
+      if(retval) F.clicks = 0;
       return retval;
     }
   }
 
-  if(is_down && !pins) {
+  if(F.is_down && !pins) {
     // released
-    is_down = false;
+    F.is_down = false;
   }
 
   // is_down && pins means "still down"

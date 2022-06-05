@@ -129,7 +129,7 @@ void loop() {
   F.auto_mode = true;
   F.is_silent = false;
   F.is_attract_mode = false;
-  F.pushed = 0;
+  F.pushed = false;
   bool filter_beat = false;
 
 #if DO_BANNER
@@ -290,7 +290,7 @@ void loop() {
         break;
     }
 
-    F.pushed = pushed;
+    F.pushed = (bool)pushed;
 
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
