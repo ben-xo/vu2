@@ -112,6 +112,45 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
+static void ensure_minimum_power_draw() {
+  /* 
+  According to https://www.audiosciencereview.com/forum/index.php?threads/powerbank-keep-alive-to-power-low-current-5v-devices.4065/,
+  USB power banks tend to need between 50mA and 200mA to not assuming charging is finished and turn themselves off
+
+  According to https://www.temposlighting.com/guides/power-any-ws2812b-setup, a ws2812 at 50/255 brightness will draw ~10mA
+
+  Strategies
+  - minimum brightness
+    So, STRIP_LENGTH * MINIMUM_BRIGHTNESS / BRIGHTNESS_TO_MA_RATIO = MINIMUM_POWER_DRAW
+    Or  MINIMUM_POWER_DRAW * BRIGHTNESS_TO_MA_RATIO / STRIP_LENGTH = MINIMUM_BRIGHTNESS
+    Pro: conceptually simple
+    Con: waste of power
+    Con: affects renders which already draw more than enough current
+    Con: requires either an extra full scan of the LEDs, integration with each effect, or FastLED hax
+
+  - dynamic minimum brightness based on total as strip rendered
+    Pro: only draws power when there's darkness to compensate for
+    Pro: some effects will never need this
+    Con: needs state accounting
+    Con: requires either an extra full scan of the LEDs, integration with each effect, or FastLED hax
+
+  
+
+  */
+  uint8_t min_brightness = round((MINIMUM_POWER_DRAW * BRIGHTNESS_TO_MA_RATIO / STRIP_LENGTH) + 0.5f);
+  for(uint8_t p = 0; p <= STRIP_LENGTH; p++) {
+    CRGB l = leds[p];
+    if(l.r < min_brightness) {
+      l.r = min_brightness;
+    } 
+    if(l.g < min_brightness) {
+      l.g = min_brightness;
+    } 
+    if(l.b < min_brightness) {
+      l.b = min_brightness;
+    } 
+  }
+}
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -247,6 +286,8 @@ void loop() {
 
     DEBUG_SAMPLE_RATE_HIGH();
 
+    // make sure USB battery pack doesn't disable
+    ensure_minimum_power_draw();
 
     FastLED.show();
     //FastLED[0].show(&leds[0], STRIP_LENGTH, 255);

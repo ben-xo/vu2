@@ -71,6 +71,10 @@
 #define ATTRACT_MODE_TIMEOUT 15000 // ms (although this is compared 1024)
 #define ATTRACT_MODE_DOTS 5
 
+/**** Minimum Power Draw for USB battery packs ***/
+#define BRIGHTNESS_TO_MA_RATIO 5 // from https://www.temposlighting.com/guides/power-any-ws2812b-setup
+#define MINIMUM_POWER_DRAW 200 // mA - guess based on https://www.audiosciencereview.com/forum/index.php?threads/powerbank-keep-alive-to-power-low-current-5v-devices.4065/
+
 // By default it uses an entire frame's worth of samples, i.e everything not yet included in a VU.
 // But you can override that to suit your taste, especially as upping the FPS would reduce the number of samples in the calculation.
 //#define VU_LOOKBEHIND 20
