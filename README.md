@@ -56,28 +56,27 @@ The audio input stage expects "0" to be at around 2.5v (i.e the mid range of the
 
 Minimum would be something like:
 * ground of audio connected to ground of arduino
-* signal (left or right audio channel) connected to A0 through a 3.3uF electrolytic cap
-* signal connected to ground via a 103 cap
-* signal connected to ground and +5v through 100k resistors (to create a potential divider to get the signal to sit at 2.5v)
+* signal (left or right audio channel) connected to A0 through a small capacitor e.g. 3.3uF
+* A0 also connected to ground and +5v through 100k resistors (to create a potential divider to get the signal to sit at 2.5v)
 
 That's it.
 
 Output LEDs
 -----------
 
-* connect 5 LEDs from D8, D9, D10, D11 and D12 to ground. (no resistor needed). These show the current mode in binary
-* connect 2 LEDs from A1 and A2 to ground. These flash in time for the beats.
+* connect 5 LEDs from D8, D9, D10, D11 and D12 to ground. (no resistor needed). These show the current mode using either binary or seven seg "shapes"
+* connect 2 LEDs from A1 and A2 to ground. These flash in time for the beats. I use the decimal point and base of the seven seg.
 
 Mode Button
 -----------
 
-* Pull D4 to ground through a 10k resistor (if you don't and it floats the mode will go haywire)
+* Pull D4 to ground through a 10k+ resistor (if you don't and it floats the mode will go haywire)
 * Connect a push button from D4 to pull up to 5v. That's it
 
 LED light strip
 ---------------
 
-Connect some WS2812s or whatever through a 330 resistor to D6, in "the usual way".
+Connect some WS2812s or whatever through a 220 or 330 resistor to D6, in "the usual way".
 
 
 Notes on Power
