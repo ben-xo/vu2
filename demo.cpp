@@ -90,7 +90,7 @@ void setup_demo() {
 static void _demo_loop(const uint8_t start_sober)
 {
   uint8_t pushed = NO_PUSH;
-  uint8_t mode = 4;
+  uint8_t mode = start_sober ? 13 : 4;
   uint8_t render_mode = start_sober;
 
   portb_val = 0;
@@ -103,11 +103,30 @@ static void _demo_loop(const uint8_t start_sober)
     switch(pushed)
     {
       case SINGLE_CLICK:
+        // toggle demo / sober
         render_mode ^= 1;
+        mode = render_mode ? 13 : 4;
+        break;
+
+      case DOUBLE_CLICK:
+        // exit
+        return;
+
+      case TRIPLE_CLICK:
+        // for consistency with main, demo
+        render_mode = 0;
+        mode = 4;
+        break;
+
+      case QUADRUPLE_CLICK:
+        // for consistency with main, sober
+        render_mode = 1;
+        mode = 13;
         break;
 
       case LONG_PUSH:
-        return;
+        hard_reset(); // this never returns
+        break;
 
       default:
         break;
@@ -122,7 +141,7 @@ static void _demo_loop(const uint8_t start_sober)
 
       EVERY_N_SECONDS( 1 ) {
         portb_val = seven_seg(mode);
-        mode = (mode == 13) ? 14 : 13;
+        mode = (mode <= 13) ? 14 : 13;
       }      
     } else {
 

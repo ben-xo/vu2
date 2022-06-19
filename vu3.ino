@@ -210,30 +210,33 @@ void loop() {
     switch(pushed)
     {
       case SINGLE_CLICK:
+        // change mode (cancels auto change)
+        F.auto_mode = false;
+        F.is_attract_mode = false;
         F.mode++;
         if(F.mode > MAX_MODE) F.mode = 0;
         portb_val = seven_seg(F.mode); // writes directly to pins 9-12
-        F.auto_mode = false;
-        F.is_attract_mode = false;
         break;
 
-      case LONG_PUSH:
+      case DOUBLE_CLICK:
+        // reinstate auto change
         F.auto_mode = true;
+        F.is_attract_mode = false;
         F.mode = 0;
         portb_val = 0;
         break;
 
-      case DOUBLE_CLICK:
+      case TRIPLE_CLICK:
         demo_loop();
         portb_val = seven_seg(F.mode);
         break;
 
-      case TRIPLE_CLICK:
+      case QUADRUPLE_CLICK:
         sober_loop();
         portb_val = seven_seg(F.mode);
         break;
 
-      case QUADRUPLE_CLICK:
+      case LONG_PUSH:
         hard_reset(); // this never returns
         break;
 
