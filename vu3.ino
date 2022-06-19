@@ -50,12 +50,12 @@ void setup() {
   // put your setup code here, to run once:
 
   // the pin with the push button
-  pinMode(BUTTON_PIN, INPUT);
   pinMode(NEOPIXEL_PIN, OUTPUT);
   pinMode(DUTY_CYCLE_LED, OUTPUT);
 
   beat_pin.config(OUTPUT, LOW);
   tempo_pin.config(OUTPUT, LOW);
+  button_pin.config(INPUT, LOW);
   
   // the pin with the push-button LED
   pinMode(BUTTON_LED_PIN,OUTPUT);  
@@ -206,7 +206,7 @@ void loop() {
     //FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
 
     // do post-frame-render stuff
-    uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    uint8_t pushed = was_button_pressed();
     
     switch(pushed)
     {
@@ -246,9 +246,6 @@ void loop() {
 
     F.pushed = (bool)pushed;
 
-    DEBUG_SAMPLE_RATE_LOW();
-    DEBUG_FRAME_RATE_LOW();
-    reach_target_fps();
-    F.frame_counter++;
+    frame_epilogue();
   }
 }

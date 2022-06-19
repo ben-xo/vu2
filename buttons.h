@@ -10,6 +10,8 @@
 #include "config.h"
 #include "framestate.h"
 
+#include <DigitalIO.h>
+
 #define NO_PUSH 0
 #define SINGLE_CLICK 1
 #define DOUBLE_CLICK 2
@@ -27,6 +29,8 @@
 #define BUTTON_LONG_PUSH_SPEED 2000 // ms
 #endif
 
-uint8_t was_button_pressed(uint8_t pins);
+extern DigitalPin<BUTTON_PIN> button_pin;
+
+uint8_t was_button_pressed();
 
 #endif /* _BUTTONS_H */

@@ -12,7 +12,7 @@ void sober_mode() {
 
   while(true) {
 
-    pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    pushed = was_button_pressed();
     if(pushed)
     {
       return;

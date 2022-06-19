@@ -4,7 +4,9 @@
 
 #include "buttons.h"
 
-uint8_t was_button_pressed(uint8_t pins) {
+uint8_t was_button_pressed() {
+
+  bool pins = button_pin.read();
 
   uint16_t now = (uint16_t) millis();
 

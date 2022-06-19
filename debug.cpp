@@ -97,7 +97,7 @@ void debug_loop()
 
     one_frame_sample_handler();
 
-    pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
+    pushed = was_button_pressed();
     if(pushed)
     {
       return;

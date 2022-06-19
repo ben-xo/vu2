@@ -13,6 +13,10 @@
 
 #include "framestate.h"
 
+#include "buttons.h"
+#include "hardreset.h"
+#include "sober.h"
+
 #include "fps.h"
 #include "debug.h"
 
@@ -21,7 +25,7 @@ extern bool filter_beat;
 extern uint8_t my_current_sample;
 extern uint16_t my_sample_sum;
 
-__attribute__((always_inline)) void static one_frame_sample_handler() {
+__attribute__((always_inline)) static void one_frame_sample_handler() {
 
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_SAMPLE_RATE_LOW();
@@ -115,6 +119,13 @@ __attribute__((always_inline)) void static one_frame_sample_handler() {
     }
 
     DEBUG_SAMPLE_RATE_LOW();
+}
+
+static void frame_epilogue() {
+    DEBUG_SAMPLE_RATE_LOW();
+    DEBUG_FRAME_RATE_LOW();
+    reach_target_fps();
+    F.frame_counter++;
 }
 
 #endif /* _LOOP_H */
