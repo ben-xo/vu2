@@ -109,6 +109,7 @@ static void _demo_loop(const uint8_t start_sober)
         break;
 
       case DOUBLE_CLICK:
+      case LONG_PUSH:
         // exit
         return;
 
@@ -124,7 +125,7 @@ static void _demo_loop(const uint8_t start_sober)
         mode = 13;
         break;
 
-      case LONG_PUSH:
+      case REALLY_LONG_PUSH:
         hard_reset(); // this never returns
         break;
 
@@ -138,9 +139,9 @@ static void _demo_loop(const uint8_t start_sober)
 
       // send the 'leds' array out to the actual LED strip
       FastLED.show();
+      portb_val = seven_seg(mode);
 
       EVERY_N_SECONDS( 1 ) {
-        portb_val = seven_seg(mode);
         mode = (mode <= 13) ? 14 : 13;
       }      
     } else {
@@ -149,7 +150,9 @@ static void _demo_loop(const uint8_t start_sober)
       gPatterns[gCurrentPatternNumber]();
 
       // send the 'leds' array out to the actual LED strip
-      FastLED.show();  
+      FastLED.show();
+      portb_val = seven_seg(mode);
+
 
       // do some periodic updates
       EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
@@ -160,7 +163,6 @@ static void _demo_loop(const uint8_t start_sober)
         if(mode > 7) {
           mode = 4;
         }
-        portb_val = seven_seg(mode);
       }
     }
 

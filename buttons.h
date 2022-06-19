@@ -8,6 +8,8 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "ledpwm.h"
+#include "sevenseg.h"
 #include "framestate.h"
 
 #include <DigitalIO.h>
@@ -18,8 +20,8 @@
 #define TRIPLE_CLICK 3
 #define QUADRUPLE_CLICK 4
 #define QUINTUPLE_CLICK 5
-#define SEXTUPLE_CLICK 6
-#define LONG_PUSH 7
+#define LONG_PUSH 6
+#define REALLY_LONG_PUSH 7
 
 #ifndef BUTTON_CLICK_SPEED
 #define BUTTON_CLICK_SPEED 300 // ms
@@ -27,6 +29,10 @@
 
 #ifndef BUTTON_LONG_PUSH_SPEED
 #define BUTTON_LONG_PUSH_SPEED 2000 // ms
+#endif
+
+#ifndef BUTTON_REALLY_LONG_PUSH_SPEED
+#define BUTTON_REALLY_LONG_PUSH_SPEED 4000 // ms
 #endif
 
 extern DigitalPin<BUTTON_PIN> button_pin;

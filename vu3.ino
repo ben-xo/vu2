@@ -218,6 +218,7 @@ void loop() {
         portb_val = seven_seg(F.mode); // writes directly to pins 9-12
         break;
 
+      case LONG_PUSH:
       case DOUBLE_CLICK:
         // reinstate auto change
         F.auto_mode = true;
@@ -236,7 +237,7 @@ void loop() {
         portb_val = seven_seg(F.mode);
         break;
 
-      case LONG_PUSH:
+      case REALLY_LONG_PUSH:
         hard_reset(); // this never returns
         break;
 
