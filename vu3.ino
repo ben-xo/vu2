@@ -119,7 +119,7 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   // hold down button at startup
-  if(PIND & (1 << BUTTON_PIN)) {
+  if(button_pin.read()) {
     demo_loop();
   }
   
