@@ -5,6 +5,8 @@
  */
 
 #include "debug.h"
+#include "loop.h"
+
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
@@ -92,6 +94,8 @@ void debug_loop()
   uint8_t mode = 4;
 
   while(true) {
+
+    one_frame_sample_handler();
 
     pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
     if(pushed)
