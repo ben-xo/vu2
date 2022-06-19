@@ -9,6 +9,8 @@
 #include <Arduino.h>
 #include "config.h"
 
+// these are offsets into PORTB. Because of the way the masking algorithm works with half-bytes,
+// you should write into EITHER the lower or upper half. Don't wire your seven seg into a mixture.
 #define SEG_G (1<<0)
 #define SEG_F (1<<1)
 #define SEG_A (1<<2)

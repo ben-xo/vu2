@@ -28,7 +28,7 @@
 
 /*** LED PWM configuration ***/
 #define PWM_LED_FRQ      10000 // 10kHz
-#define PWM_DUTY_PERCENT 10
+#define PWM_DUTY_PERCENT 5
 
 /*** If you connect A, B, G and F of a 7 segment display to PORTB (that is, D8-D11) then you can have a cute shape instead of a binary counter ***/
 #define SEVEN_SEG_MODE_DISPLAY 1
