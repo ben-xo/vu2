@@ -3,8 +3,8 @@
  */
 
 
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#ifndef _DEMO_H
+#define _DEMO_H
 
 #include <Arduino.h>
 #include "config.h"
@@ -38,7 +38,8 @@
 extern uint32_t start_time;
 extern uint32_t silent_since;
 
-void setup_debug();
-void debug_loop();
+void setup_demo();
+void demo_loop();
+void sober_loop();
 
-#endif /* _DEBUG_H */
+#endif /* _DEMO_H */

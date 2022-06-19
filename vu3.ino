@@ -35,9 +35,8 @@ volatile uint8_t beats_from_interrupt = 0;
 
 #include "buttons.h"
 #include "hardreset.h"
-#include "sober.h"
 #include "fps.h"
-#include "debug.h"
+#include "demo.h"
 
 #include <DigitalIO.h>
 
@@ -89,7 +88,7 @@ void setup() {
 
   setup_initial_framestate();
 
-  setup_debug();
+  setup_demo();
 
 }
 
@@ -161,7 +160,7 @@ void loop() {
 
   // hold down button at startup
   if(PIND & (1 << BUTTON_PIN)) {
-    debug_loop();
+    demo_loop();
   }
   
   F.is_beat_1 = false;
@@ -207,7 +206,7 @@ void loop() {
 
     // do post-frame-render stuff
     uint8_t pushed = was_button_pressed();
-    
+    F.pushed = (bool)pushed;
     switch(pushed)
     {
       case SINGLE_CLICK:
@@ -225,14 +224,12 @@ void loop() {
         break;
 
       case DOUBLE_CLICK:
-        portb_val = 0;
-        debug_loop();
+        demo_loop();
         portb_val = seven_seg(F.mode);
         break;
 
       case TRIPLE_CLICK:
-        portb_val = 0;
-        sober_mode();
+        sober_loop();
         portb_val = seven_seg(F.mode);
         break;
 
@@ -243,8 +240,6 @@ void loop() {
       default:
         break;
     }
-
-    F.pushed = (bool)pushed;
 
     frame_epilogue();
   }

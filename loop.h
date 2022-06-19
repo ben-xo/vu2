@@ -15,10 +15,9 @@
 
 #include "buttons.h"
 #include "hardreset.h"
-#include "sober.h"
 
 #include "fps.h"
-#include "debug.h"
+#include "demo.h"
 
 // the loop is inlined, but filter_beat needs continuity.
 extern bool filter_beat;
@@ -121,7 +120,7 @@ __attribute__((always_inline)) static void one_frame_sample_handler() {
     DEBUG_SAMPLE_RATE_LOW();
 }
 
-static void frame_epilogue() {
+__attribute__((always_inline)) static void frame_epilogue() {
     DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
     reach_target_fps();

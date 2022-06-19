@@ -4,7 +4,7 @@
  * Most of this file is adapted from FastLED DemoReel100.ino by Mark Kriegsman.
  */
 
-#include "debug.h"
+#include "demo.h"
 #include "loop.h"
 
 
@@ -83,50 +83,81 @@ void nextPattern()
 }
 
 
-void setup_debug() {
+void setup_demo() {
   Serial.begin(2000000);
 } 
 
-  
-void debug_loop()
+static void _demo_loop(const uint8_t start_sober)
 {
   uint8_t pushed = NO_PUSH;
   uint8_t mode = 4;
+  uint8_t render_mode = start_sober;
+
+  portb_val = 0;
 
   while(true) {
 
     one_frame_sample_handler();
 
     pushed = was_button_pressed();
-    if(pushed)
+    switch(pushed)
     {
-      return;
+      case SINGLE_CLICK:
+        render_mode ^= 1;
+        break;
+
+      case LONG_PUSH:
+        return;
+
+      default:
+        break;
     }
 
-    // Call the current pattern function once, updating the 'leds' array
-    gPatterns[gCurrentPatternNumber]();
+    if(render_mode == 1) {
+      // sober
+      fill_rainbow( leds, STRIP_LENGTH, 0, 7);
 
-    // send the 'leds' array out to the actual LED strip
-    FastLED.show();  
-    // insert a delay to keep the framerate modest
-    FastLED.delay(1000/FPS); 
+      // send the 'leds' array out to the actual LED strip
+      FastLED.show();
 
-    // do some periodic updates
-    EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
-    EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
+      EVERY_N_SECONDS( 1 ) {
+        portb_val = seven_seg(mode);
+        mode = (mode == 13) ? 14 : 13;
+      }      
+    } else {
 
-    EVERY_N_MILLISECONDS( 100 ) {
-      mode++;
-      if(mode > 7) {
-        mode = 4;
+      // Call the current pattern function once, updating the 'leds' array
+      gPatterns[gCurrentPatternNumber]();
+
+      // send the 'leds' array out to the actual LED strip
+      FastLED.show();  
+
+      // do some periodic updates
+      EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+      EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
+
+      EVERY_N_MILLISECONDS( 100 ) {
+        mode++;
+        if(mode > 7) {
+          mode = 4;
+        }
+        portb_val = seven_seg(mode);
       }
-      portb_val = seven_seg(mode);
     }
+
+    frame_epilogue();
   }
 }
 
+void demo_loop() {
+  _demo_loop(0);
+}
 
-// void debug_loop() {
+void sober_loop() {
+  _demo_loop(1);
+}
+
+// void demo_loop() {
 
 // //  uint8_t beat_sustain = 0;
 //   byte is_beats = 0;
