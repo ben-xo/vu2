@@ -20,6 +20,10 @@
 
 struct Framestate F; // the global instance
 
+#include "loop.h"
+bool filter_beat = false;
+uint8_t my_current_sample = 0;
+uint16_t my_sample_sum = 0;
 
 #ifdef BEAT_WITH_INTERRUPTS
 // This mode doesn't currently work, because it's all been integrated into this project and isn't needed
@@ -31,9 +35,8 @@ volatile uint8_t beats_from_interrupt = 0;
 
 #include "buttons.h"
 #include "hardreset.h"
-#include "sober.h"
 #include "fps.h"
-#include "debug.h"
+#include "demo.h"
 
 #include <DigitalIO.h>
 
@@ -46,12 +49,12 @@ void setup() {
   // put your setup code here, to run once:
 
   // the pin with the push button
-  pinMode(BUTTON_PIN, INPUT);
   pinMode(NEOPIXEL_PIN, OUTPUT);
   pinMode(DUTY_CYCLE_LED, OUTPUT);
 
   beat_pin.config(OUTPUT, LOW);
   tempo_pin.config(OUTPUT, LOW);
+  button_pin.config(INPUT, LOW);
   
   // the pin with the push-button LED
   pinMode(BUTTON_LED_PIN,OUTPUT);  
@@ -85,7 +88,7 @@ void setup() {
 
   setup_initial_framestate();
 
-  setup_debug();
+  setup_demo();
 
 }
 
@@ -112,13 +115,12 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
-
 void loop() {
   // put your main code here, to run repeatedly:
 
   // hold down button at startup
   if(PIND & (1 << BUTTON_PIN)) {
-    debug_loop();
+    demo_loop();
   }
   
   F.is_beat_1 = false;
@@ -130,7 +132,6 @@ void loop() {
   F.is_silent = false;
   F.is_attract_mode = false;
   F.pushed = false;
-  bool filter_beat = false;
 
 #if DO_BANNER
   do_banner();
@@ -139,98 +140,8 @@ void loop() {
   portb_val = seven_seg(F.mode); // writes directly to pins 9-12
 
   while(true) {
-    DEBUG_FRAME_RATE_HIGH();
-    DEBUG_SAMPLE_RATE_LOW();
-        
-    // read these as they're volatile
-    uint8_t my_current_sample = sampler.current_sample;
-    uint8_t my_new_sample_count = (my_current_sample - last_processed_sample_bd) & ~SAMP_BUFF_LEN;
 
-    DEBUG_SAMPLE_RATE_HIGH();
-
-    // now let's do some beat calculations
-
-
-    bool was_beat = filter_beat;
-
-    bool is_beat_1 = false; // start calculation assuming no beat in this frame
-
-    uint8_t my_sample_base = my_current_sample - my_new_sample_count;
-    uint8_t offset = 0;
-    uint8_t sample_idx;
-    do {
-      sample_idx = (my_sample_base + offset) & ~SAMP_BUFF_LEN;
-      uint8_t val = sampler.samples[sample_idx];
-      // Serial.println(val);
-      PeckettIIRFixedPoint(val, &filter_beat);
-      set_beat_at(sample_idx, filter_beat);
-      offset++;
-
-      // If there was a beat edge detected at any point, set is_beat_1.
-      // This gives a 1 frame resolution on beats, which is 8ms resolution at 125fps - good enough for us.
-      // If we only checked the end of the frame, we might miss a beat that was very short.
-      is_beat_1 |= filter_beat;
-    } while(offset < my_new_sample_count);
-    last_processed_sample_bd = sample_idx;
-
-
-    F.is_beat_1 = is_beat_1;
-    if(!was_beat && F.is_beat_1) {
-        record_rising_edge();
-    }
-
-    F.is_beat_2 = recalc_tempo(F.is_beat_2);
-
-#ifdef BEAT_WITH_INTERRUPTS
-    // this won't be much use unless you also rip out the IIR code below…
-    byte is_beats = beats_from_interrupt;
-    F.is_beat_1 = is_beats & (1 << BEAT_PIN_1);
-    F.is_beat_2 = is_beats & (1 << BEAT_PIN_2);
-#endif
-
-    F.min_vu = 0;
-    F.max_vu = 255;
-
-    // read these again, as the sampler probably sampled some stuff during the beat processing
-    cli();
-    my_current_sample = sampler.current_sample;
-    uint16_t my_sample_sum = sample_sum;
-    sei();
-    my_new_sample_count = (my_current_sample - last_processed_sample_vu) & ~SAMP_BUFF_LEN;
-    last_processed_sample_vu = my_current_sample;
-
-
-    // Currently, the lookbehind for the VU is always the number of samples queued up since the last VU (i.e. a whole Frame's worth)
-    // With 5kHz sample rate and 125fps, this is usually 40 samples. But because the interrupts are staggered so they don't all fire at once,
-    // occassionally it's 39 or 41.
-#ifndef VU_LOOKBEHIND
-    F.vu_width = calculate_vu(my_current_sample, &F.min_vu, &F.max_vu, my_new_sample_count);
-#else
-    F.vu_width = calculate_vu(my_current_sample, &F.min_vu, &F.max_vu, VU_LOOKBEHIND);
-#endif
-
-    uint8_t recent_max_vu = calculate_auto_gain_bonus(F.vu_width);
-    F.vu_width = F.vu_width + scale8(F.vu_width, 255 - recent_max_vu);
-
-    if (F.pushed || F.vu_width > ATTRACT_MODE_THRESHOLD) {
-      // loudness: cancel attract mode, and so does a button press.
-      F.is_silent = false;
-      F.is_attract_mode = false;
-    } else {
-      // quiet: short or long?
-      if(!F.is_silent) {
-        // first loop of silence. Record time.
-        silent_since = start_time; // note start time of silence
-        F.is_silent = true;
-      } else {
-        // 2nd+ loop of silence. Long enough for attract mode?
-        if (!F.is_attract_mode && ((start_time - silent_since)/1024 > ATTRACT_MODE_TIMEOUT)) {
-          F.is_attract_mode = true;
-        }
-      }
-    }
-
-    DEBUG_SAMPLE_RATE_LOW();
+    one_frame_sample_handler();
 
     if(F.is_attract_mode) {
       render_attract();
@@ -247,42 +158,43 @@ void loop() {
 
     DEBUG_SAMPLE_RATE_HIGH();
 
-
     FastLED.show();
     //FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
 
     // do post-frame-render stuff
-    uint8_t pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
-    
+    uint8_t pushed = was_button_pressed();
+    F.pushed = (bool)pushed;
     switch(pushed)
     {
       case SINGLE_CLICK:
+        // change mode (cancels auto change)
+        F.auto_mode = false;
+        F.is_attract_mode = false;
         F.mode++;
         if(F.mode > MAX_MODE) F.mode = 0;
         portb_val = seven_seg(F.mode); // writes directly to pins 9-12
-        F.auto_mode = false;
-        F.is_attract_mode = false;
         break;
 
       case LONG_PUSH:
+      case DOUBLE_CLICK:
+        // reinstate auto change
         F.auto_mode = true;
+        F.is_attract_mode = false;
         F.mode = 0;
         portb_val = 0;
         break;
 
-      case DOUBLE_CLICK:
-        portb_val = 0;
-        debug_loop();
-        portb_val = seven_seg(F.mode);
-        break;
-
       case TRIPLE_CLICK:
-        portb_val = 0;
-        sober_mode();
+        demo_loop();
         portb_val = seven_seg(F.mode);
         break;
 
       case QUADRUPLE_CLICK:
+        sober_loop();
+        portb_val = seven_seg(F.mode);
+        break;
+
+      case REALLY_LONG_PUSH:
         hard_reset(); // this never returns
         break;
 
@@ -290,11 +202,6 @@ void loop() {
         break;
     }
 
-    F.pushed = (bool)pushed;
-
-    DEBUG_SAMPLE_RATE_LOW();
-    DEBUG_FRAME_RATE_LOW();
-    reach_target_fps();
-    F.frame_counter++;
+    frame_epilogue();
   }
 }

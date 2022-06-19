@@ -8,7 +8,11 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "ledpwm.h"
+#include "sevenseg.h"
 #include "framestate.h"
+
+#include <DigitalIO.h>
 
 #define NO_PUSH 0
 #define SINGLE_CLICK 1
@@ -16,8 +20,8 @@
 #define TRIPLE_CLICK 3
 #define QUADRUPLE_CLICK 4
 #define QUINTUPLE_CLICK 5
-#define SEXTUPLE_CLICK 6
-#define LONG_PUSH 7
+#define LONG_PUSH 6
+#define REALLY_LONG_PUSH 7
 
 #ifndef BUTTON_CLICK_SPEED
 #define BUTTON_CLICK_SPEED 300 // ms
@@ -27,6 +31,12 @@
 #define BUTTON_LONG_PUSH_SPEED 2000 // ms
 #endif
 
-uint8_t was_button_pressed(uint8_t pins);
+#ifndef BUTTON_REALLY_LONG_PUSH_SPEED
+#define BUTTON_REALLY_LONG_PUSH_SPEED 4000 // ms
+#endif
+
+extern DigitalPin<BUTTON_PIN> button_pin;
+
+uint8_t was_button_pressed();
 
 #endif /* _BUTTONS_H */

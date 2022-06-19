@@ -4,7 +4,9 @@
  * Most of this file is adapted from FastLED DemoReel100.ino by Mark Kriegsman.
  */
 
-#include "debug.h"
+#include "demo.h"
+#include "loop.h"
+
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
@@ -81,48 +83,102 @@ void nextPattern()
 }
 
 
-void setup_debug() {
+void setup_demo() {
   Serial.begin(2000000);
 } 
 
-  
-void debug_loop()
+static void _demo_loop(const uint8_t start_sober)
 {
   uint8_t pushed = NO_PUSH;
-  uint8_t mode = 4;
+  uint8_t mode = start_sober ? 13 : 4;
+  uint8_t render_mode = start_sober;
+
+  portb_val = 0;
 
   while(true) {
 
-    pushed = was_button_pressed(PIND & (1 << BUTTON_PIN));
-    if(pushed)
+    one_frame_sample_handler();
+
+    pushed = was_button_pressed();
+    switch(pushed)
     {
-      return;
-    }
+      case SINGLE_CLICK:
+        // toggle demo / sober
+        render_mode ^= 1;
+        mode = render_mode ? 13 : 4;
+        break;
 
-    // Call the current pattern function once, updating the 'leds' array
-    gPatterns[gCurrentPatternNumber]();
+      case DOUBLE_CLICK:
+      case LONG_PUSH:
+        // exit
+        return;
 
-    // send the 'leds' array out to the actual LED strip
-    FastLED.show();  
-    // insert a delay to keep the framerate modest
-    FastLED.delay(1000/FPS); 
-
-    // do some periodic updates
-    EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
-    EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
-
-    EVERY_N_MILLISECONDS( 100 ) {
-      mode++;
-      if(mode > 7) {
+      case TRIPLE_CLICK:
+        // for consistency with main, demo
+        render_mode = 0;
         mode = 4;
-      }
-      portb_val = seven_seg(mode);
+        break;
+
+      case QUADRUPLE_CLICK:
+        // for consistency with main, sober
+        render_mode = 1;
+        mode = 13;
+        break;
+
+      case REALLY_LONG_PUSH:
+        hard_reset(); // this never returns
+        break;
+
+      default:
+        break;
     }
+
+    if(render_mode == 1) {
+      // sober
+      fill_rainbow( leds, STRIP_LENGTH, 0, 7);
+
+      // send the 'leds' array out to the actual LED strip
+      FastLED.show();
+      portb_val = seven_seg(mode);
+
+      EVERY_N_SECONDS( 1 ) {
+        mode = (mode <= 13) ? 14 : 13;
+      }      
+    } else {
+
+      // Call the current pattern function once, updating the 'leds' array
+      gPatterns[gCurrentPatternNumber]();
+
+      // send the 'leds' array out to the actual LED strip
+      FastLED.show();
+      portb_val = seven_seg(mode);
+
+
+      // do some periodic updates
+      EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+      EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
+
+      EVERY_N_MILLISECONDS( 100 ) {
+        mode++;
+        if(mode > 7) {
+          mode = 4;
+        }
+      }
+    }
+
+    frame_epilogue();
   }
 }
 
+void demo_loop() {
+  _demo_loop(0);
+}
 
-// void debug_loop() {
+void sober_loop() {
+  _demo_loop(1);
+}
+
+// void demo_loop() {
 
 // //  uint8_t beat_sustain = 0;
 //   byte is_beats = 0;

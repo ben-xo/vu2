@@ -4,7 +4,9 @@
 
 #include "buttons.h"
 
-uint8_t was_button_pressed(uint8_t pins) {
+uint8_t was_button_pressed() {
+
+  bool pins = button_pin.read();
 
   uint16_t now = (uint16_t) millis();
 
@@ -21,7 +23,9 @@ uint8_t was_button_pressed(uint8_t pins) {
     if(F.clicks) {
       // but was pressed recently
       uint8_t retval = NO_PUSH;
-      if(now - F.last_push > BUTTON_LONG_PUSH_SPEED) { // default 2000ms
+      if(now - F.last_push > BUTTON_REALLY_LONG_PUSH_SPEED) { // default 4000ms
+        retval = REALLY_LONG_PUSH;
+      } else if(now - F.last_push > BUTTON_LONG_PUSH_SPEED) { // default 2000ms
         retval = LONG_PUSH;
       } else if(now - F.last_push > BUTTON_CLICK_SPEED) { // default 300ms
         switch(F.clicks) {
@@ -38,11 +42,9 @@ uint8_t was_button_pressed(uint8_t pins) {
             retval = QUADRUPLE_CLICK;
             break;
           case 5:
-            retval = QUINTUPLE_CLICK;
-            break;
-          case 6:
           default:
-            retval = SEXTUPLE_CLICK;
+            // 5 or more
+            retval = QUINTUPLE_CLICK;
             break;
         }
       }
@@ -53,10 +55,24 @@ uint8_t was_button_pressed(uint8_t pins) {
 
   if(F.is_down && !pins) {
     // released
+    if(F.clicks && now - F.last_push > BUTTON_LONG_PUSH_SPEED) {
+      portb_val = 0;
+    }
     F.is_down = false;
   }
 
-  // is_down && pins means "still down"
+  if(F.is_down && pins) {
+    // still down
+    if(F.clicks) {
+      if(now - F.last_push > BUTTON_REALLY_LONG_PUSH_SPEED) {
+        // full bright as really long press (usually reset)
+        portb_val = seven_seg(12);
+      } else if(now - F.last_push > BUTTON_LONG_PUSH_SPEED) {
+        // half bright at long press
+        portb_val = (F.frame_counter & 1) ? 0 : seven_seg(12);
+      }
+    }
+  }
   // no push yet, although one may be in progress.
   return NO_PUSH;
 }

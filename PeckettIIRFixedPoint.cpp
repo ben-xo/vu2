@@ -114,7 +114,7 @@ void PeckettIIRFixedPointSetup() {
   setup_sampler(SAMPLER_TIMER_COUNTER_FOR(5000 /* Hz */));
 }
 
-void PeckettIIRFixedPoint(uint8_t val, bool *is_beat) {
+bool PeckettIIRFixedPoint(uint8_t val, bool is_beat) {
     int8_t sample;
     int16_t value, envelope, beat;
     static uint8_t i = 200;
@@ -136,9 +136,9 @@ void PeckettIIRFixedPoint(uint8_t val, bool *is_beat) {
 
       // If we are above threshold, light up LED
       if (beat > thresh_f) {
-        *is_beat = true;
+        is_beat = true;
       } else {
-        *is_beat = false;
+        is_beat = false;
       }
       
       //Reset sample counter
@@ -146,4 +146,5 @@ void PeckettIIRFixedPoint(uint8_t val, bool *is_beat) {
     } else {
       i--;
     }
+    return is_beat;
 }
