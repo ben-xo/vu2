@@ -41,7 +41,7 @@ void __inline__ fps_count()
   // clobbers r24 and SREG so they must be saved before use.
   // stores overflow in GPIOR0:1. So, that must be reset when read at point of use.
 
-  static int8_t fps_interrupt_count = PWM_LED_FRQ / FPS;
+  static int8_t fps_interrupt_count = INTERRUPT_RESET_VAL;
 
   // // using an intermediate variable makes the compiled output much more efficient.
   // int8_t new_interrupt_count = fps_interrupt_count - 1;
@@ -93,7 +93,9 @@ void setup_ledpwm() {
   
   // Output Compare Match A & B Interrupt Enable
   // TIMER2_COMPA_vect clears the LEDs, TIMER2_COMPB_vect lights them.
-  TIMSK2 |= (1 << OCIE2A) | (1 << OCIE2B); 
+  TIMSK2 |= (1 << OCIE2A) | (1 << OCIE2B);
+
+  portb_mask = 0b01111111;
 
   // this clears the timer and sets the right pre-scaler, starting the timer.
   enable_ledpwm();
@@ -132,7 +134,14 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   // unfortunately we need to backup SREG for fps_count
   asm volatile( "push    r25                             \n\t");
   asm volatile( "in      r25, %0                         \n\t" :: "I" (_SFR_IO_ADDR(SREG)));
+
+  // well, we needed to push SREG, so might as well do this now, as ROR affects SREG
+  // 
+  uint8_t temp = portb_mask;
+  portb_mask = (temp >> 1) | (temp << 7); // basically, ror
+
   fps_count();
+
   asm volatile( "out     %0, r25                         \n\t" :: "I" (_SFR_IO_ADDR(SREG)));
   asm volatile( "pop     r25                             \n\t");
 
@@ -144,7 +153,28 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
 ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t");
 
-  PORTB = portb_val;
+  // Based on LSB of portb_mask, swap the nibbles of portb val before displaying.
+  // The idea is that portb_val is actually a double buffer, and portb_mask is effectively
+  // a blend percentage. Once every sample interrupt, it is rotated by 1 bit.
+  // So a mask = 0x00 will always show the one half of portb_val, and mask = 0xFF will show the other half,
+  // with mask = 0x55 showing a 50/50 mix. Thus, you can achieve fades and pulses on the seven seg
+  // by periodically updating the val and the mask.
+  asm volatile(
+    "in	r24, %[portb_mask_io_reg] \n\t"
+    "cbi	%[flags_io_reg], 2 \n\t"
+    "sbrc	r24, 0 \n\t"
+    "sbi	%[flags_io_reg], 2 \n\t"
+    "in	r24, %[portb_val_io_reg] \n\t"
+    "sbic	%[flags_io_reg], 2 \n\t"
+    "swap r24 \n\t"
+    "out %[portb_io_reg], r24 \n\t"
+    :: 
+    [portb_mask_io_reg] "I" (_SFR_IO_ADDR(portb_mask)),
+    [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val)),
+    [flags_io_reg] "I" (_SFR_IO_ADDR(GPIOR0)),
+    [portb_io_reg] "I" (_SFR_IO_ADDR(PORTB))
+  );
+
 
   register bool is_beat_1 asm ("r24") = F.is_beat_1;
   if(is_beat_1) beat_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
@@ -167,7 +197,9 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
     "push  r30 \t\n"
     "push  r31 \t\n"
   );
+
   sample();
+  
   asm volatile(
     "pop r31 \t\n"
     "pop r30 \t\n"

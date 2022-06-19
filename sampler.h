@@ -95,7 +95,7 @@ __attribute__((always_inline)) void inline sample()
     "subi r31, 0xFF \t\n"
 
     "ldd r24, Z+1 \t\n"
-    "out %[GPIOR1_addr], r24 \t\n"
+    "out %[temp_reg], r24 \t\n"
 
     "lds r24, %[ADCH_addr] \t\n"
     "std Z+1, r24 \t\n"
@@ -108,7 +108,7 @@ __attribute__((always_inline)) void inline sample()
     "brcc .+2 \t\n"
     "subi r31, 0xFF \t\n"
 
-    "in r24, %[GPIOR1_addr] \t\n"
+    "in r24, %[temp_reg] \t\n"
     "sub r30, r24 \t\n"
     "sbci r31, 0x00 \t\n"
 
@@ -119,7 +119,7 @@ __attribute__((always_inline)) void inline sample()
      [ADCSRA_addr] "M" (_SFR_IO_ADDR(ADCSRA) + 0x20),
      [ADCSRA_val] "M" ((1 << ADPS1) | (1 << ADEN) | (1 << ADSC)),
      [ADCH_addr] "M" (_SFR_IO_ADDR(ADCH) + 0x20),
-     [GPIOR1_addr] "I" (_SFR_IO_ADDR(GPIOR1)),
+     [temp_reg] "I" (_SFR_IO_ADDR(EEARL)),  // abuse a register we're not using. Abusable reg's include: EEDR, EEARL
      [ss] "i" (&sampler.current_sample),
      [sample_sum] "i" (&sample_sum)
      :
