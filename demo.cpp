@@ -93,14 +93,22 @@ static void _demo_loop(const uint8_t start_sober)
   uint8_t mode = start_sober ? 13 : 0;
   uint8_t render_mode = start_sober;
 
+  // demo mode changes pattern every 10 seconds, but increments hue every 20ms
   uint8_t gHue_divider = 20 * FPS / 1000; // every 20ms = every 3 frames at 150FPS
   uint8_t gHue_counter = gHue_divider;
+  uint16_t demo_divider = 10 * FPS; // every 10s = every 1500 frames
+  uint16_t demo_counter = demo_divider;
 
-  uint8_t seven_seg_divider = 40 * FPS / 1000; // every 40ms = every 6 frames at 150FPS
-  uint8_t seven_seg_counter = seven_seg_divider;
+
+  // give sober mode a nice gentle fade
+  uint8_t sober_fade_divider = 40 * FPS / 1000; // every 40ms = every 6 frames at 150FPS
+  uint8_t sober_fade_counter = sober_fade_divider;
+  uint8_t sober_mode_divider = FPS; // once per second
+  uint8_t sober_mode_counter = sober_mode_divider;
 
   portb_val = 0;
   portb_mask = 0;
+
   uint8_t portb_mask_in = 0;
   uint8_t portb_val_in = 0;
 
@@ -150,13 +158,13 @@ static void _demo_loop(const uint8_t start_sober)
       // send the 'leds' array out to the actual LED strip
       FastLED.show();
 
-      EVERY_N_SECONDS( 1 ) {
+      if(--sober_mode_counter == 0) {
+        sober_mode_counter = sober_mode_divider;
         mode = (mode <= 13) ? 14 : 13;
       }
 
-      // this gives a good framerate as is.
-      if(--seven_seg_counter == 0) {
-        seven_seg_counter = seven_seg_divider;
+      if(--sober_fade_counter == 0) {
+        sober_fade_counter = sober_fade_divider;
         if(mode == 13) {
           switch (portb_mask_in) {
             default:
@@ -196,6 +204,13 @@ static void _demo_loop(const uint8_t start_sober)
 
       // do some periodic updates
 
+      /* 
+        NOTE: the EVERY_N_MILLISECONDS etc macros from the original
+        demo reel allocate static RAM, which is a waste when we're 
+        only sometimes in this mode. We use local (stack based)
+        counters instead
+      */
+
       // slowly cycle the "base color" through the rainbow
       // EVERY_N_MILLISECONDS( 20 ) { gHue++; }
       if(--gHue_counter == 0) {
@@ -203,7 +218,11 @@ static void _demo_loop(const uint8_t start_sober)
         gHue++; 
       }
 
-      EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
+      // EVERY_N_SECONDS( 10 ) { nextPattern(); }
+      if(--demo_counter == 0) {
+        demo_counter = demo_divider;
+        nextPattern();  // change patterns periodically
+      }
 
       // this gives a good framerate as is.
       switch (portb_mask_in) {
