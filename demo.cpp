@@ -96,6 +96,9 @@ static void _demo_loop(const uint8_t start_sober)
   uint8_t gHue_divider = 20 * FPS / 1000; // every 20ms = every 3 frames at 150FPS
   uint8_t gHue_counter = gHue_divider;
 
+  uint8_t seven_seg_divider = (100 * FPS / 1000); // every 100ms = every 15 frames at 150FPS
+  uint8_t seven_seg_counter = seven_seg_divider;
+
   portb_val = 0;
   portb_mask = 0;
 
@@ -172,36 +175,40 @@ static void _demo_loop(const uint8_t start_sober)
       //   portb_val = seven_seg(mode == 7 ? 4 : mode + 1) | (seven_seg(mode) << 4);
       // }
 
-      switch (portb_mask) {
-        case 0b00000000: portb_mask = 0b00000001; break;
-        case 0b00000001: portb_mask = 0b00010001; break;
-        case 0b00010001: portb_mask = 0b00010101; break;
-        case 0b00010101: portb_mask = 0b01010101; break;
-        case 0b01010101: portb_mask = 0b01010111; break;
-        case 0b01010111: portb_mask = 0b01110111; break;
-        case 0b01110111: portb_mask = 0b01111111; break;
-        case 0b01111111: portb_mask = 0b11111111; break;
-        case 0b11111111: portb_mask = 0b11111110; break;
-        case 0b11111110: portb_mask = 0b11101110; break;
-        case 0b11101110: portb_mask = 0b10101110; break;
-        case 0b10101110: portb_mask = 0b10101010; break;
-        case 0b10101010: portb_mask = 0b00101010; break;
-        case 0b00101010: portb_mask = 0b00100010; break;
-        case 0b00100010: portb_mask = 0b00000010; break;
-        default: 
-        case 0b00000010: 
-          mode++;
-          if(mode > 7) {
-            mode = 4;
-          }
-          portb_mask = 0b00000000;
-          portb_val = (seven_seg(mode == 7 ? 4 : mode + 1) << 4) | seven_seg(mode);
-          break;
+      if(--seven_seg_counter == 0) {
+        seven_seg_counter = seven_seg_divider;
+
+        switch (portb_mask) {
+          case 0b00000000: portb_mask = 0b00000001; break;
+          case 0b00000001: portb_mask = 0b00010001; break;
+          case 0b00010001: portb_mask = 0b00010101; break;
+          case 0b00010101: portb_mask = 0b01010101; break;
+          case 0b01010101: portb_mask = 0b01010111; break;
+          case 0b01010111: portb_mask = 0b01110111; break;
+          case 0b01110111: portb_mask = 0b01111111; break;
+          case 0b01111111: portb_mask = 0b11111111; break;
+          case 0b11111111: portb_mask = 0b11111110; break;
+          case 0b11111110: portb_mask = 0b11101110; break;
+          case 0b11101110: portb_mask = 0b10101110; break;
+          case 0b10101110: portb_mask = 0b10101010; break;
+          case 0b10101010: portb_mask = 0b00101010; break;
+          case 0b00101010: portb_mask = 0b00100010; break;
+          case 0b00100010: portb_mask = 0b00000010; break;
+          default: 
+          case 0b00000010: 
+            mode++;
+            if(mode > 7) {
+              mode = 4;
+            }
+            portb_mask = 0b00000000;
+            portb_val = (seven_seg(mode == 7 ? 4 : mode + 1) << 4) | seven_seg(mode);
+            break;
+        }
       }
 
     }
 
-    // frame_epilogue();
+    frame_epilogue();
   }
 }
 
