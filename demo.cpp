@@ -90,17 +90,19 @@ void setup_demo() {
 static void _demo_loop(const uint8_t start_sober)
 {
   uint8_t pushed = NO_PUSH;
-  uint8_t mode = start_sober ? 13 : 4;
+  uint8_t mode = start_sober ? 13 : 0;
   uint8_t render_mode = start_sober;
 
   uint8_t gHue_divider = 20 * FPS / 1000; // every 20ms = every 3 frames at 150FPS
   uint8_t gHue_counter = gHue_divider;
 
-  uint8_t seven_seg_divider = (100 * FPS / 1000); // every 100ms = every 15 frames at 150FPS
+  uint8_t seven_seg_divider = 40 * FPS / 1000; // every 40ms = every 6 frames at 150FPS
   uint8_t seven_seg_counter = seven_seg_divider;
 
   portb_val = 0;
   portb_mask = 0;
+  uint8_t portb_mask_in = 0;
+  uint8_t portb_val_in = 0;
 
   while(true) {
 
@@ -112,7 +114,7 @@ static void _demo_loop(const uint8_t start_sober)
       case SINGLE_CLICK:
         // toggle demo / sober
         render_mode ^= 1;
-        mode = render_mode ? 13 : 4;
+        mode = render_mode ? 13 : 0;
         break;
 
       case DOUBLE_CLICK:
@@ -123,7 +125,7 @@ static void _demo_loop(const uint8_t start_sober)
       case TRIPLE_CLICK:
         // for consistency with main, demo
         render_mode = 0;
-        mode = 4;
+        mode = 0;
         break;
 
       case QUADRUPLE_CLICK:
@@ -143,14 +145,47 @@ static void _demo_loop(const uint8_t start_sober)
     if(render_mode == 1) {
       // sober
       fill_rainbow( leds, STRIP_LENGTH, 0, 7);
+      portb_val_in = (seven_seg(13) << 4) | seven_seg(14);
 
       // send the 'leds' array out to the actual LED strip
       FastLED.show();
-      portb_val = seven_seg(mode);
 
       EVERY_N_SECONDS( 1 ) {
         mode = (mode <= 13) ? 14 : 13;
-      }      
+      }
+
+      // this gives a good framerate as is.
+      if(--seven_seg_counter == 0) {
+        seven_seg_counter = seven_seg_divider;
+        if(mode == 13) {
+          switch (portb_mask_in) {
+            default:
+            case 0b00000000: portb_mask_in = 0b00000001; break;
+            case 0b00000001: portb_mask_in = 0b00010001; break;
+            case 0b00010001: portb_mask_in = 0b00010101; break;
+            case 0b00010101: portb_mask_in = 0b01010101; break;
+            case 0b01010101: portb_mask_in = 0b01010111; break;
+            case 0b01010111: portb_mask_in = 0b01110111; break;
+            case 0b01110111: portb_mask_in = 0b01111111; break;
+            case 0b01111111: portb_mask_in = 0b11111111; break;
+            case 0b11111111: portb_mask_in = 0b11111111; break;
+          }
+        } else {
+          switch(portb_mask_in) {
+            default:
+            case 0b11111111: portb_mask_in = 0b11111110; break;
+            case 0b11111110: portb_mask_in = 0b11101110; break;
+            case 0b11101110: portb_mask_in = 0b10101110; break;
+            case 0b10101110: portb_mask_in = 0b10101010; break;
+            case 0b10101010: portb_mask_in = 0b00101010; break;
+            case 0b00101010: portb_mask_in = 0b00100010; break;
+            case 0b00100010: portb_mask_in = 0b00000010; break;
+            case 0b00000010: portb_mask_in = 0b00000000; break;
+            case 0b00000000: portb_mask_in = 0b00000000; break;
+          }
+        }
+      }
+
     } else {
 
       // Call the current pattern function once, updating the 'leds' array
@@ -160,53 +195,47 @@ static void _demo_loop(const uint8_t start_sober)
       FastLED.show();
 
       // do some periodic updates
+
+      // slowly cycle the "base color" through the rainbow
+      // EVERY_N_MILLISECONDS( 20 ) { gHue++; }
       if(--gHue_counter == 0) {
         gHue_counter = gHue_divider;
-        gHue++;
+        gHue++; 
       }
-      // EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+
       EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
 
-      // EVERY_N_MILLISECONDS( 80 ) {
-      //   mode++;
-      //   if(mode > 7) {
-      //     mode = 4;
-      //   }
-      //   portb_val = seven_seg(mode == 7 ? 4 : mode + 1) | (seven_seg(mode) << 4);
-      // }
-
-      if(--seven_seg_counter == 0) {
-        seven_seg_counter = seven_seg_divider;
-
-        switch (portb_mask) {
-          case 0b00000000: portb_mask = 0b00000001; break;
-          case 0b00000001: portb_mask = 0b00010001; break;
-          case 0b00010001: portb_mask = 0b00010101; break;
-          case 0b00010101: portb_mask = 0b01010101; break;
-          case 0b01010101: portb_mask = 0b01010111; break;
-          case 0b01010111: portb_mask = 0b01110111; break;
-          case 0b01110111: portb_mask = 0b01111111; break;
-          case 0b01111111: portb_mask = 0b11111111; break;
-          case 0b11111111: portb_mask = 0b11111110; break;
-          case 0b11111110: portb_mask = 0b11101110; break;
-          case 0b11101110: portb_mask = 0b10101110; break;
-          case 0b10101110: portb_mask = 0b10101010; break;
-          case 0b10101010: portb_mask = 0b00101010; break;
-          case 0b00101010: portb_mask = 0b00100010; break;
-          case 0b00100010: portb_mask = 0b00000010; break;
-          default: 
-          case 0b00000010: 
-            mode++;
-            if(mode > 7) {
-              mode = 4;
-            }
-            portb_mask = 0b00000000;
-            portb_val = (seven_seg(mode == 7 ? 4 : mode + 1) << 4) | seven_seg(mode);
-            break;
-        }
+      // this gives a good framerate as is.
+      switch (portb_mask_in) {
+        case 0b00000000: portb_mask_in = 0b00000001; break;
+        case 0b00000001: portb_mask_in = 0b00010001; break;
+        case 0b00010001: portb_mask_in = 0b00010101; break;
+        case 0b00010101: portb_mask_in = 0b01010101; break;
+        case 0b01010101: portb_mask_in = 0b01010111; break;
+        case 0b01010111: portb_mask_in = 0b01110111; break;
+        case 0b01110111: portb_mask_in = 0b01111111; break;
+        case 0b01111111: 
+          mode++;
+          mode = mode % 4;
+          portb_mask_in = 0b11111111; 
+          portb_val_in = (seven_seg(mode) << 4) | seven_seg(mode+4);
+          break;
+        case 0b11111111: portb_mask_in = 0b11111110; break;
+        case 0b11111110: portb_mask_in = 0b11101110; break;
+        case 0b11101110: portb_mask_in = 0b10101110; break;
+        case 0b10101110: portb_mask_in = 0b10101010; break;
+        case 0b10101010: portb_mask_in = 0b00101010; break;
+        case 0b00101010: portb_mask_in = 0b00100010; break;
+        case 0b00100010: portb_mask_in = 0b00000010; break;
+        default: 
+        case 0b00000010:
+          portb_mask_in = 0b00000000;
+          portb_val_in = (seven_seg((mode + 1) % 4) << 4) | seven_seg(mode+4);
+          break;
       }
-
     }
+    portb_mask = portb_mask_in;
+    portb_val = portb_val_in;
 
     frame_epilogue();
   }
