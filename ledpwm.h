@@ -19,6 +19,8 @@
 #include "render.h"
 #include "framestate.h"
 
+#include "gpio0.h"
+
 extern uint8_t pwm_duty;
 
 //extern uint8_t volatile portb_val;
