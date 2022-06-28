@@ -7,7 +7,9 @@
 uint32_t start_time = 0; // time each loop started.
 uint32_t silent_since = 0; // time we've been silent since.
 
-uint32_t last_delay=0;
+uint32_t last_delay = 0;
+
+int8_t volatile fps_interrupt_count = INTERRUPT_RESET_VAL;
 
 void setup_fps() {
   // // TIMER1 is used for the sampler. We are going to piggy back on Timer 1 to get an interrupt to use for keeping the frame rate steady.
@@ -25,11 +27,3 @@ void setup_fps() {
 //   fps_count(SAMP_FREQ / FPS); // defined in header.
 // }
 
-void reach_target_fps() {
-  uint32_t end_time = micros();
-  while(!(GPIOR0 & (1<<1))) {
-    asm("");
-  }
-  GPIOR0 &= ~(1<<1);
-  start_time = end_time;
-}
