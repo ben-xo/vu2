@@ -11,12 +11,7 @@
 #include <Arduino.h>
 #include "config.h"
 #include "ledpwm.h"
-
-// we're attaching the FPS calculation to the ledpwm interrupt to lower the number of interrupts.
 #include "fps.h"
-
-// we're attaching the sampler to the ledpwm interrupt to lower the number of interrupts.
-#include "sampler.h"
 
 #define PWM_PRESCALER 8 // must match what enable_ledpwm() does
 
@@ -25,6 +20,10 @@
 
 // e.g. at 16MHz, duty val will be 180. At 20Mhz, 225. At 8MHz, 90.
 #define PWM_DUTY_VALUE     (PWM_OVERFLOW_VALUE - (PWM_OVERFLOW_VALUE / (100 / PWM_DUTY_PERCENT)))
+
+#define INTERRUPT_RESET_VAL (PWM_LED_FRQ / FPS)
+
+int8_t volatile fps_interrupt_count = INTERRUPT_RESET_VAL;
 
 /* definition to expand macro then apply to pragma message */
 /* from https://stackoverflow.com/questions/1562074/how-do-i-show-the-value-of-a-define-at-compile-time */
@@ -36,45 +35,12 @@
 #pragma message(VAR_NAME_VALUE(PWM_OVERFLOW_VALUE))
 #pragma message(VAR_NAME_VALUE(PWM_DUTY_VALUE))
 
-static void __inline__ fps_count()
-{
-  // clobbers r24 and SREG so they must be saved before use.
-  // stores overflow in GPIOR0:1. So, that must be reset when read at point of use.
+// we're attaching the FPS calculation to the ledpwm interrupt to lower the number of interrupts.
+#include "fps_count.h"
 
-  // // using an intermediate variable makes the compiled output much more efficient.
-  // int8_t new_interrupt_count = fps_interrupt_count - 1;
-  // if(!new_interrupt_count) {
-  //   GPIOR0 |= (1<<1);
-  //   new_interrupt_count = interrupt_reset_val;
-  // }
-  // fps_interrupt_count = new_interrupt_count;
+// we're attaching the sampler to the ledpwm interrupt to lower the number of interrupts.
+#include "sampler.h"
 
-  volatile uint8_t* fic = &fps_interrupt_count; 
-  asm volatile( 
-    // int8_t new_interrupt_count = fps_interrupt_count - 1;
-    "lds r24, %[fic]            \n\t" 
-    "subi  r24, 0x01            \n\t" 
-
-    // if(!new_interrupt_count) {
-    "brne  .+4            \n\t" 
-
-    //   GPIOR0 |= (1<<1);
-    "sbi %0, 1            \n\t" 
-
-    //   new_interrupt_count = interrupt_reset_val;
-    "ldi r24, %1        \n\t" 
-    // }
-
-    // fps_interrupt_count = new_interrupt_count;
-    "sts %[fic], r24        \n\t" 
-    : 
-    : 
-    "I" (_SFR_IO_ADDR(GPIOR0)),
-    "M" (INTERRUPT_RESET_VAL),
-    [fic] "i" (fic)
-
-  );
-}
 
 void setup_ledpwm() {
   cli();
