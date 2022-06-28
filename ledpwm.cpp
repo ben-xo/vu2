@@ -36,12 +36,10 @@
 #pragma message(VAR_NAME_VALUE(PWM_OVERFLOW_VALUE))
 #pragma message(VAR_NAME_VALUE(PWM_DUTY_VALUE))
 
-void __inline__ fps_count()
+static void __inline__ fps_count()
 {
   // clobbers r24 and SREG so they must be saved before use.
   // stores overflow in GPIOR0:1. So, that must be reset when read at point of use.
-
-  static int8_t fps_interrupt_count = INTERRUPT_RESET_VAL;
 
   // // using an intermediate variable makes the compiled output much more efficient.
   // int8_t new_interrupt_count = fps_interrupt_count - 1;
