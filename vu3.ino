@@ -20,22 +20,28 @@
 
 struct Framestate F; // the global instance
 
-#include "loop.h"
 bool filter_beat = false;
 uint8_t my_current_sample = 0;
 uint16_t my_sample_sum = 0;
+uint32_t start_time = 0;   // time each loop started.
+uint32_t silent_since = 0; // time we've been silent since.
+#include "loop.h"
+
 
 #ifdef BEAT_WITH_INTERRUPTS
 // This mode doesn't currently work, because it's all been integrated into this project and isn't needed
 // If you want to trigger the beats with interrupts, you'll need to reconfigure the BEAT_PIN_1 and 2 to inputs
 // and take out the IIR filter etc down below.
-#include "beatdetect.h"
 volatile uint8_t beats_from_interrupt = 0;
+#include "beatdetect.h"
 #endif
 
 #include "buttons.h"
 #include "hardreset.h"
+
+volatile uint8_t fps_interrupt_count = 0;
 #include "fps.h"
+
 #include "demo.h"
 
 #include <DigitalIO.h>
@@ -76,10 +82,10 @@ void setup() {
 
   FastLED.setDither( 0 );
   
+  setup_fps();
   setup_render();
   setup_sampler(SAMPLER_TIMER_COUNTER_FOR(SAMP_FREQ));
   setup_tempo();
-  setup_fps();
   setup_ledpwm();
 
 #ifdef BEAT_WITH_INTERRUPTS

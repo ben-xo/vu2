@@ -23,6 +23,8 @@
 extern bool filter_beat;
 extern uint8_t my_current_sample;
 extern uint16_t my_sample_sum;
+extern uint32_t start_time;   // time each loop started.
+extern uint32_t silent_since; // time we've been silent since.
 
 __attribute__((always_inline)) static void one_frame_sample_handler() {
 

@@ -18,8 +18,7 @@
 
 #include "render.h"
 #include "framestate.h"
-
-extern uint8_t pwm_duty;
+#include "gpio0.h"
 
 //extern uint8_t volatile portb_val;
 #define ledpwm_status GPIOR0
