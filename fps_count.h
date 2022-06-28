@@ -5,7 +5,7 @@
 #ifndef _FPS_COUNT_H
 #define _FPS_COUNT_H
 
-
+#include "gpio0.h"
 
 /*
  * The expectation is that you only include this in ledpwm.cpp.
