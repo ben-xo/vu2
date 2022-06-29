@@ -118,34 +118,11 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
 /*
  * This interrupt fires to turn the LED lights on. The LSB of the mask determines 
  * whether we `swap` the value of PORTB before showing it (i.e. double buffered upper or lower half)
- * 60 cycles for the sampler path (sampler takes ~31)
+ * 68 cycles for the sampler path (sampler takes ~31)
  * 22 cycles for the non-sampler path
  */
 ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t"); // 2cy
-
-  // Based on LSB of portb_mask, swap the nibbles of portb val before displaying.
-  // The idea is that portb_val is actually a double buffer, and portb_mask is effectively
-  // a blend percentage. Once every sample interrupt, it is rotated by 1 bit.
-  // So a mask = 0x00 will always show the one half of portb_val, and mask = 0xFF will show the other half,
-  // with mask = 0x55 showing a 50/50 mix. Thus, you can achieve fades and pulses on the seven seg
-  // by periodically updating the val and the mask.
-  asm volatile(
-    "in	r24, %[portb_mask_io_reg] \n\t"
-    "cbi	%[flags_io_reg], 2 \n\t"
-    "sbrc	r24, 0 \n\t"
-    "sbi	%[flags_io_reg], 2 \n\t"
-    "in	r24, %[portb_val_io_reg] \n\t"
-    "sbic	%[flags_io_reg], 2 \n\t"
-    "swap r24 \n\t"
-    "out %[portb_io_reg], r24 \n\t"
-    :: 
-    [portb_mask_io_reg] "I" (_SFR_IO_ADDR(portb_mask)),
-    [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val)),
-    [flags_io_reg] "I" (_SFR_IO_ADDR(GPIOR0)),
-    [portb_io_reg] "I" (_SFR_IO_ADDR(PORTB))
-  );
-
 
   register bool is_beat_1 asm ("r24") = F.is_beat_1; // 2cy
   if(is_beat_1) beat_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
@@ -153,11 +130,43 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   register bool is_beat_2 asm ("r24") = F.is_beat_2; // 2cy
   if(is_beat_2) tempo_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
 
+  /* Based on LSB of portb_mask, swap the nibbles of portb val before di
+   * The idea is that portb_val is actually a double buffer, and portb_m
+   * a blend percentage. Once every sample interrupt, it is rotated by 1
+   * So a mask = 0x00 will always show the one half of portb_val, and ma
+   * with mask = 0x55 showing a 50/50 mix. Thus, you can achieve fades a
+   * by periodically updating the val and the mask.
+   *
+   * Note that because just saving and restoring SREG takes 6 cycles, we
+   * SREG altogether in order to keep this to 8 cycles total.
+   *
+   * total: 8 cycles
+   */
+  asm volatile(
+    "in r24, %[portb_mask_io_reg] \n\t"
+    "cbi  %[flags_io_reg], %[_LEDPWM_BUFFER_SELECT_FLAG_BIT] \n\t"
+    "sbrc r24, 0 \n\t"
+    "sbi  %[flags_io_reg], %[_LEDPWM_BUFFER_SELECT_FLAG_BIT] \n\t"
+    "in r24, %[portb_val_io_reg] \n\t"
+    "sbic %[flags_io_reg], %[_LEDPWM_BUFFER_SELECT_FLAG_BIT] \n\t"
+    "swap r24 \n\t"
+    "out %[portb_io_reg], r24 \n\t"
+    :: 
+    [portb_mask_io_reg] "I" (_SFR_IO_ADDR(portb_mask)),
+    [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val)),
+    [flags_io_reg] "I" (_SFR_IO_ADDR(GPIOR0)),
+    [portb_io_reg] "I" (_SFR_IO_ADDR(PORTB)),
+    [_LEDPWM_BUFFER_SELECT_FLAG_BIT] "M" (LEDPWM_BUFFER_SELECT_FLAG_BIT)
+  ); // 8cy
+
   if(!(GPIOR0 & (EVERY_OTHER_FRAME_FLAG))) {
-    GPIOR0 |= (EVERY_OTHER_FRAME_FLAG);
-    asm volatile( "pop     r24                             \n\t");
-    asm volatile( "reti                                    \n\t");
-  }
+    // test itself takes 1 cy
+
+    GPIOR0 |= (EVERY_OTHER_FRAME_FLAG); // 1 cy
+
+    asm volatile( "pop     r24                             \n\t"); // 2cy
+    asm volatile( "reti                                    \n\t"); // 4cy
+  } // 8 cy if returning, 2 cy otherwise
 
   GPIOR0 &= ~(EVERY_OTHER_FRAME_FLAG);
 
