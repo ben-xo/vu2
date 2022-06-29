@@ -26,7 +26,7 @@ static void inline __attribute__((always_inline)) fps_count()
   // }
   // fps_interrupt_count = new_interrupt_count;
 
-  volatile uint8_t* fic = &fps_interrupt_count; 
+  volatile uint8_t* fic = &fps_interrupt_count;
   asm volatile( 
     // int8_t new_interrupt_count = fps_interrupt_count - 1;
     "lds r24, %[fic]            \n\t" 
@@ -36,7 +36,7 @@ static void inline __attribute__((always_inline)) fps_count()
     "brne  .+4            \n\t" 
 
     //   GPIOR0 |= (END_OF_FRAME_FLAG);
-    "sbi %[gpior0_addr], 1            \n\t" 
+    "sbi %[gpior0_addr], %[eoff]            \n\t" 
 
     //   new_interrupt_count = interrupt_reset_val;
     "ldi r24, %[irv]        \n\t" 
@@ -48,7 +48,7 @@ static void inline __attribute__((always_inline)) fps_count()
     : 
     [gpior0_addr] "I" (_SFR_IO_ADDR(GPIOR0)),
     [irv] "M" (INTERRUPT_RESET_VAL),
-    [eoff] "I" ((END_OF_FRAME_FLAG)),
+    [eoff] "I" (END_OF_FRAME_FLAG_BIT),
     [fic] "i" (fic)
 
   );
