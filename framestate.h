@@ -36,7 +36,7 @@ struct Framestate
   bool is_down:1;
 };
 
-extern Framestate F;
+extern struct Framestate F;
 
 void setup_initial_framestate();
 #endif /* _FRAMESTATE_H */
