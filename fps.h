@@ -7,6 +7,7 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "fps_constants.h"
 
 extern uint32_t start_time;   // time each loop started.
 extern uint32_t silent_since; // time we've been silent since.
