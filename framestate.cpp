@@ -4,6 +4,8 @@
  
 #include "framestate.h"
 
+struct Framestate F; // the global instance
+
 void setup_initial_framestate() {
   F.auto_mode = true;
   F.is_silent = false;
