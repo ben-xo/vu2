@@ -39,7 +39,7 @@ void setup_ledpwm() {
   // TIMER2_COMPA_vect clears the LEDs, TIMER2_COMPB_vect lights them.
   TIMSK2 |= (1 << OCIE2A) | (1 << OCIE2B);
 
-  portb_mask = 0b01110111;
+  portb_mask = MASK_RESET_VAL;
 
   // this clears the timer and sets the right pre-scaler, starting the timer.
   enable_ledpwm();
