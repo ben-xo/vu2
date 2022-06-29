@@ -21,7 +21,7 @@ static void inline __attribute__((always_inline)) fps_count()
   // // using an intermediate variable makes the compiled output much more efficient.
   // int8_t new_interrupt_count = fps_interrupt_count - 1;
   // if(!new_interrupt_count) {
-  //   GPIOR0 |= (1<<1);
+  //   GPIOR0 |= (END_OF_FRAME_FLAG);
   //   new_interrupt_count = interrupt_reset_val;
   // }
   // fps_interrupt_count = new_interrupt_count;
@@ -35,19 +35,20 @@ static void inline __attribute__((always_inline)) fps_count()
     // if(!new_interrupt_count) {
     "brne  .+4            \n\t" 
 
-    //   GPIOR0 |= (1<<1);
-    "sbi %0, 1            \n\t" 
+    //   GPIOR0 |= (END_OF_FRAME_FLAG);
+    "sbi %[gpior0_addr], 1            \n\t" 
 
     //   new_interrupt_count = interrupt_reset_val;
-    "ldi r24, %1        \n\t" 
+    "ldi r24, %[irv]        \n\t" 
     // }
 
     // fps_interrupt_count = new_interrupt_count;
     "sts %[fic], r24        \n\t" 
     : 
     : 
-    "I" (_SFR_IO_ADDR(GPIOR0)),
-    "M" (INTERRUPT_RESET_VAL),
+    [gpior0_addr] "I" (_SFR_IO_ADDR(GPIOR0)),
+    [irv] "M" (INTERRUPT_RESET_VAL),
+    [eoff] "I" ((END_OF_FRAME_FLAG)),
     [fic] "i" (fic)
 
   );
