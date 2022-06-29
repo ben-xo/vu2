@@ -9,6 +9,8 @@ uint32_t silent_since = 0; // time we've been silent since.
 
 uint32_t last_delay = 0;
 
+int8_t volatile fps_interrupt_count = FPS_INTERRUPT_RESET_VAL;
+
 void setup_fps() {
   // // TIMER1 is used for the sampler. We are going to piggy back on Timer 1 to get an interrupt to use for keeping the frame rate steady.
   // OCR1B = 0;
@@ -17,8 +19,6 @@ void setup_fps() {
 }
 
 /* N.B. we apply fps_count() in ledpwm.cpp in order to efficiently share an interrupt */
-
-// int8_t fps_interrupt_count = SAMP_FREQ / FPS;
 
 // ISR(TIMER1_COMPB_vect)
 // {

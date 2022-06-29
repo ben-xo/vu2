@@ -15,6 +15,6 @@
 // e.g. at 16MHz and 10% duty, this will be 180. At 20Mhz, 225. At 8MHz, 90.
 #define PWM_DUTY_VALUE     (PWM_OVERFLOW_VALUE - (PWM_OVERFLOW_VALUE / (100 / PWM_DUTY_PERCENT)))
 
-#define INTERRUPT_RESET_VAL (PWM_LED_FRQ / FPS)
+#define FPS_INTERRUPT_RESET_VAL (PWM_LED_FRQ / FPS)
 
 #endif /* _FPS_CONSTANTS_H */

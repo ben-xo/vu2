@@ -16,8 +16,6 @@
 
 #include "fps_constants.h"
 
-int8_t volatile fps_interrupt_count = INTERRUPT_RESET_VAL;
-
 /* definition to expand macro then apply to pragma message */
 /* from https://stackoverflow.com/questions/1562074/how-do-i-show-the-value-of-a-define-at-compile-time */
 #define VALUE_TO_STRING(x) #x
