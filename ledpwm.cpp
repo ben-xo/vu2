@@ -74,41 +74,55 @@ void enable_ledpwm() {
 //  TCCR2B = (1 << CS22); // re-enable the timer (with pre-scaler 64) - change PWM_PRESCALER if you change this
 }
 
-
+/*
+ * This interrupt fires to turn the lights out, both on PORTB and the two beat pins.
+ * It also rotates the LED brigtness mask and does the FPS count.
+ *
+ * Lights out: 4 cycles
+ * Mask rotate: 5 cycles
+ * FPS count:  7 or 8 cycles
+ * Interrupt overhead: 14 cycles
+ * Total cycles: 30 or 31 cycles
+ */
 ISR(TIMER2_COMPA_vect, ISR_NAKED) {
-  asm volatile( "push    r24                             \n\t");
+  asm volatile( "push    r24                             \n\t"); // 2cy
 
   // "PORTB = 0" would set PORTB from r1, but we can't guarantee that's 0.
   // ldi rN, 0 doesn't affect SREG, but we can't ldi into r1 (has to be r15+)
   // so, do it manually
 
-  asm volatile( "ldi     r24, 0                          \n\t"); 
-  asm volatile( "out     %0, r24     ; PORTB             \n\t" :: "I" (_SFR_IO_ADDR(PORTB)));
+  asm volatile( "ldi     r24, 0                          \n\t"); // 1cy
+  asm volatile( "out     %0, r24     ; PORTB             \n\t" :: "I" (_SFR_IO_ADDR(PORTB))); // 1cy
 
   beat_pin.low();
   tempo_pin.low();
 
   // unfortunately we need to backup SREG for fps_count
-  asm volatile( "push    r25                             \n\t");
-  asm volatile( "in      r25, %0                         \n\t" :: "I" (_SFR_IO_ADDR(SREG)));
+  asm volatile( "push    r25                             \n\t"); // 2cy
+  asm volatile( "in      r25, %0                         \n\t" :: "I" (_SFR_IO_ADDR(SREG))); // 1cy
 
-  // well, we needed to push SREG, so might as well do this now, as ROR affects SREG
-  // 
+  // Rotate the portb_mask (this is used for brightness control on LEDs in the other interrupt.)
+  // As we alreaded needed to push SREG we might as well do this now, as `ror` affects SREG
   uint8_t temp = portb_mask;
-  portb_mask = (temp >> 1) | (temp << 7); // basically, ror
+  portb_mask = (temp >> 1) | (temp << 7); // basically, ror -    // 5 cy
 
-  fps_count();
+  fps_count();                                                   // 7 or 8cy
 
-  asm volatile( "out     %0, r25                         \n\t" :: "I" (_SFR_IO_ADDR(SREG)));
-  asm volatile( "pop     r25                             \n\t");
+  asm volatile( "out     %0, r25                         \n\t" :: "I" (_SFR_IO_ADDR(SREG))); //1 cy
+  asm volatile( "pop     r25                             \n\t"); // 2cy
 
-  asm volatile( "pop     r24                             \n\t");
-  asm volatile( "reti                                    \n\t");
+  asm volatile( "pop     r24                             \n\t"); // 2cy
+  asm volatile( "reti                                    \n\t"); // 4cy
 }
 
-
+/*
+ * This interrupt fires to turn the LED lights on. The LSB of the mask determines 
+ * whether we `swap` the value of PORTB before showing it (i.e. double buffered upper or lower half)
+ * 60 cycles for the sampler path (sampler takes ~31)
+ * 22 cycles for the non-sampler path
+ */
 ISR(TIMER2_COMPB_vect, ISR_NAKED) {
-  asm volatile( "push    r24                             \n\t");
+  asm volatile( "push    r24                             \n\t"); // 2cy
 
   // Based on LSB of portb_mask, swap the nibbles of portb val before displaying.
   // The idea is that portb_val is actually a double buffer, and portb_mask is effectively
@@ -133,19 +147,19 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   );
 
 
-  register bool is_beat_1 asm ("r24") = F.is_beat_1;
+  register bool is_beat_1 asm ("r24") = F.is_beat_1; // 2cy
   if(is_beat_1) beat_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
 
-  register bool is_beat_2 asm ("r24") = F.is_beat_2;
+  register bool is_beat_2 asm ("r24") = F.is_beat_2; // 2cy
   if(is_beat_2) tempo_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
 
-  if(!(GPIOR0 & (1<<0))) {
-    GPIOR0 |= (1<<0);
+  if(!(GPIOR0 & (EVERY_OTHER_FRAME_FLAG))) {
+    GPIOR0 |= (EVERY_OTHER_FRAME_FLAG);
     asm volatile( "pop     r24                             \n\t");
     asm volatile( "reti                                    \n\t");
   }
 
-  GPIOR0 &= ~(1<<0);
+  GPIOR0 &= ~(EVERY_OTHER_FRAME_FLAG);
 
   asm volatile(
     "push  r30 \t\n"
@@ -153,9 +167,9 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
     // "push  r24 \t\n" // in ISR_NAKED prologue
     "push  r30 \t\n"
     "push  r31 \t\n"
-  );
+  ); // 7 cy
 
-  sample();
+  sample(); // ~ 31 cy
   
   asm volatile(
     "pop r31 \t\n"
@@ -163,7 +177,7 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
     // "pop r24 \t\n" // in ISR_NAKED epilogue
     "out __SREG__, r30\t\n"
     "pop r30 \t\n"
-  );
-  asm volatile( "pop     r24                             \n\t");
-  asm volatile( "reti                                    \n\t");
+  ); // 7 cy
+  asm volatile( "pop     r24                             \n\t"); // 2cy
+  asm volatile( "reti                                    \n\t"); // 4cy
 }
