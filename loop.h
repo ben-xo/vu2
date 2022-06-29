@@ -7,6 +7,8 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "debug.h"
+
 #include "sampler.h"
 
 #include "tempo.h"
@@ -27,13 +29,11 @@ extern uint16_t my_sample_sum;
 __attribute__((always_inline)) static void one_frame_sample_handler() {
 
     DEBUG_FRAME_RATE_HIGH();
-    DEBUG_SAMPLE_RATE_LOW();
+    DEBUG_AUDIO_PROCESSING_RATE_HIGH();
         
     // read these as they're volatile
     my_current_sample = sampler.current_sample;
     uint8_t my_new_sample_count = (my_current_sample - last_processed_sample_bd) & ~SAMP_BUFF_LEN;
-
-    DEBUG_SAMPLE_RATE_HIGH();
 
     // now let's do some beat calculations
 
@@ -117,11 +117,10 @@ __attribute__((always_inline)) static void one_frame_sample_handler() {
       }
     }
 
-    DEBUG_SAMPLE_RATE_LOW();
+    DEBUG_AUDIO_PROCESSING_RATE_LOW();
 }
 
 __attribute__((always_inline)) static void frame_epilogue() {
-    DEBUG_SAMPLE_RATE_LOW();
     DEBUG_FRAME_RATE_LOW();
     reach_target_fps();
     F.frame_counter++;

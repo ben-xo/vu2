@@ -50,7 +50,6 @@ void setup() {
 
   // the pin with the push button
   pinMode(NEOPIXEL_PIN, OUTPUT);
-  pinMode(DUTY_CYCLE_LED, OUTPUT);
 
   beat_pin.config(OUTPUT, LOW);
   tempo_pin.config(OUTPUT, LOW);
@@ -67,11 +66,6 @@ void setup() {
   pinMode(MODE_LED_PIN_5,OUTPUT);
   pinMode(BUTTON_LED_PIN,OUTPUT);
   
-#ifdef DEBUG_FRAME_RATE
-  // debugging pin for checking frame rate
-  pinMode (DEBUG_FRAME_RATE_PIN, OUTPUT);
-#endif
-
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, STRIP_LENGTH).setCorrection(TypicalLEDStrip);
 
   FastLED.setDither( 0 );
@@ -81,6 +75,7 @@ void setup() {
   setup_tempo();
   setup_fps();
   setup_ledpwm();
+  setup_debug();
 
 #ifdef BEAT_WITH_INTERRUPTS
   setup_beatdetect();

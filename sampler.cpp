@@ -49,11 +49,6 @@ void setup_sampler(uint16_t timer_counter) {
 
   // XXX previous versions of this code used TIMER1 for the sampler, but now we hook onto LEDPWM timer2.
 
-
-#ifdef DEBUG_SAMPLE_RATE
-  // debugging pin for checking sample rate
-  pinMode (DEBUG_SAMPLE_RATE_PIN, OUTPUT);
-#endif
   
   sei();
 }

@@ -11,9 +11,11 @@
 
 /*** Pin configuration ***/
 #define AUDIO_INPUT_PIN 0
-#define BUTTON_PIN 7
+#define DEBUG_FRAME_RATE_PIN A3
+#define DEBUG_SAMPLE_RATE_PIN A4
+#define DEBUG_AUDIO_PROCESSING_RATE_PIN A5
 #define NEOPIXEL_PIN 6
-#define DUTY_CYCLE_LED 4 
+#define BUTTON_PIN 7
 #define MODE_LED_PIN_1 8
 #define MODE_LED_PIN_2 9
 #define MODE_LED_PIN_3 10 
@@ -82,13 +84,6 @@
 
 /*** random debug stuff ***/
 //#define DEBUG_ONLY 1
-#define DEBUG_SAMPLE_RATE 1
-#define DEBUG_SAMPLE_RATE_PORT PORTD
-#define DEBUG_SAMPLE_RATE_PIN PD2
-#define DEBUG_FRAME_RATE 1
-#define DEBUG_FRAME_RATE_PORT PORTD
-#define DEBUG_FRAME_RATE_PIN PD3
-
 //#define LONGCLI 1
 
 #endif /* _CONFIG_H */

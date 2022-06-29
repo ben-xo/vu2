@@ -9,6 +9,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "config.h"
+#include "debug.h"
 
 #include "PeckettIIRFixedPoint.h"
 
@@ -54,9 +55,7 @@ __attribute__((always_inline)) uint8_t inline consume_sample_index() {
 
 __attribute__((always_inline)) void inline sample()
 {
-//#ifdef DEBUG_SAMPLE_RATE
-//  DEBUG_SAMPLE_RATE_PORT |= (1 << DEBUG_SAMPLE_RATE_PIN);
-//#endif
+   DEBUG_SAMPLE_RATE_HIGH();
 
  /** C version **/
   // ADCSRA = (1 << ADPS1) | (1 << ADEN) | (1 << ADSC); // trigger a sample. Spell out the settings to save clock cycles.
@@ -127,9 +126,7 @@ __attribute__((always_inline)) void inline sample()
      "r24", "r30", "r31"
    );
 
-//#ifdef DEBUG_SAMPLE_RATE
-//  DEBUG_SAMPLE_RATE_PORT &= ~(1 << DEBUG_SAMPLE_RATE_PIN);
-//#endif
+   DEBUG_SAMPLE_RATE_LOW();
 }
 
 #endif /* _SAMPLER_H */
