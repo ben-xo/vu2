@@ -12,7 +12,7 @@
  * It's not really related, which is why it has its own file, but it should still be inlined
  */
 
-static void __inline__ fps_count()
+static void inline __attribute__((always_inline)) fps_count()
 {
   // clobbers r24 and SREG so they must be saved before use.
   // stores overflow in GPIOR0:1. So, that must be reset when read at point of use.
