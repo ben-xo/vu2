@@ -18,12 +18,9 @@
 
 #include "render.h"
 #include "framestate.h"
-
+#include "pwm_constants.h"
 #include "gpio0.h"
 
-extern uint8_t pwm_duty;
-
-//extern uint8_t volatile portb_val;
 #define ledpwm_status GPIOR0
 #define portb_mask GPIOR1
 #define portb_val GPIOR2
@@ -31,17 +28,6 @@ extern uint8_t pwm_duty;
 void setup_ledpwm();
 void disable_ledpwm();
 void enable_ledpwm();
-
-// These values are specific to the LEDs you choose. 
-// Override them in config.h if you like.
-
-#ifndef PWM_LED_FRQ
-#  define PWM_LED_FRQ 10000 // 10kHz
-#endif
-
-#ifndef PWM_DUTY_PERCENT
-#  define PWM_DUTY_PERCENT 10
-#endif
 
 extern DigitalPin<BEAT_PIN_1> beat_pin;
 extern DigitalPin<BEAT_PIN_2> tempo_pin;

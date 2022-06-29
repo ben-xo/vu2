@@ -14,24 +14,13 @@
 #include "fps.h"
 #include "gpio0.h"
 
-#include "fps_constants.h"
-
-/* definition to expand macro then apply to pragma message */
-/* from https://stackoverflow.com/questions/1562074/how-do-i-show-the-value-of-a-define-at-compile-time */
-#define VALUE_TO_STRING(x) #x
-#define VALUE(x) VALUE_TO_STRING(x)
-#define VAR_NAME_VALUE(var) #var "="  VALUE(var)
-
-// compile time debug to see the PWM vals
-#pragma message(VAR_NAME_VALUE(PWM_OVERFLOW_VALUE))
-#pragma message(VAR_NAME_VALUE(PWM_DUTY_VALUE))
+#include "pwm_constants.h"
 
 // we're attaching the FPS calculation to the ledpwm interrupt to lower the number of interrupts.
 #include "fps_count.h"
 
 // we're attaching the sampler to the ledpwm interrupt to lower the number of interrupts.
 #include "sampler.h"
-
 
 void setup_ledpwm() {
   cli();
