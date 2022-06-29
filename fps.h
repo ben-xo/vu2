@@ -18,7 +18,7 @@ void setup_fps();
 /*
  * Busy-wait until the end of the frame, then clear the end-of-frame flag.
  */
-__attribute__((always_inline)) static void reach_target_fps()
+inline __attribute__((always_inline)) static void reach_target_fps()
 {
   uint32_t end_time = micros();
   while(!(GPIOR0 & (1<<1))) {
