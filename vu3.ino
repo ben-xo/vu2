@@ -180,11 +180,13 @@ void loop() {
       case TRIPLE_CLICK:
         demo_loop();
         portb_val = seven_seg(F.mode);
+        portb_mask = MASK_RESET_VAL;
         break;
 
       case QUADRUPLE_CLICK:
         sober_loop();
         portb_val = seven_seg(F.mode);
+        portb_mask = MASK_RESET_VAL;
         break;
 
       case REALLY_LONG_PUSH:
