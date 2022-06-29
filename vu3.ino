@@ -18,8 +18,6 @@
 #include "sevenseg.h"
 #include "framestate.h"
 
-struct Framestate F; // the global instance
-
 #include "loop.h"
 bool filter_beat = false;
 uint8_t my_current_sample = 0;
