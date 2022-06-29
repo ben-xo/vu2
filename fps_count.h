@@ -2,16 +2,20 @@
  * Copyright Ben XO https://github.com/ben-xo All rights reserved.
  */
 
+
+/*
+ * The expectation is that you only include this in ledpwm.cpp.
+ * It's not really related, which is why it has its own file, but it should still be inlined
+ */
+
 #ifndef _FPS_COUNT_H
 #define _FPS_COUNT_H
 
 #include "gpio0.h"
 #include "fps_constants.h"
 
-/*
- * The expectation is that you only include this in ledpwm.cpp.
- * It's not really related, which is why it has its own file, but it should still be inlined
- */
+// this is defined in fps.cpp
+extern int8_t volatile fps_interrupt_count;
 
 static void inline __attribute__((always_inline)) fps_count()
 {
@@ -47,7 +51,7 @@ static void inline __attribute__((always_inline)) fps_count()
     : 
     : 
     [gpior0_addr] "I" (_SFR_IO_ADDR(GPIOR0)),
-    [irv] "M" (INTERRUPT_RESET_VAL),
+    [irv] "M" (FPS_INTERRUPT_RESET_VAL),
     [eoff] "I" (END_OF_FRAME_FLAG_BIT),
     [fic] "i" (fic)
 

@@ -15,8 +15,6 @@ extern uint32_t silent_since; // time we've been silent since.
 
 void setup_fps();
 
-// extern volatile int8_t fps_interrupt_count;
-
 /*
  * Busy-wait until the end of the frame, then clear the end-of-frame flag.
  */
