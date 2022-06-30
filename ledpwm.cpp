@@ -117,14 +117,14 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   register bool is_beat_2 asm ("r24") = F.is_beat_2; // 2cy
   if(is_beat_2) tempo_pin.high(); // this compiles to a `sbrc` which doesn't affect the SREG!
 
-  /* Based on LSB of portb_mask, swap the nibbles of portb val before di
-   * The idea is that portb_val is actually a double buffer, and portb_m
-   * a blend percentage. Once every sample interrupt, it is rotated by 1
-   * So a mask = 0x00 will always show the one half of portb_val, and ma
-   * with mask = 0x55 showing a 50/50 mix. Thus, you can achieve fades a
+  /* Based on LSB of portb_mask, swap the nibbles of portb val before displaying.
+   * The idea is that portb_val is actually a double buffer, and portb_mask is effectively
+   * a blend percentage. Once every sample interrupt, it is rotated by 1 bit.
+   * So a mask = 0x00 will always show the one half of portb_val, and mask = 0xFF will show the other half,
+   * with mask = 0x55 showing a 50/50 mix. Thus, you can achieve fades and pulses on the seven seg
    * by periodically updating the val and the mask.
    *
-   * Note that because just saving and restoring SREG takes 6 cycles, we
+   * Note that because just saving and restoring SREG takes 6 cycles, we're avoiding anything that modifies
    * SREG altogether in order to keep this to 8 cycles total.
    *
    * total: 8 cycles

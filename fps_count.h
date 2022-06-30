@@ -17,6 +17,20 @@
 // this is defined in fps.cpp
 extern int8_t volatile fps_interrupt_count;
 
+/*
+ * Every time fps_count() is called, it decrements a counter of "interrupts per frame".
+ *
+ * We hitch a ride on the LED PWM interrupt (see ledpwm.cpp), as the timing there
+ * is essentially jitter free.
+ *
+ * For example, if our desired frame rate is 150FPS, and our interrupt triggers 10k times
+ * per second (i.e. a typical LED PWM value), then we count down from 200 to 0 and set a
+ * flag in GPIOR0 when it underflows. (See PWM_OVERFLOW_VALUE in ledpwm.cpp)
+ *
+ * GPIOR0 is chosen because you can use `sbi` to set the bit very quickly.
+ *
+ * This whole function only takes 7 or 8 clock cycles.
+ */
 static void inline __attribute__((always_inline)) fps_count()
 {
   // clobbers r24 and SREG so they must be saved before use.
