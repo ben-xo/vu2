@@ -108,6 +108,47 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
+
+void ledpwm_vu_1() {
+
+    static const PROGMEM uint8_t masks[16] = { 0b11111110, 0b11101110, 0b11101010, 0b10101010,
+                                               0b10101000, 0b10001000, 0b10000000, 0b00000000,
+                                               0b10000000, 0b10001000, 0b10101000, 0b10101010,
+                                               0b11101010, 0b11101110, 0b11111110, 0b11111110 };
+    
+    /*
+    mask         UPPER LOWER
+    0b01111111,  0000  XXXX   -> lowest brightness symbol, black non-symbol
+    0b01110111,
+    0b01010111,
+    0b01010101,  0000  XXXX   -> medium brightness symbol, black non-symbol
+    0b01010100,    
+    0b01000100,
+    0b01000000,  
+    0b00000000,  0000  XXXX   -> full brightness symbol, black non-symbol
+
+    0b01000000,  1111  XXXX   -> full brightness symbol, lowest non-symbol
+    0b01000100,        
+    0b01010100,    
+    0b01010101,  1111  XXXX   -> full brightness symbol, medium non-symbol
+    0b01010111,
+    0b01110111,
+    0b01111111,  1111  XXXX  -> full brightness symbol, almost full non-symbol
+    0b01111111,  1111  XXXX  -> repeat, don't want symbol illegible
+    */
+
+    uint8_t four_bit_level = (F.vu_width & 0xF0) >> 4;
+    uint8_t new_portb_mask = masks[four_bit_level];
+    uint8_t new_portb_val = seven_seg(F.mode);
+    if (four_bit_level > 7) {
+      new_portb_val |= 0b11110000;
+    }
+    cli();
+    portb_mask = new_portb_mask;
+    portb_val = new_portb_val;
+    sei();
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -130,87 +171,13 @@ void loop() {
   do_banner();
 #endif
 
-  portb_val = seven_seg(F.mode); // writes directly to pins 9-12
+  portb_val = 0; // writes directly to pins 9-12
 
   while(true) {
 
     one_frame_sample_handler();
 
-    uint8_t new_mask = 0b01111111;
-    uint8_t upper_buffer = 0b00000000;
-    uint8_t four_bit_level = F.vu_width >> 4;
-    switch(four_bit_level)
-    {
-      case 0x0:
-        new_mask = 0b01111111;
-        upper_buffer = 0b00000000;
-        break;
-      case 0x1:
-        new_mask = 0b01110111;
-        upper_buffer = 0b00000000;
-        break;
-      case 0x2:
-        new_mask = 0b01010111;
-        upper_buffer = 0b00000000;
-        break;
-      case 0x3:
-        new_mask = 0b01010101;
-        upper_buffer = 0b00000000;
-        break;
-
-      case 0x4:
-        new_mask = 0b01111111;
-        upper_buffer = 0b00100000;
-        break;
-      case 0x5:
-        new_mask = 0b01110111;
-        upper_buffer = 0b01000000;
-        break;
-      case 0x6:
-        new_mask = 0b01010111;
-        upper_buffer = 0b10000000;
-        break;
-      case 0x7:
-        new_mask = 0b01010101;
-        upper_buffer = 0b00010000;
-        break;
-
-      case 0x8:
-        new_mask = 0b01111111;
-        upper_buffer = 0b11110000;
-        break;
-      case 0x9:
-        new_mask = 0b01110111;
-        upper_buffer = 0b11110000;
-        break;
-      case 0xA:
-        new_mask = 0b01010111;
-        upper_buffer = 0b11110000;
-        break;
-      case 0xB:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11110000;
-        break;
-
-      case 0xC:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11110001;
-        break;
-      case 0xD:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11110011;
-        break;
-      case 0xE:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11110111;
-        break;
-      case 0xF:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11111111;
-        break;
-    }
-    portb_mask = new_mask;
-    portb_val = seven_seg(F.mode) | upper_buffer;
+    ledpwm_vu_1();
 
     if(F.is_attract_mode) {
       render_attract();
