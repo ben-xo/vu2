@@ -129,26 +129,14 @@ static void ledpwm_vu_1() {
     uint8_t four_bit_level = (F.vu_width & 0xF0) >> 4;
     uint8_t new_portb_mask = masks[four_bit_level];
     uint8_t new_portb_val = 0;
-    switch(four_bit_level) {
-      case 0x0F:
-      case 0x0E:
-      case 0x0D:
-      case 0x0C:
+    if(four_bit_level > 0x0B) {
         new_portb_val = 0b11110000;
-        break;
-
-      case 0x0B:
-      case 0x0A:
-      case 0x09:
-      case 0x08:
-        new_portb_val = 0b10100000;
+    } else if(four_bit_level > 0x07) {
         if(F.frame_counter & 0x01) {
-          new_portb_val >>= 1;
+          new_portb_val = 0b10100000;
+        } else {
+          new_portb_val = 0b01010000;
         }
-        break;
-
-      default:
-        break;
     }
     new_portb_val |= seven_seg(F.mode);
 
