@@ -87,7 +87,7 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
 
   // unfortunately we need to backup SREG for fps_count
   asm volatile( "push    r25                             \n\t"); // 2cy
-  asm volatile( "in      r25, %0                         \n\t" :: "I" (_SFR_IO_ADDR(SREG))); // 1cy
+  asm volatile( "in      r25, __SREG__                   \n\t"); // 1cy
 
   // Rotate the portb_mask (this is used for brightness control on LEDs in the other interrupt.)
   // As we alreaded needed to push SREG we might as well do this now, as `ror` affects SREG
@@ -125,7 +125,7 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
 
   fps_count();                                                   // 7 or 8cy
 
-  asm volatile( "out     %0, r25                         \n\t" :: "I" (_SFR_IO_ADDR(SREG))); //1 cy
+  asm volatile( "out     __SREG__, r25                   \n\t"); //1 cy
   asm volatile( "pop     r25                             \n\t"); // 2cy
 
   asm volatile( "pop     r24                             \n\t"); // 2cy
