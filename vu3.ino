@@ -181,7 +181,7 @@ void loop() {
       if(F.auto_mode && auto_mode_change(F.is_beat_1)) {
         F.last_mode = F.mode;
         while(F.mode == F.last_mode) F.mode = random8(MAX_MODE+1); // max is exclusive
-        //portb_val = seven_seg(F.mode); // writes directly to pins 9-12.
+        // the mode indicator LED is changed by ledpwm_vu_1() below
       }
 
       render(my_current_sample, my_sample_sum);
@@ -205,6 +205,7 @@ void loop() {
         F.is_attract_mode = false;
         F.mode++;
         if(F.mode > MAX_MODE) F.mode = 0;
+        ledpwm_reset();
         break;
 
       case LONG_PUSH:
