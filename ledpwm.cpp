@@ -93,7 +93,7 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   // As we alreaded needed to push SREG we might as well do this now, as `ror` affects SREG
   uint8_t register temp asm("r24") = portb_mask;
   portb_mask = (temp >> 1) | (temp << 7); // basically, ror -    // 5 cy
-  
+
   // if(GPIOR0 & (LEDPWM_ROTATE_BACK_BUFFER_FLAG)) {
   //   asm volatile( "push    r25                             \n\t"); // 2cy
   //   temp = portb_val;
@@ -155,33 +155,19 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
    * by periodically updating the val and the mask.
    *
    * Note that because just saving and restoring SREG takes 6 cycles, we're avoiding anything that modifies
-   * SREG altogether in order to keep this to 8 cycles total.
+   * SREG altogether in order to keep this to 7 cycles total.
    *
    * total: 7 cycles
    */
   asm volatile(
-    // flags_io_reg is GPIOR0, which supports 1 cycle bit set/clear/test (sbi/sbc/sbis/sbic)
-    // the other reg's are GPIOR1, GPIOR2 and PORTB, which you must in/out to/from a normal reg
-
-    // the mask is rotated in the other interrupt; first we copy the LSB from the mask into the BUFFER_SELECT_FLAG_BIT in GPIOR0
-    // "in r24, %[portb_mask_io_reg] \n\t"
-    // "cbi  %[flags_io_reg], %[_LEDPWM_BUFFER_SELECT_FLAG_BIT] \n\t"
-    // "sbrc r24, 0 \n\t"
-    // "sbi  %[flags_io_reg], %[_LEDPWM_BUFFER_SELECT_FLAG_BIT] \n\t"
-
-    // // then we use the BUFFER_SELECT_FLAG_BIT in GPIOR0 to swap upper and lower halves of the val
-    // "in r24, %[portb_val_io_reg] \n\t"
-    // "sbic %[flags_io_reg], %[_LEDPWM_BUFFER_SELECT_FLAG_BIT] \n\t"
-    // "swap r24 \n\t"
-    // "out %[portb_io_reg], r24 \n\t"
+    // the mask is rotated in the other interrupt; we test the LSB of the mask to decide if we are swapping to the back buffer
 
     "in r24, %[portb_mask_io_reg] \n\t"
     "sbrc r24, 0 \n\t"
-    "rjmp .+6 \n\t"
+    "rjmp .+4 \n\t"
 
     "in r24, %[portb_val_io_reg] \n\t"
-    "out %[portb_io_reg], r24 \n\t"
-    "rjmp .+6 \n\t"
+    "rjmp .+4 \n\t"
 
     "in r24, %[portb_val_io_reg] \n\t"
     "swap r24 \n\t"
@@ -190,9 +176,8 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
     :: 
     [portb_mask_io_reg] "I" (_SFR_IO_ADDR(portb_mask)),
     [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val)),
-    [flags_io_reg] "I" (_SFR_IO_ADDR(GPIOR0)),
     [portb_io_reg] "I" (_SFR_IO_ADDR(PORTB))
-  ); // 8cy
+  ); // 7cy
 
   if(!(GPIOR0 & (EVERY_OTHER_FRAME_FLAG))) {
     // test itself takes 1 cy
@@ -203,7 +188,7 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
     asm volatile( "reti                                    \n\t"); // 4cy
   } // 8 cy if returning, 2 cy otherwise
 
-  GPIOR0 &= ~(EVERY_OTHER_FRAME_FLAG);
+  GPIOR0 &= ~(EVERY_OTHER_FRAME_FLAG); // 1 cy
 
   asm volatile(
     "push  r30 \t\n"
