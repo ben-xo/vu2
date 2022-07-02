@@ -85,14 +85,29 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   beat_pin.low();
   tempo_pin.low();
 
-  // unfortunately we need to backup SREG for fps_count
+  // unfortunately we need to back up SREG for the mask rotate and fps_count
   asm volatile( "push    r25                             \n\t"); // 2cy
   asm volatile( "in      r25, __SREG__                   \n\t"); // 1cy
 
   // Rotate the portb_mask (this is used for brightness control on LEDs in the other interrupt.)
   // As we alreaded needed to push SREG we might as well do this now, as `ror` affects SREG
-  uint8_t register temp asm("r24") = portb_mask;
-  portb_mask = (temp >> 1) | (temp << 7); // basically, ror -    // 5 cy
+  uint8_t register temp asm("r24") = portb_mask;  // 1 cy
+  asm volatile(
+
+    // we don't particularly care whether we rotate the mask right or left.
+    // GCC outputs 3 instructions for rotate right (bst r24, 0   ; ror r24 ; bld r24, 7).
+    // GCC outputs 2 instructions for rotate left  (add r24, r24 ; adc r24, r1)
+    // however because we're in an interrupt, we can't guarantee r1 (which is the ZERO_REG) is actually 0,
+    // and pushing, clearing and popping r1 would add 9 cycles! What to do?
+
+    // Well, it took me a while, but I did solve it.
+
+    "cpi  r24, 0x80  \t\n"
+    "rol  r24        \t\n"
+
+  ); // 2 cy
+
+  portb_mask = temp; // 1 cy
 
   // if(GPIOR0 & (LEDPWM_ROTATE_BACK_BUFFER_FLAG)) {
   //   asm volatile( "push    r25                             \n\t"); // 2cy
