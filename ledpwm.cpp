@@ -82,8 +82,8 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "ldi     r24, 0                          \n\t"); // 1cy
   asm volatile( "out     %0, r24     ; PORTB             \n\t" :: "I" (_SFR_IO_ADDR(PORTB))); // 1cy
 
-  beat_pin.low();
-  tempo_pin.low();
+  beat_pin.low();  // 1cy
+  tempo_pin.low(); // 1cy
 
   // unfortunately we need to back up SREG for the mask rotate and fps_count
   asm volatile( "push    r25                             \n\t"); // 2cy
@@ -136,6 +136,15 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
 /*
  * This interrupt fires to turn the LED lights on. The LSB of the mask determines 
  * whether we `swap` the value of PORTB before showing it (i.e. double buffered upper or lower half)
+ *
+ * NOTE: based on the following calculation:
+ *
+ * 16,000,000 cycles/sec
+ *  10,000 OCR2A interrupts / sec with overflow val 199 (prescaler 8, so that's every 1600 clocks)
+ *  10,000 OCR2B interrupts / sec overflow val 190, so 10*8 (80) cycles before OCR2A for duty cycle 10%
+ *
+ * _The max length of this interrupt is currently 80 cycles, before it risks making OCR2A fire late._
+ *
  * 67 cycles for the sampler path (sampler takes ~31)
  * 21 cycles for the non-sampler path
  */
