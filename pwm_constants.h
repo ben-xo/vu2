@@ -10,7 +10,7 @@
 
 // 0b11111111 is "invisible" and 0x00000000 is "super bright" not that the human eye can tell
 #ifndef MASK_RESET_VAL
-#  define MASK_RESET_VAL 0b01111111
+#  define MASK_RESET_VAL 0b01110111
 #endif
 
 // These values are specific to the LEDs you choose. 

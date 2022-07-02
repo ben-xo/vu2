@@ -47,8 +47,8 @@ static void inline __attribute__((always_inline)) fps_count()
   volatile uint8_t* fic = &fps_interrupt_count;
   asm volatile( 
     // int8_t new_interrupt_count = fps_interrupt_count - 1;
-    "lds r24, %[fic]            \n\t" 
-    "subi  r24, 0x01            \n\t" 
+    "lds r24, %[fic]             \n\t" 
+    "subi r24, 0xFF              \n\t" // ledpwm (the caller of this)relies on C being 1, so rather than counting down to zero we count "up"
 
     // if(!new_interrupt_count) {
     "brne  .+4            \n\t" 
@@ -57,7 +57,7 @@ static void inline __attribute__((always_inline)) fps_count()
     "sbi %[gpior0_addr], %[eoff]            \n\t" 
 
     //   new_interrupt_count = interrupt_reset_val;
-    "ldi r24, %[irv]        \n\t" 
+    "subi r24, %[irv]        \n\t" // ledpwm (the caller of this) relies on C being 1, so we subtract from 0 rather than using ldi
     // }
 
     // fps_interrupt_count = new_interrupt_count;

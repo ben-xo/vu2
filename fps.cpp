@@ -9,7 +9,7 @@ uint32_t silent_since = 0; // time we've been silent since.
 
 uint32_t last_delay = 0;
 
-int8_t volatile fps_interrupt_count = FPS_INTERRUPT_RESET_VAL;
+int8_t volatile fps_interrupt_count = 0 - FPS_INTERRUPT_RESET_VAL;
 
 void setup_fps() {
   // // TIMER1 is used for the sampler. We are going to piggy back on Timer 1 to get an interrupt to use for keeping the frame rate steady.

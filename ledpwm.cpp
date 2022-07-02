@@ -89,26 +89,6 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "push    r25                             \n\t"); // 2cy
   asm volatile( "in      r25, __SREG__                   \n\t"); // 1cy
 
-  // Rotate the portb_mask (this is used for brightness control on LEDs in the other interrupt.)
-  // As we alreaded needed to push SREG we might as well do this now, as `ror` affects SREG
-  uint8_t register temp asm("r24") = portb_mask;  // 1 cy
-  asm volatile(
-
-    // we don't particularly care whether we rotate the mask right or left.
-    // GCC outputs 3 instructions for rotate right (bst r24, 0   ; ror r24 ; bld r24, 7).
-    // GCC outputs 2 instructions for rotate left  (add r24, r24 ; adc r24, r1)
-    // however because we're in an interrupt, we can't guarantee r1 (which is the ZERO_REG) is actually 0,
-    // and pushing, clearing and popping r1 would add 9 cycles! What to do?
-
-    // Well, it took me a while, but I did solve it.
-
-    "cpi  r24, 0x80  \t\n"
-    "rol  r24        \t\n"
-
-  ); // 2 cy
-
-  portb_mask = temp; // 1 cy
-
   // if(GPIOR0 & (LEDPWM_ROTATE_BACK_BUFFER_FLAG)) {
   //   asm volatile( "push    r25                             \n\t"); // 2cy
   //   temp = portb_val;
@@ -138,11 +118,30 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   //   portb_val = temp;
   // }
 
-  fps_count();                                                   // 7 or 8cy
+  fps_count();  // we rely on this consistently setting the C flag // 7 or 8cy
 
-  asm volatile( "out     __SREG__, r25                   \n\t"); //1 cy
+  // Rotate the portb_mask (this is used for brightness control on LEDs in the other interrupt.)
+  // As we alreaded needed to push SREG we might as well do this now, as `ror` affects SREG
+
+  // we don't particularly care whether we rotate the mask right or left.
+  // GCC outputs 3 instructions for rotate right (bst r24, 0   ; ror r24 ; bld r24, 7).
+  // GCC outputs 2 instructions for rotate left  (add r24, r24 ; adc r24, r1)
+  // however because we're in an interrupt, we can't guarantee r1 (which is the ZERO_REG) is actually 0,
+  // and pushing, clearing and popping r1 would add 9 cycles! What to do?
+
+  // Well, it took me a while, but I did solve it.
+
+  uint8_t register temp asm("r24") = portb_mask;  // 1 cy
+  // temp = (temp >> 1) | (temp << 7); // basically, ror -    // 3 cy
+  asm volatile(
+    "sbrs r24, 0 \n\t"
+    "clc         \n\t"
+    "ror  r24    \n\t"
+  ); // 2 cy
+  portb_mask = temp; // 1 cy
+
+  asm volatile( "out     __SREG__, r25                   \n\t"); // 1cy
   asm volatile( "pop     r25                             \n\t"); // 2cy
-
   asm volatile( "pop     r24                             \n\t"); // 2cy
   asm volatile( "reti                                    \n\t"); // 4cy
 }
@@ -194,6 +193,8 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
     [portb_io_reg] "I" (_SFR_IO_ADDR(PORTB))
   ); // 7cy
 
+
+  // return early every other frame (i.e. sampler runs at half PWM freq)
   if(!(GPIOR0 & (EVERY_OTHER_FRAME_FLAG))) {
     // test itself takes 1 cy
 
