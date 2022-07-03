@@ -25,14 +25,14 @@
 void setup_ledpwm() {
   cli();
   // Clear registers
+  TCCR2B = 0; // ensure the timer starts disabled. We call enable_ledpwm() at the end
   TCCR2A = 0;
-  TCCR2B = 0;
 
   // The correct formula here is (F_CPU / ((OCR2A+1)*PRESCALER)) - google why
   OCR2A = PWM_OVERFLOW_VALUE - 1; // 24 for 10kHz with prescaler 64, 199 for 10kHz with prescaler 8
-  OCR2B = PWM_DUTY_VALUE;         // duty cycle 10% of OCR2A
+  OCR2B = PWM_DUTY_VALUE;         // duty cycle, usually ~10% of OCR2A
   
-  // CTC
+  // CTC mode
   TCCR2A = (1 << WGM21);
   
   // Output Compare Match A & B Interrupt Enable
@@ -46,19 +46,35 @@ void setup_ledpwm() {
   sei();
 }
 
+/* 
+ * disable the timer entirely, then make sure the lights are off.
+ *
+ * *NOTE* this also disables the sampler and end-of-frame flag, so calling this
+ * is not recommended unless you're doing your own loop outside of the main loop.
+ */
 void disable_ledpwm() {
-  // disable the timer entirely, then make sure the lights are off.
+  cli();
   TCCR2B = 0;
   PORTB = 0;
+  sei();
 }
 
+/*
+ * enable the pwm interrupt timer.
+ *
+ * Starts the timer at an offset so that PWM interrupts don't coincide with other interrupts.
+ * Without this, sometimes we get unstable PWM when interrupts pile up.
+ */
 void enable_ledpwm() {
-  // start at an offset so that PWM interrupts don't coincide with Sampler interrupts
-  // Without this, sometimes we get unstable PWM when interrupts pile up.
-  TCNT2 = 70;
+  TCNT2 = PWM_STARTING_OFFSET;
   
-  TCCR2B = (1 << CS21); // re-enable the timer (with pre-scaler 8) - change PWM_PRESCALER if you change this
-//  TCCR2B = (1 << CS22); // re-enable the timer (with pre-scaler 64) - change PWM_PRESCALER if you change this
+#if (PWM_PRESCALER == 8)
+  TCCR2B = (1 << CS21); // enable the timer (with pre-scaler 8)
+#elif (PWM_PRESCALER == 64)
+  TCCR2B = (1 << CS22); // enable the timer (with pre-scaler 64)
+#else
+# error PWM_PRESCALER must be 8 or 64
+#endif
 }
 
 /*
