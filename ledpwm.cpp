@@ -40,7 +40,8 @@ void setup_ledpwm() {
   TIMSK2 |= (1 << OCIE2A) | (1 << OCIE2B);
 
   clear_status_leds_within_interrupt();
-
+  disable_backbuffer_rotation();
+  
   // this clears the timer and sets the right pre-scaler, starting the timer.
   enable_ledpwm();
   sei();
@@ -118,15 +119,15 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
     asm volatile(
       "push r25 \n\t"
       "in   r24, %[portb_val_io_reg] \n\t"
-      "andi r24, 0x0F \n\t" // temp_r24 &= 0x0F
+      "andi r24, 15  \n\t" // temp_r24 &= 0x0F
       "in   r25, %[portb_val_io_reg] \n\t"
-      "andi r25, 0xF0 \n\t" // temp_r25 &= 0xF0
+      "andi r25, 240 \n\t" // temp_r25 &= 0xF0
       "add  r25, r25  \n\t" // temp_r25 *= 2
       "brcc .+2       \n\t" // skip if there was no carry
-      "ori  r25, 0x10 \n\t" // set bit 4 if bit 7 was set
+      "sbr  r25, 4    \n\t" // set bit 4 if bit 7 was set
       "or   r25, r24  \n\t" // temp_r24 |= temp_r25
       "out  %[portb_val_io_reg], r25 \n\t"
-      "pop r25 \n\t"
+      "pop  r25 \n\t"
       ::
       [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val))
     );

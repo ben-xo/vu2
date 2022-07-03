@@ -67,10 +67,10 @@ uint8_t was_button_pressed() {
     if(F.clicks) {
       if(now - F.last_push > BUTTON_REALLY_LONG_PUSH_SPEED) {
         // full bright as really long press (usually reset)
-        set_status_leds(seven_seg(12));
+        set_status_leds_front_buffer_only(seven_seg(12));
       } else if(now - F.last_push > BUTTON_LONG_PUSH_SPEED) {
         // half bright at long press
-        set_status_leds((F.frame_counter & 1) ? 0 : seven_seg(12));
+        set_status_leds_front_buffer_only((F.frame_counter & 1) ? 0 : seven_seg(12));
       }
     }
   }

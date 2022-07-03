@@ -8,9 +8,9 @@
 #include <Arduino.h>
 #include "config.h"
 
-// 0b11111111 is "invisible" and 0x00000000 is "super bright" not that the human eye can tell
+// 0b11111111 is "invisible" and 0b00000000 is "super bright" not that the human eye can tell
 #ifndef MASK_RESET_VAL
-#  define MASK_RESET_VAL 0b01111111
+#  define MASK_RESET_VAL 0b00000000
 #endif
 
 // These values are specific to the LEDs you choose. 

@@ -42,6 +42,7 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "render.h"
 
 CRGB leds[STRIP_LENGTH];
+extern struct Framestate F;
 
 void setup() {
   // put your setup code here, to run once:
@@ -108,10 +109,6 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
-static void ledpwm_reset()
-{
-    set_status_leds(seven_seg(F.mode));
-}
 
 /*
  * Mess with the brightness of the status LEDs (by adjusting the mask and double-buffer content) 
@@ -120,36 +117,28 @@ static void ledpwm_reset()
 static void ledpwm_vu_1() {
 
     static const PROGMEM uint8_t masks[16] = { 
-      0b01111111, 0b01110111, 0b01110101, 0b01010101,
-      0b01010100, 0b01000100, 0b01000000, 0b00000000,
-      0b01010101, 0b01010101, 0b01010101, 0b01010101,
-      0b01010101, 0b01010101, 0b01010101, 0b01010101
+      0b11111110, 0b11111110, 0b11111110, 0b11111110,
+      0b11101110, 0b11101110, 0b11101010, 0b11101010,
+      0b10101010, 0b10101010, 0b10101010, 0b10101010,
+      0b10101010, 0b10101010, 0b10101010, 0b10101010
     };
 
     // there are only 4 lights, so 5 brightness levels
     static const PROGMEM uint8_t vals[8] = { 
-      0b00000000, 0b00000000, 0b00000000, 0b00000000,
-      0b00010000, 0b01010000, 0b01110000, 0x11110000
+      0b00000000, 0b00010000, 0b01000000, 0b10100000,
+      0b01010000, 0b11100000, 0b01110000, 0b11110000
     };
+
+    // uint8_t volatile old_portb_val = portb_val;
     
-    uint8_t four_bit_level = (F.vu_width >> 4) & 0x0F;
+    uint8_t four_bit_level = (F.vu_width >> 4) & 0b00001111;
     uint8_t new_portb_mask = masks[four_bit_level];
 
-    int8_t three_bit_level = (four_bit_level >> 1) & 0x07;
-    uint8_t new_portb_val  = vals[three_bit_level] | seven_seg(F.mode);
+    uint8_t three_bit_level = (four_bit_level >> 1) & 0b00000111;
+    // uint8_t new_portb_val = (old_portb_val & 0x0F) | vals[three_bit_level];
+    uint8_t new_portb_val = vals[three_bit_level] | seven_seg(F.mode);
 
-    // if(four_bit_level > 0x0B) {
-    //     new_portb_val = 0b11110000;
-    // } else if(four_bit_level > 0x07) {
-    //     if(F.frame_counter & 0x01) {
-    //       new_portb_val = 0b10100000;
-    //     } else {
-    //       new_portb_val = 0b01010000;
-    //     }
-    // }
-    // new_portb_val |= seven_seg(F.mode);
-
-    set_status_leds_and_mask(new_portb_val, new_portb_mask);
+    set_status_leds_and_mask_rotate(new_portb_val, new_portb_mask);
 }
 
 void loop() {
@@ -174,11 +163,12 @@ void loop() {
   do_banner();
 #endif
 
-  ledpwm_reset();
+  set_status_leds(seven_seg(F.mode));
 
   while(true) {
 
     one_frame_sample_handler();
+    ledpwm_vu_1();
 
     if(F.is_attract_mode) {
       render_attract();
@@ -198,8 +188,6 @@ void loop() {
     FastLED.show();
     //FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
 
-    ledpwm_vu_1();
-
     // do post-frame-render stuff
     uint8_t pushed = was_button_pressed();
     F.pushed = (bool)pushed;
@@ -211,7 +199,7 @@ void loop() {
         F.is_attract_mode = false;
         F.mode++;
         if(F.mode > MAX_MODE) F.mode = 0;
-        ledpwm_reset();
+        set_status_leds(seven_seg(F.mode));
         break;
 
       case LONG_PUSH:
@@ -220,17 +208,19 @@ void loop() {
         F.auto_mode = true;
         F.is_attract_mode = false;
         F.mode = 0;
-        ledpwm_reset();
+        set_status_leds(seven_seg(F.mode));
         break;
 
       case TRIPLE_CLICK:
+        clear_status_leds();
         demo_loop();
-        ledpwm_reset();
+        clear_status_leds();
         break;
 
       case QUADRUPLE_CLICK:
+        clear_status_leds();
         sober_loop();
-        ledpwm_reset();
+        clear_status_leds();
         break;
 
       case REALLY_LONG_PUSH:
@@ -240,8 +230,6 @@ void loop() {
       default:
         break;
     }
-
-
 
     frame_epilogue();
   }
