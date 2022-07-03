@@ -108,11 +108,9 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
-static void ledpwm_reset() {
-    cli();
-    portb_mask = MASK_RESET_VAL; // min brightness mask
-    portb_val = seven_seg(F.mode);
-    sei();
+static void ledpwm_reset()
+{
+    set_status_leds(seven_seg(F.mode));
 }
 
 /*
@@ -121,10 +119,10 @@ static void ledpwm_reset() {
  */
 static void ledpwm_vu_1() {
 
-    static const PROGMEM uint8_t masks[16] = { 0b11111110, 0b11101110, 0b11101010, 0b10101010,
-                                               0b10101000, 0b10001000, 0b10000000, 0b00000000,
-                                               0b10101010, 0b10101010, 0b10101010, 0b10101010,
-                                               0b10101010, 0b10101010, 0b10101010, 0b10101010 };
+    static const PROGMEM uint8_t masks[16] = { 0b01111111, 0b01110111, 0b01110101, 0b01010101,
+                                               0b01010100, 0b01000100, 0b01000000, 0b00000000,
+                                               0b01010101, 0b01010101, 0b01010101, 0b01010101,
+                                               0b01010101, 0b01010101, 0b01010101, 0b01010101 };
     
     uint8_t four_bit_level = (F.vu_width & 0xF0) >> 4;
     uint8_t new_portb_mask = masks[four_bit_level];
@@ -140,10 +138,7 @@ static void ledpwm_vu_1() {
     }
     new_portb_val |= seven_seg(F.mode);
 
-    cli();
-    portb_mask = new_portb_mask;
-    portb_val = new_portb_val;
-    sei();
+    set_status_leds_and_mask(new_portb_val, new_portb_mask);
 }
 
 void loop() {
