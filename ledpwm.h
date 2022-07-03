@@ -38,7 +38,11 @@ extern DigitalPin<BEAT_PIN_2> tempo_pin;
 static void inline __attribute__((always_inline)) set_status_leds_and_mask_within_interrupt(uint8_t new_portb_val, uint8_t new_portb_mask)
 {
     portb_mask = new_portb_mask;
-    portb_val = new_portb_val;
+    if(new_portb_mask & 1) {
+        portb_val = new_portb_val;
+    } else {
+        portb_val = new_portb_val >> 4 | new_portb_val << 4; // basically, swap
+    }
 }
 
 static void inline __attribute__((always_inline)) set_status_leds_within_interrupt(uint8_t new_portb_val)
@@ -48,7 +52,8 @@ static void inline __attribute__((always_inline)) set_status_leds_within_interru
 
 static void inline __attribute__((always_inline)) clear_status_leds_within_interrupt()
 {
-    set_status_leds_and_mask_within_interrupt(0, MASK_RESET_VAL);
+    portb_mask = MASK_RESET_VAL;
+    portb_val = 0;
 }
 
 static void inline __attribute__((always_inline)) set_status_leds_and_mask(uint8_t new_portb_val, uint8_t new_portb_mask)
