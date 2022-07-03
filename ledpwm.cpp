@@ -105,43 +105,32 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "push    r25                             \n\t"); // 2cy
   asm volatile( "in      r25, __SREG__                   \n\t"); // 1cy
 
-  // if(GPIOR0 & (LEDPWM_ROTATE_BACK_BUFFER_FLAG)) {
-  //   asm volatile( "push    r25                             \n\t"); // 2cy
-  //   temp = portb_val;
-  //   if ((temp << 1) < 0) {
-  //     temp |= 0b00010000;
-  //   }
-  //   portb_val = temp;
-  //   asm volatile( "pop     r25                             \n\t"); // 2cy
-  // }
-
-  // if(GPIOR0 & (LEDPWM_ROTATE_BACK_BUFFER_FLAG)) {
-  //   temp = portb_val;
-  //   temp &= 0x0F;
-  //   asm volatile(
-  //     "cp %[portb_val_io_reg], %[portb_val_io_reg]       \n\t"
-  //     "addi r24, "
-  //     "ori  r24, 0b01000000                              \n\t"
-  //     "sbis %[portb_val_io_reg], 6                       \n\t"
-  //     "ori  r24, 0b00100000                              \n\t"
-  //     "sbis %[portb_val_io_reg], 5                       \n\t"
-  //     "ori  r24, 0b00010000                              \n\t"
-  //     "sbis %[portb_val_io_reg], 4                       \n\t"
-  //     "ori  r24, 0b10000000                              \n\t"
-  //     ::
-  //     [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val))
-  //   ); // 2cy
-  //   portb_val = temp;
-  // }
-
   fps_count();                                                   // 7 or 8cy
 
   // Rotate the portb_mask (this is used for brightness control on LEDs in the other interrupt.)
-  // As we alreaded needed to push SREG we might as well do this now, as `ror` affects SREG
+  // As we already needed to push SREG we might as well do this now, as `ror` affects SREG
 
-  uint8_t register temp asm("r24") = portb_mask;  // 1 cy
-  temp = (temp >> 1) | (temp << 7); // basically, ror -    // 3 cy
-  portb_mask = temp; // 1 cy
+  uint8_t register temp_r24 asm("r24") = portb_mask;  // 1 cy
+  temp_r24 = (temp_r24 >> 1) | (temp_r24 << 7); // basically, ror -    // 3 cy
+  portb_mask = temp_r24; // 1 cy
+
+  if(GPIOR0 & (LEDPWM_ROTATE_BACK_BUFFER_FLAG)) {
+    asm volatile(
+      "push r25 \n\t"
+      "in   r24, %[portb_val_io_reg] \n\t"
+      "andi r24, 0x0F \n\t" // temp_r24 &= 0x0F
+      "in   r25, %[portb_val_io_reg] \n\t"
+      "andi r25, 0xF0 \n\t" // temp_r25 &= 0xF0
+      "add  r25, r25  \n\t" // temp_r25 *= 2
+      "brcc .+2       \n\t" // skip if there was no carry
+      "ori  r25, 0x10 \n\t" // set bit 4 if bit 7 was set
+      "or   r25, r24  \n\t" // temp_r24 |= temp_r25
+      "out  %[portb_val_io_reg], r25 \n\t"
+      "pop r25 \n\t"
+      ::
+      [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val))
+    );
+  } // 2cy or 14 cy
 
   asm volatile( "out     __SREG__, r25                   \n\t"); // 1cy
   asm volatile( "pop     r25                             \n\t"); // 2cy

@@ -34,6 +34,15 @@ void enable_ledpwm();
 extern DigitalPin<BEAT_PIN_1> beat_pin;
 extern DigitalPin<BEAT_PIN_2> tempo_pin;
 
+static void inline __attribute__((always_inline)) disable_backbuffer_rotation()
+{
+    GPIOR0 &= ~LEDPWM_ROTATE_BACK_BUFFER_FLAG;
+}
+
+static void inline __attribute__((always_inline)) enable_backbuffer_rotation()
+{
+    GPIOR0 |= LEDPWM_ROTATE_BACK_BUFFER_FLAG;
+}
 
 static void inline __attribute__((always_inline)) set_status_leds_and_mask_within_interrupt(uint8_t new_portb_val, uint8_t new_portb_mask)
 {
@@ -70,8 +79,19 @@ static void inline __attribute__((always_inline)) clear_status_leds()
 {
     cli();
     clear_status_leds_within_interrupt();
+    disable_backbuffer_rotation();
     sei();
 }
+
+
+static void inline __attribute__((always_inline)) set_status_leds_and_mask_rotate(uint8_t new_portb_val, uint8_t new_portb_mask)
+{
+    cli();
+    set_status_leds_and_mask_within_interrupt(new_portb_val, new_portb_mask);
+    enable_backbuffer_rotation();
+    sei();
+}
+
 
 
 #endif /* _LEDPWM_H */

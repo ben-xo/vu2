@@ -25,8 +25,9 @@
 extern bool filter_beat;
 extern uint8_t my_current_sample;
 extern uint16_t my_sample_sum;
+extern Framestate F;
 
-__attribute__((always_inline)) static void one_frame_sample_handler() {
+__attribute__((always_inline)) static void inline one_frame_sample_handler() {
 
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_AUDIO_PROCESSING_RATE_HIGH();
@@ -120,7 +121,7 @@ __attribute__((always_inline)) static void one_frame_sample_handler() {
     DEBUG_AUDIO_PROCESSING_RATE_LOW();
 }
 
-__attribute__((always_inline)) static void frame_epilogue() {
+__attribute__((always_inline)) static void inline frame_epilogue() {
     DEBUG_FRAME_RATE_LOW();
     reach_target_fps();
     F.frame_counter++;

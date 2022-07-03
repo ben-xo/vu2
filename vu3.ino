@@ -119,24 +119,35 @@ static void ledpwm_reset()
  */
 static void ledpwm_vu_1() {
 
-    static const PROGMEM uint8_t masks[16] = { 0b01111111, 0b01110111, 0b01110101, 0b01010101,
-                                               0b01010100, 0b01000100, 0b01000000, 0b00000000,
-                                               0b01010101, 0b01010101, 0b01010101, 0b01010101,
-                                               0b01010101, 0b01010101, 0b01010101, 0b01010101 };
+    static const PROGMEM uint8_t masks[16] = { 
+      0b01111111, 0b01110111, 0b01110101, 0b01010101,
+      0b01010100, 0b01000100, 0b01000000, 0b00000000,
+      0b01010101, 0b01010101, 0b01010101, 0b01010101,
+      0b01010101, 0b01010101, 0b01010101, 0b01010101
+    };
+
+    // there are only 4 lights, so 5 brightness levels
+    static const PROGMEM uint8_t vals[8] = { 
+      0b00000000, 0b00000000, 0b00000000, 0b00000000,
+      0b00010000, 0b01010000, 0b01110000, 0x11110000
+    };
     
-    uint8_t four_bit_level = (F.vu_width & 0xF0) >> 4;
+    uint8_t four_bit_level = (F.vu_width >> 4) & 0x0F;
     uint8_t new_portb_mask = masks[four_bit_level];
-    uint8_t new_portb_val = 0;
-    if(four_bit_level > 0x0B) {
-        new_portb_val = 0b11110000;
-    } else if(four_bit_level > 0x07) {
-        if(F.frame_counter & 0x01) {
-          new_portb_val = 0b10100000;
-        } else {
-          new_portb_val = 0b01010000;
-        }
-    }
-    new_portb_val |= seven_seg(F.mode);
+
+    int8_t three_bit_level = (four_bit_level >> 1) & 0x07;
+    uint8_t new_portb_val  = vals[three_bit_level] | seven_seg(F.mode);
+
+    // if(four_bit_level > 0x0B) {
+    //     new_portb_val = 0b11110000;
+    // } else if(four_bit_level > 0x07) {
+    //     if(F.frame_counter & 0x01) {
+    //       new_portb_val = 0b10100000;
+    //     } else {
+    //       new_portb_val = 0b01010000;
+    //     }
+    // }
+    // new_portb_val |= seven_seg(F.mode);
 
     set_status_leds_and_mask(new_portb_val, new_portb_mask);
 }
@@ -182,12 +193,12 @@ void loop() {
       render(my_current_sample, my_sample_sum);
     }
 
-    ledpwm_vu_1();
-
     DEBUG_SAMPLE_RATE_HIGH();
 
     FastLED.show();
     //FastLED[0].show(&leds[0], STRIP_LENGTH, 255);
+
+    ledpwm_vu_1();
 
     // do post-frame-render stuff
     uint8_t pushed = was_button_pressed();
@@ -229,6 +240,8 @@ void loop() {
       default:
         break;
     }
+
+
 
     frame_epilogue();
   }
