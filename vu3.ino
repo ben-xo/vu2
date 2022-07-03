@@ -114,8 +114,8 @@ static void ledpwm_reset()
 }
 
 /*
- * Mess with the brightness of the status LEDs (by adjusting the mask and double-buffer content) so that it's VU reactive.
- * Kinda ugly but also kinda cool at the same time.
+ * Mess with the brightness of the status LEDs (by adjusting the mask and double-buffer content) 
+ * so that it's VU reactive. Kinda ugly but also kinda cool at the same time.
  */
 static void ledpwm_vu_1() {
 
