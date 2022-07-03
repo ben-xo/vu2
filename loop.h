@@ -25,7 +25,7 @@
 extern bool filter_beat;
 extern uint8_t my_current_sample;
 extern uint16_t my_sample_sum;
-extern struct Framestate F;
+extern Framestate F;
 
 __attribute__((always_inline)) static void inline one_frame_sample_handler() {
 

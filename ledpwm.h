@@ -36,7 +36,6 @@ extern DigitalPin<BEAT_PIN_2> tempo_pin;
 
 #define disable_backbuffer_rotation() (GPIOR0 &= ~(LEDPWM_ROTATE_BACK_BUFFER_FLAG))
 #define enable_backbuffer_rotation() (GPIOR0 |= (LEDPWM_ROTATE_BACK_BUFFER_FLAG))
-// #define enable_backbuffer_rotation() 
 
 static void inline __attribute__((always_inline)) set_status_leds_and_mask_within_interrupt(uint8_t new_portb_val, uint8_t new_portb_mask)
 {
@@ -88,8 +87,8 @@ static void inline __attribute__((always_inline)) set_status_leds_and_mask_rotat
     // } else {
     //    enable_backbuffer_rotation();
     // }
+    // enable_backbuffer_rotation();
     set_status_leds_and_mask_within_interrupt(new_portb_val, new_portb_mask);
-    enable_backbuffer_rotation();
     sei();
 }
 

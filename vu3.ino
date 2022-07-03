@@ -109,6 +109,20 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
+static const uint8_t masks[16] = { 
+  0b11111110, 0b11111110, 0b11111110, 0b11111110,
+  0b11111110, 0b11111110, 0b11111110, 0b11101110,
+  0b10101010, 0b10101010, 0b10001000, 0b10001000,
+  0b10000000, 0b10000000, 0b10001000, 0b10101010
+};
+
+// there are only 4 lights, so 5 brightness levels
+static const uint8_t vals[16] = { 
+  0b00000000, 0b00000000, 0b00000000, 0b00000000,
+  0b00000000, 0b00000000, 0b00000000, 0b00000000,
+  0b00000000, 0b00000000, 0b00000000, 0b00000000,
+  0b00000000, 0b11110000, 0b11110000, 0b11110000
+};
 
 /*
  * Mess with the brightness of the status LEDs (by adjusting the mask and double-buffer content) 
@@ -116,27 +130,15 @@ static bool auto_mode_change(bool is_beat) {
  */
 static void ledpwm_vu_1() {
 
-    static const PROGMEM uint8_t masks[16] = { 
-      0b11111110, 0b11111110, 0b11111110, 0b11111110,
-      0b11101110, 0b11101110, 0b11101010, 0b11101010,
-      0b10101010, 0b10101010, 0b10101010, 0b10101010,
-      0b10101010, 0b10101010, 0b10101010, 0b10101010
-    };
-
-    // there are only 4 lights, so 5 brightness levels
-    static const PROGMEM uint8_t vals[8] = { 
-      0b00000000, 0b00010000, 0b01000000, 0b10100000,
-      0b01010000, 0b11100000, 0b01110000, 0b11110000
-    };
-
     // uint8_t volatile old_portb_val = portb_val;
     
-    uint8_t four_bit_level = (F.vu_width >> 4) & 0b00001111;
+    uint8_t four_bit_level = F.vu_width / 4;
+    if(four_bit_level > 15) four_bit_level = 15;
     uint8_t new_portb_mask = masks[four_bit_level];
 
-    uint8_t three_bit_level = (four_bit_level >> 1) & 0b00000111;
+    // uint8_t three_bit_level = (four_bit_level >> 1) & 0b00000111;
     // uint8_t new_portb_val = (old_portb_val & 0x0F) | vals[three_bit_level];
-    uint8_t new_portb_val = vals[three_bit_level] | seven_seg(F.mode);
+    uint8_t new_portb_val = vals[four_bit_level] | seven_seg(F.mode);
 
     set_status_leds_and_mask_rotate(new_portb_val, new_portb_mask);
 }
