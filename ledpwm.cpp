@@ -40,8 +40,7 @@ void setup_ledpwm() {
   TIMSK2 |= (1 << OCIE2A) | (1 << OCIE2B);
 
   clear_status_leds_within_interrupt();
-  disable_backbuffer_rotation();
-  
+
   // this clears the timer and sets the right pre-scaler, starting the timer.
   enable_ledpwm();
   sei();
@@ -83,11 +82,10 @@ void enable_ledpwm() {
  * It also rotates the LED brigtness mask and does the FPS count.
  *
  * Lights out: 4 cycles
- * Mask rotate: 5 cycles
+ * Mask rotate: 4 or 8 cycles
  * FPS count:  7 or 8 cycles
  * Interrupt overhead: 14 cycles
- * Back Buffer rotate: 2 or 12 cycles
- * Total cycles: 32 or 33 or 44 or 45 cycles
+ * Total cycles: 29 or 30 or 33 or 34
  */
 ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t"); // 2cy
@@ -111,27 +109,13 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
   // Rotate the portb_mask (this is used for brightness control on LEDs in the other interrupt.)
   // As we already needed to push SREG we might as well do this now, as `ror` affects SREG
 
-  uint8_t register temp_r24 asm("r24") = portb_mask;  // 1 cy
-  temp_r24 = (temp_r24 >> 1) | (temp_r24 << 7); // basically, ror -    // 3 cy
-  portb_mask = temp_r24; // 1 cy
-
-  // // if(GPIOR0 & (LEDPWM_ROTATE_BACK_BUFFER_FLAG)) {
-  //   asm volatile(
-  //     "push r25 \n\t"
-  //     "in   r24, %[portb_val_io_reg] \n\t"
-  //     "andi r24, 15   \n\t"
-  //     "in   r25, %[portb_val_io_reg] \n\t"
-  //     "andi r25, 240  \n\t"
-  //     "bst  r25, 7    \n\t"
-  //     "add  r25, r25  \n\t"
-  //     "bld  r25, 4    \n\t" // bit 7 moved to bit 4
-  //     "or   r25, r24  \n\t" // temp_r24 |= temp_r25
-  //     "out  %[portb_val_io_reg], r25 \n\t"
-  //     "pop  r25 \n\t"
-  //     ::
-  //     [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val))
-  //   );
-  // // } // 2cy or 14 cy
+  // both have to be cleared
+  if( !(GPIOR0 & (LEDPWM_MASK_DIV_2_FLAG | EVERY_OTHER_FRAME_FLAG)) )
+  { // 3 cy when condition true, 4 when not
+    uint8_t register temp_r24 asm("r24") = portb_mask;  // 1 cy
+    temp_r24 = (temp_r24 >> 1) | (temp_r24 << 7); // basically, ror -    // 3 cy
+    portb_mask = temp_r24; // 1 cy
+  } // total: 8 or 4
 
   asm volatile( "out     __SREG__, r25                   \n\t"); // 1cy
   asm volatile( "pop     r25                             \n\t"); // 2cy
@@ -151,8 +135,8 @@ ISR(TIMER2_COMPA_vect, ISR_NAKED) {
  *
  * _The max length of this interrupt is currently 80 cycles, before it risks making OCR2A fire late._
  *
- * 67 cycles for the sampler path (sampler takes ~31)
- * 21 cycles for the non-sampler path
+ * 69 cycles for the sampler path (sampler takes ~31)
+ * 23 cycles for the non-sampler path
  */
 ISR(TIMER2_COMPB_vect, ISR_NAKED) {
   asm volatile( "push    r24                             \n\t"); // 2cy
@@ -173,27 +157,32 @@ ISR(TIMER2_COMPB_vect, ISR_NAKED) {
    * Note that because just saving and restoring SREG takes 6 cycles, we're avoiding anything that modifies
    * SREG altogether in order to keep this to 7 cycles total.
    *
-   * total: 7 cycles
+   * total: 7 or 9 cycles
    */
   asm volatile(
     // the mask is rotated in the other interrupt; we test the LSB of the mask to decide if we are swapping to the back buffer
 
     "in r24, %[portb_mask_io_reg] \n\t"
-    "sbrc r24, 0 \n\t"
+    "sbrc r24, 0 \n\t" // obey mask
     "rjmp .+4 \n\t"
 
     "in r24, %[portb_val_io_reg] \n\t"
-    "rjmp .+4 \n\t"
+    "rjmp .+8 \n\t"
 
     "in r24, %[portb_val_io_reg] \n\t"
+    "sbic %[gpio0_reg], %[_LEDPWM_MASK_DIV_2_FLAG_BIT] \n\t"  // if LEDPWM_MASK_DIV_2_FLAG is off, obey mask
+    "sbic %[gpio0_reg], %[_EVERY_OTHER_FRAME_FLAG_BIT] \n\t"  // if LEDPWM_MASK_DIV_2_FLAG is on, only obey mask on every other frame
     "swap r24 \n\t"
     "out %[portb_io_reg], r24 \n\t"
 
     :: 
     [portb_mask_io_reg] "I" (_SFR_IO_ADDR(portb_mask)),
     [portb_val_io_reg] "I" (_SFR_IO_ADDR(portb_val)),
-    [portb_io_reg] "I" (_SFR_IO_ADDR(PORTB))
-  ); // 7cy
+    [portb_io_reg] "I" (_SFR_IO_ADDR(PORTB)),
+    [gpio0_reg] "I" (_SFR_IO_ADDR(GPIOR0)),
+    [_LEDPWM_MASK_DIV_2_FLAG_BIT] "I" (LEDPWM_MASK_DIV_2_FLAG_BIT),
+    [_EVERY_OTHER_FRAME_FLAG_BIT] "I" (EVERY_OTHER_FRAME_FLAG_BIT)
+  ); // 9cy
 
 
   // return early every other frame (i.e. sampler runs at half PWM freq)

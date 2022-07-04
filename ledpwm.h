@@ -34,9 +34,6 @@ void enable_ledpwm();
 extern DigitalPin<BEAT_PIN_1> beat_pin;
 extern DigitalPin<BEAT_PIN_2> tempo_pin;
 
-#define disable_backbuffer_rotation() (GPIOR0 &= ~(LEDPWM_ROTATE_BACK_BUFFER_FLAG))
-#define enable_backbuffer_rotation() (GPIOR0 |= (LEDPWM_ROTATE_BACK_BUFFER_FLAG))
-
 static void inline __attribute__((always_inline)) set_status_leds_and_mask_within_interrupt(uint8_t new_portb_val, uint8_t new_portb_mask)
 {
     portb_mask = new_portb_mask;
@@ -52,14 +49,12 @@ static void inline __attribute__((always_inline)) clear_status_leds_within_inter
 {
     portb_mask = MASK_RESET_VAL;
     portb_val = 0;
-    disable_backbuffer_rotation();
 }
 
 static void inline __attribute__((always_inline)) set_status_leds_and_mask(uint8_t new_portb_val, uint8_t new_portb_mask)
 {
     cli();
     set_status_leds_and_mask_within_interrupt(new_portb_val, new_portb_mask);
-    disable_backbuffer_rotation(); // assume you don't want rotation, if you didn't call set_status_leds_and_mask_rotate()
     sei();
 }
 
@@ -67,7 +62,6 @@ static void inline __attribute__((always_inline)) set_status_leds(uint8_t new_po
 {
     cli();
     set_status_leds_within_interrupt(new_portb_val);
-    disable_backbuffer_rotation(); // assume you don't want rotation, if you didn't call set_status_leds_and_mask_rotate()
     sei();
 }
 
@@ -81,13 +75,6 @@ static void inline __attribute__((always_inline)) clear_status_leds()
 static void inline __attribute__((always_inline)) set_status_leds_and_mask_rotate(uint8_t new_portb_val, uint8_t new_portb_mask)
 {
     cli();
-    // only enable rotation if the backbuffer is a mixture of 1s and 0s
-    // if((new_portb_val & 0xF0) == 0xF0 || (new_portb_val & 0xF0) == 0x00) {
-    //    disable_backbuffer_rotation();
-    // } else {
-    //    enable_backbuffer_rotation();
-    // }
-    // enable_backbuffer_rotation();
     set_status_leds_and_mask_within_interrupt(new_portb_val, new_portb_mask);
     sei();
 }
