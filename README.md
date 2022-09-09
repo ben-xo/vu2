@@ -139,6 +139,9 @@ Finally
 Plug the audio in. Plug the power in. Adjust the volume...
 
 Push button to change modes.
+Long press to reset to auto change.
+Long long press to reboot.
+Double click and triple click get you to an animated test mode and a static test mode. (I think)
 
 There is a screensaver which kicks in after 15 seconds silence, but when there's a signal it is back to VU. You might need to adjust the levels low or high! Sensitivity CAN be adjusted with care in sampler.cpp (adjust "scale" in sampler.cpp), or with resistors etc.
 
