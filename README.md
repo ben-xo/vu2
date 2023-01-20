@@ -114,6 +114,7 @@ Software
 
 Rough instructions for that:
 * `brew install arduino-cli`
+* `brew tap osx-cross/avr`
 * `brew install avr-gcc@11`
 * `brew link avr-gcc@11`
 * modify `~/Library/Arduino15/packages/arduino/hardware/avr/1.8.3/platform.txt` - change `compiler.path` to `/usr/local/bin/`
