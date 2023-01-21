@@ -65,14 +65,23 @@ That's it.
 Output LEDs
 -----------
 
-* connect 5 LEDs from D8, D9, D10, D11 and D12 to ground. (no resistor needed). These show the current mode in binary
-* connect 2 LEDs from A1 and A2 to ground. These flash in time for the beats.
+
+* connect 4 LEDs from D8, D9, D10, and D11 to ground A, B, G and F on a 7-segment. These will show the mode and other things.
+  (if you don't have a 7-seg, any LEDs will do). No resistors needed
+
+  Note that quite a lot of stuff is configurable in the config.h BUT THESE ARE NOT because we rely on them being in the half of PORTB.
+
+* connect 2 LEDs from A1 and A2 to ground. These flash in time for the beats. I would connect them to the 7 seg in 2 of the unused positions
+  (I use the decimal point, and the low bar.) 
+
+* Configure to other pins if you want, avoid PORTB
 
 Mode Button
 -----------
 
-* Pull D4 to ground through a 10k resistor (if you don't and it floats the mode will go haywire)
-* Connect a push button from D4 to pull up to 5v. That's it
+* Pull D7 to ground through a 10k resistor. (if you don't and it floats the mode will go haywire)
+* Connect a push button from D7 to pull up to 5v. That's it
+* Configure to another pin if you want, but avoid PORTB
 
 LED light strip
 ---------------
@@ -89,7 +98,7 @@ Choose a PSU you trust. For 1 Arduino and 2x strips of 60 NeoPixels you probably
 
 You can wire a 5v supply directly to the 5v pins on the Arduino, but if you do that, you bypass the fuses on the Arduino and if your PSU turns out to be untrustworthy you may end up needing to buy a new Arduino.
 
-You can power the Arduino and lights separately, but if you do, you must conenct the GND pins together.
+You can power the Arduino and lights separately, but if you do, you must connect the GND pins together.
 
 You'll know if you don't have enough power because the thing will keep rebooting (you get a nice rainbow every time it starts up)
 
@@ -97,10 +106,14 @@ You'll know if you don't have enough power because the thing will keep rebooting
 Debug monitoring
 ----------------
 
-If you wanna watch the frame rate (and time taken to do various stages in the main loop) on an oscilloscope, you should pull D2 and D3 to ground via 10k resistors and then hook your scope up to those pins.
+If you wanna watch the frame rate (and time taken to do various stages in the main loop) on an oscilloscope, you can hook an oscilloscope to pins D2 and D3. You may need to add a resistor to pull them to GND, or 5v… or you might not need to do either!
+
+If it's working correctly when you zoom in you should see 150Hz on D3 and "other stuff" on D2 which shows phases of the draw and render. (If you want to see the sample rate specifically, you'll need to comment out the usages of DEBUG_SAMPLE_RATE_PIN and uncomment the ones in sampler.h)
 
 Software
 --------
+
+***Very important: you need to build against a custom branch of FastLED!***
 
 1) Set up Arduino Studio (or arduino-cli)
 2) Install FastLED lib
@@ -126,8 +139,11 @@ Finally
 Plug the audio in. Plug the power in. Adjust the volume...
 
 Push button to change modes.
+Long press to reset to auto change.
+Long long press to reboot.
+Double click and triple click get you to an animated test mode and a static test mode. (I think)
 
-There is a screensaver which kicks in after 15 seconds silence, but when there's a signal it is back to VU. You might need to adjust the levels low or high! Sensitivity CAN be adjusted with care in sampler.cpp (or with resistors)
+There is a screensaver which kicks in after 15 seconds silence, but when there's a signal it is back to VU. You might need to adjust the levels low or high! Sensitivity CAN be adjusted with care in sampler.cpp (adjust "scale" in sampler.cpp), or with resistors etc.
 
 
 Tips
@@ -173,7 +189,7 @@ Thanks for coming to my TED talk
 History
 =======
 
-* Worked on it throughout 2017 to 2019
+* Worked on it throughout 2017 to 2022
 * Made it public in a fit of GitHub and Twitter dopamine-seeking on 11th June 2020
 * Made it all-in-one with no second arduino required for beat detect and very fast 180fps Jan 2021
 
