@@ -25,8 +25,9 @@
 extern bool filter_beat;
 extern uint8_t my_current_sample;
 extern uint16_t my_sample_sum;
+extern Framestate F;
 
-__attribute__((always_inline)) static void one_frame_sample_handler() {
+__attribute__((always_inline)) static void inline one_frame_sample_handler() {
 
     DEBUG_FRAME_RATE_HIGH();
     DEBUG_AUDIO_PROCESSING_RATE_HIGH();
@@ -96,8 +97,10 @@ __attribute__((always_inline)) static void one_frame_sample_handler() {
     F.vu_width = calculate_vu(my_current_sample, &F.min_vu, &F.max_vu, VU_LOOKBEHIND);
 #endif
 
+#ifdef AUTOGAIN && (AUTOGAIN == 1)
     uint8_t recent_max_vu = calculate_auto_gain_bonus(F.vu_width);
     F.vu_width = F.vu_width + scale8(F.vu_width, 255 - recent_max_vu);
+#endif
 
     if (F.pushed || F.vu_width > ATTRACT_MODE_THRESHOLD) {
       // loudness: cancel attract mode, and so does a button press.
@@ -120,7 +123,8 @@ __attribute__((always_inline)) static void one_frame_sample_handler() {
     DEBUG_AUDIO_PROCESSING_RATE_LOW();
 }
 
-__attribute__((always_inline)) static void frame_epilogue() {
+
+__attribute__((always_inline)) static void inline frame_epilogue() {
     DEBUG_FRAME_RATE_LOW();
     reach_target_fps();
     F.frame_counter++;

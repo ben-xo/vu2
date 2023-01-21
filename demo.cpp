@@ -106,8 +106,7 @@ static void _demo_loop(const uint8_t start_sober)
   uint8_t sober_mode_divider = FPS; // once per second
   uint8_t sober_mode_counter = sober_mode_divider;
 
-  portb_val = 0;
-  portb_mask = 0;
+  clear_status_leds();
 
   uint8_t portb_mask_in = 0;
   uint8_t portb_val_in = 0;
@@ -253,9 +252,7 @@ static void _demo_loop(const uint8_t start_sober)
           break;
       }
     }
-    portb_mask = portb_mask_in;
-    portb_val = portb_val_in;
-
+    set_status_leds_and_mask(portb_val_in, portb_mask_in);
     frame_epilogue();
   }
 }

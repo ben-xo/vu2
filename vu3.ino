@@ -42,6 +42,7 @@ volatile uint8_t beats_from_interrupt = 0;
 #include "render.h"
 
 CRGB leds[STRIP_LENGTH];
+extern struct Framestate F;
 
 void setup() {
   // put your setup code here, to run once:
@@ -108,6 +109,40 @@ static bool auto_mode_change(bool is_beat) {
   return false;
 }
 
+static const uint8_t masks[16] = { 
+  0b11111110, 0b11111110, 0b11111110, 0b11111110,
+  0b11111110, 0b11111110, 0b11111110, 0b11101110,
+  0b10101010, 0b10101010, 0b10001000, 0b10001000,
+  0b10000000, 0b10000000, 0b10001000, 0b10101010
+};
+
+// there are only 4 lights, so 5 brightness levels
+static const uint8_t vals[16] = { 
+  0b00000000, 0b00000000, 0b00000000, 0b00000000,
+  0b00000000, 0b00000000, 0b00000000, 0b00000000,
+  0b00000000, 0b00000000, 0b00000000, 0b00000000,
+  0b00000000, 0b11110000, 0b11110000, 0b11110000
+};
+
+/*
+ * Mess with the brightness of the status LEDs (by adjusting the mask and double-buffer content) 
+ * so that it's VU reactive. Kinda ugly but also kinda cool at the same time.
+ */
+static void ledpwm_vu_1() {
+
+    // uint8_t volatile old_portb_val = portb_val;
+    
+    uint8_t four_bit_level = F.vu_width / 4;
+    if(four_bit_level > 15) four_bit_level = 15;
+    uint8_t new_portb_mask = masks[four_bit_level];
+
+    // uint8_t three_bit_level = (four_bit_level >> 1) & 0b00000111;
+    // uint8_t new_portb_val = (old_portb_val & 0x0F) | vals[three_bit_level];
+    uint8_t new_portb_val = vals[four_bit_level] | seven_seg(F.mode);
+
+    set_status_leds_and_mask_rotate(new_portb_val, new_portb_mask);
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -130,87 +165,12 @@ void loop() {
   do_banner();
 #endif
 
-  portb_val = seven_seg(F.mode); // writes directly to pins 9-12
+  set_status_leds(seven_seg(F.mode));
 
   while(true) {
 
     one_frame_sample_handler();
-
-    uint8_t new_mask = 0b01111111;
-    uint8_t upper_buffer = 0b00000000;
-    uint8_t four_bit_level = F.vu_width >> 4;
-    switch(four_bit_level)
-    {
-      case 0x0:
-        new_mask = 0b01111111;
-        upper_buffer = 0b00000000;
-        break;
-      case 0x1:
-        new_mask = 0b01110111;
-        upper_buffer = 0b00000000;
-        break;
-      case 0x2:
-        new_mask = 0b01010111;
-        upper_buffer = 0b00000000;
-        break;
-      case 0x3:
-        new_mask = 0b01010101;
-        upper_buffer = 0b00000000;
-        break;
-
-      case 0x4:
-        new_mask = 0b01111111;
-        upper_buffer = 0b00100000;
-        break;
-      case 0x5:
-        new_mask = 0b01110111;
-        upper_buffer = 0b01000000;
-        break;
-      case 0x6:
-        new_mask = 0b01010111;
-        upper_buffer = 0b10000000;
-        break;
-      case 0x7:
-        new_mask = 0b01010101;
-        upper_buffer = 0b00010000;
-        break;
-
-      case 0x8:
-        new_mask = 0b01111111;
-        upper_buffer = 0b11110000;
-        break;
-      case 0x9:
-        new_mask = 0b01110111;
-        upper_buffer = 0b11110000;
-        break;
-      case 0xA:
-        new_mask = 0b01010111;
-        upper_buffer = 0b11110000;
-        break;
-      case 0xB:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11110000;
-        break;
-
-      case 0xC:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11110001;
-        break;
-      case 0xD:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11110011;
-        break;
-      case 0xE:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11110111;
-        break;
-      case 0xF:
-        new_mask = 0b01010101;
-        upper_buffer = 0b11111111;
-        break;
-    }
-    portb_mask = new_mask;
-    portb_val = seven_seg(F.mode) | upper_buffer;
+    ledpwm_vu_1();
 
     if(F.is_attract_mode) {
       render_attract();
@@ -219,7 +179,7 @@ void loop() {
       if(F.auto_mode && auto_mode_change(F.is_beat_1)) {
         F.last_mode = F.mode;
         while(F.mode == F.last_mode) F.mode = random8(MAX_MODE+1); // max is exclusive
-        portb_val = seven_seg(F.mode); // writes directly to pins 9-12.
+        // the mode indicator LED is changed by ledpwm_vu_1() below
       }
 
       render(my_current_sample, my_sample_sum);
@@ -241,7 +201,7 @@ void loop() {
         F.is_attract_mode = false;
         F.mode++;
         if(F.mode > MAX_MODE) F.mode = 0;
-        portb_val = seven_seg(F.mode); // writes directly to pins 9-12
+        set_status_leds(seven_seg(F.mode));
         break;
 
       case LONG_PUSH:
@@ -250,19 +210,19 @@ void loop() {
         F.auto_mode = true;
         F.is_attract_mode = false;
         F.mode = 0;
-        portb_val = 0;
+        set_status_leds(seven_seg(F.mode));
         break;
 
       case TRIPLE_CLICK:
+        clear_status_leds();
         demo_loop();
-        portb_val = seven_seg(F.mode);
-        portb_mask = MASK_RESET_VAL;
+        clear_status_leds();
         break;
 
       case QUADRUPLE_CLICK:
+        clear_status_leds();
         sober_loop();
-        portb_val = seven_seg(F.mode);
-        portb_mask = MASK_RESET_VAL;
+        clear_status_leds();
         break;
 
       case REALLY_LONG_PUSH:

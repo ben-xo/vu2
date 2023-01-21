@@ -3,6 +3,7 @@
  */
 
 #include "buttons.h"
+#include "ledpwm.h"
 
 uint8_t was_button_pressed() {
 
@@ -56,7 +57,7 @@ uint8_t was_button_pressed() {
   if(F.is_down && !pins) {
     // released
     if(F.clicks && now - F.last_push > BUTTON_LONG_PUSH_SPEED) {
-      portb_val = 0;
+      clear_status_leds();
     }
     F.is_down = false;
   }
@@ -66,10 +67,10 @@ uint8_t was_button_pressed() {
     if(F.clicks) {
       if(now - F.last_push > BUTTON_REALLY_LONG_PUSH_SPEED) {
         // full bright as really long press (usually reset)
-        portb_val = seven_seg(12);
+        set_status_leds_front_buffer_only(seven_seg(12));
       } else if(now - F.last_push > BUTTON_LONG_PUSH_SPEED) {
         // half bright at long press
-        portb_val = (F.frame_counter & 1) ? 0 : seven_seg(12);
+        set_status_leds_front_buffer_only((F.frame_counter & 1) ? 0 : seven_seg(12));
       }
     }
   }

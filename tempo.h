@@ -11,6 +11,6 @@ void record_rising_edge();
 bool recalc_tempo(bool is_tempo_output_high);
 
 extern bool tempo_beat;
-extern Framestate F;
+extern struct Framestate F;
 
 #endif // _TEMPO_H
