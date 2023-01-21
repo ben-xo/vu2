@@ -86,4 +86,7 @@
 //#define DEBUG_ONLY 1
 //#define LONGCLI 1
 
+// Tries to boost the volume to get a better effects on a lower signal. Surprisingly effective
+#define AUTOGAIN 1
+
 #endif /* _CONFIG_H */
