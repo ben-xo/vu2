@@ -76,10 +76,14 @@ uint8_t calculate_auto_gain_bonus(uint8_t vu_width) {
   // return a multiplier that will scale vu_width so that a "recently large" vu_width would be 255 (adjust to taste).
   // "recently large" means we track the largest seen VU width, but scale it down on every frame. "New loudness" will therefore increase this, but quiet patches will decrease it.
   static uint8_t weighted_max_vu = 0;
-  const uint8_t scale = 12;
+  const uint8_t scale = AUTOGAIN;
   static uint8_t scale_count = scale;
   if(scale_count == 0) {
-    weighted_max_vu = qsub8(weighted_max_vu, 1); // decrease on each call. "2" should give a roughly 1 second window at 125 FPS.  
+    // decrease on each Nth call.
+    // this represents the "headroom" between the widest recent vu_width and saturation.
+    // we gradually tighten the headroom in order to bring out quiet sounds, but if the input
+    // is larger than the max then this pushes it back up.
+    weighted_max_vu = qsub8(weighted_max_vu, 1);
     scale_count = scale;
   } else {
     scale_count--;

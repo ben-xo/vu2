@@ -86,7 +86,8 @@
 //#define DEBUG_ONLY 1
 //#define LONGCLI 1
 
-// Tries to boost the volume to get a better effects on a lower signal. Surprisingly effective
-#define AUTOGAIN 1
+// Tries to boost the volume to get a better effects on a lower signal. Surprisingly effective.
+// Larger numbers have a larger decay. 0 deactivates.
+#define AUTOGAIN 12
 
 #endif /* _CONFIG_H */

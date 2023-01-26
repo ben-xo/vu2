@@ -97,7 +97,7 @@ __attribute__((always_inline)) static void inline one_frame_sample_handler() {
     F.vu_width = calculate_vu(my_current_sample, &F.min_vu, &F.max_vu, VU_LOOKBEHIND);
 #endif
 
-#ifdef AUTOGAIN && (AUTOGAIN == 1)
+#ifdef AUTOGAIN && (AUTOGAIN >= 1)
     uint8_t recent_max_vu = calculate_auto_gain_bonus(F.vu_width);
     F.vu_width = F.vu_width + scale8(F.vu_width, 255 - recent_max_vu);
 #endif
