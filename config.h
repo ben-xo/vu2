@@ -54,12 +54,6 @@
 #define AUTO_BEATS_SILENCE_THRESH 5000 // ms
 //#define BEAT_SUSTAIN 40 // minimum length of a beat detection
 
-// This is the beat detect threshold.
-// If you build a box without the pot, you can read the threshold out
-// from one which has the pot using one of the test modes...
-#define THRESHOLD_INPUT 1
-#define DEFAULT_THRESHOLD 48.0
-#define USE_POT_FOR_THRESHOLD 0
 
 
 // This awkward calculation is to get it to round to nearest number of frames, which is roughly 4 frames at 125fps

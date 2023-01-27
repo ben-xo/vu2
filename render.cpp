@@ -398,20 +398,6 @@ void render_beat_flash_1_pixel(bool is_beat) {
     }  
 }
 
-void render_threshold() {
-  // THIS BIT DRAWS A NUMBER IN BINARY ON TO THE STRIP
-  unsigned int threshold = analogRead(THRESHOLD_INPUT);
-  for(uint8_t i = 0; i < STRIP_LENGTH; i++)
-  {
-    if (threshold & 0x01) {
-      leds[i].setRGB(127,127,127);
-    } else {
-      leds[i].setRGB(0,0,0);
-    }
-    threshold = threshold >> 1;
-  }
-}
-
 void render_black() {
     for (int j = STRIP_LENGTH - 1; j >= 0; j--) {
       leds[j].setRGB(0,0,0);
