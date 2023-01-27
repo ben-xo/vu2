@@ -30,6 +30,7 @@ typedef struct {
   bool was_beat;
   bool top;
   uint16_t hue;
+  uint8_t current_pos;
 } render_beat_bounce_flip_type;
 
 typedef struct {

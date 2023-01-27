@@ -472,6 +472,13 @@ void render_black() {
 //   }
 // }
 
+void render_beat_bounce_flip__on_enter() {
+    r.rbbf.was_beat = false;
+    r.rbbf.top = false;
+    r.rbbf.current_pos = STRIP_LENGTH/2;
+}
+
+
 static uint8_t current_pos = STRIP_LENGTH/2; // start in center
 #define HALF_CENTER = (STRIP_LENGTH/4) // one quarter of the way down the strip (which quarter flips on the beat)
 void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
@@ -502,6 +509,8 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
     target_pos = STRIP_LENGTH - target_pos;
   }
 
+  uint8_t current_pos = r.rbbf.current_pos;
+
   // home in
   if(target_pos > current_pos) {
     // this should be a saturated add, but it won't overflow because we don't really support strip lengths >100
@@ -525,12 +534,12 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
       }
     }
   }
-  current_pos = new_pos;
   hue = (hue + 1) % 2048;
 
-  r.rbbf.top = top;
   r.rbbf.was_beat = was_beat;
+  r.rbbf.top = top;
   r.rbbf.hue = hue;
+  r.rbbf.current_pos = new_pos;
 }
 
 void render_entrypoint() {
@@ -538,6 +547,11 @@ void render_entrypoint() {
       case 3:
         render_sparkle_dash__on_enter();
         break;
+
+      case 9:
+        render_beat_bounce_flip__on_enter();
+        break;
+
       default:
         break;
     }
