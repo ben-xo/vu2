@@ -54,12 +54,27 @@ static void generate_sparkle_table(uint8_t* random_table) {
   // only 
   for (i = 0; i < STRIP_LENGTH / 2; i++)
   {
-      size_t j = random8(STRIP_LENGTH - i + 1);
+      size_t j = random8(i+1, STRIP_LENGTH);
     
       int t = random_table[i];
       random_table[i] = random_table[j];
       random_table[j] = t;
   }  
+}
+
+static void shuffle_one(uint8_t* random_table) {
+      static uint8_t i = 0;
+
+      uint8_t j = random8(i+1, STRIP_LENGTH);
+    
+      uint8_t t = random_table[i];
+      random_table[i] = random_table[j];
+      random_table[j] = t;
+
+      i += 1;
+      if(i==(STRIP_LENGTH/2)) {
+        i = 0;
+      }
 }
 
 
@@ -174,22 +189,22 @@ void render_sparkles() {
     const CRGB DARK_GOLD(0x7F, 0x7F, 0x37);
 
     uint8_t adjPeak = qsub8(F.vu_width, 2); // if it's close to 0, make it 0, so it doesn't flicker
-    uint8_t index = map8(adjPeak>>2, 0, STRIP_LENGTH/4);
+    uint8_t sparkles = map8(adjPeak>>2, 0, STRIP_LENGTH/4);
     uint8_t random_table[STRIP_LENGTH];
 
-    // even though strictly speaking we don't need to generate the table if index is < 1,
+    // even though strictly speaking we don't need to generate the table if sparkles is < 1,
     // we do it anyway because it keeps the frame rate consistent.
     generate_sparkle_table(random_table);
 
     CRGB gold   = F.is_beat_1 ? GOLD   : DARK_GOLD;
     CRGB silver = F.is_beat_1 ? SILVER : DARK_SILVER;
 
-    for (uint8_t j = 0; j < index; j++) {
+    for (uint8_t j = 0; j < sparkles; j++) {
       leds[random_table[j]] = j%2 ? gold : silver;
     }
     
     // fade the rest!
-    for (uint8_t j = index; j < STRIP_LENGTH; j++) {
+    for (uint8_t j = sparkles; j < STRIP_LENGTH; j++) {
 #     ifdef FRAME_RATE_LIMIT
       fade_pixel_fast(random_table[j]);
 #     else
@@ -197,6 +212,38 @@ void render_sparkles() {
 #     endif
     }
 }
+
+
+void render_sparkle_dash__on_enter() {
+    generate_sparkle_table((uint8_t *)r.sd.random_table);
+}
+
+void render_sparkle_dash() {
+
+    uint8_t adjPeak = qsub8(F.vu_width, 2); // if it's close to 0, make it 0, so it doesn't flicker
+    uint8_t sparkles = map8(adjPeak>>2, 0, STRIP_LENGTH/4);
+
+    // even though strictly speaking we don't need to generate the table if sparkles is < 1,
+    // we do it anyway because it keeps the frame rate consistent.
+    shuffle_one((uint8_t *)r.sd.random_table);
+    shuffle_one((uint8_t *)r.sd.random_table);
+    shuffle_one((uint8_t *)r.sd.random_table);
+    shuffle_one((uint8_t *)r.sd.random_table);
+    shuffle_one((uint8_t *)r.sd.random_table);
+    shuffle_one((uint8_t *)r.sd.random_table);
+
+    for (uint8_t j = 0; j < sparkles; j++) {
+      uint8_t phase = (F.frame_counter & 0x00FF);
+      uint8_t hue = sin8(phase + j);
+      leds[r.sd.random_table[j]] = CHSV(hue, 128, 255);
+    }
+    
+    // fade the rest!
+    for (uint8_t j = sparkles; j < STRIP_LENGTH; j++) {
+      fade_pixel_fast(r.sd.random_table[j]);
+    }
+}
+
 
 // Manually unrolled version seems to give better ASM code...
 void render_combo_samples_with_beat(uint8_t sample_ptr, uint16_t sample_sum) {
@@ -485,6 +532,16 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
   r.rbbf.was_beat = was_beat;
   r.rbbf.hue = hue;
 }
+
+void render_entrypoint() {
+    switch(F.mode) {
+      case 3:
+        render_sparkle_dash__on_enter();
+        break;
+      default:
+        break;
+    }
+}
  
 void render(uint8_t sample_ptr, uint16_t sample_sum) {
 
@@ -500,7 +557,7 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         render_double_vu(F.vu_width, F.is_beat_1, F.is_beat_2);
         break;
       case 3:
-        render_vu_plus_beat_interleave();
+        render_sparkle_dash();
         break;
       case 4:
         render_fire(F.is_beat_1, F.vu_width);

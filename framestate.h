@@ -26,6 +26,7 @@ struct Framestate
 
   // general
   bool auto_mode:1;
+  bool is_new_mode:1;
   bool is_silent:1;
   bool is_attract_mode:1;
   bool is_beat_1:1;
@@ -34,6 +35,7 @@ struct Framestate
   // buttons.cpp
   bool pushed:1;
   bool is_down:1;
+
 };
 
 extern struct Framestate F;
