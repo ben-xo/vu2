@@ -72,7 +72,9 @@ static void shuffle_one(uint8_t* random_table) {
       random_table[j] = t;
 
       i += 1;
-      i = i % (STRIP_LENGTH/2);
+      if(i==(STRIP_LENGTH/2)) {
+        i = 0;
+      }
 }
 
 
