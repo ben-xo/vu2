@@ -541,6 +541,27 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
 }
 
 
+// void render_vu_scatter_density
+// * the one with lines of varying widths
+
+void render_sparkles_scattered_in_a_range() {
+    for (uint8_t j = 0; j < STRIP_LENGTH; j++) {
+      fade_pixel_fast(j);
+    }
+
+    // we want the range to be centered in the center
+    uint8_t midpoint = STRIP_LENGTH/2;
+    uint8_t scaled_vu = scale8(F.vu_width, midpoint);
+    uint8_t the_sparkle = random8(scaled_vu>>1, scaled_vu);
+    uint8_t chosen_one = midpoint + the_sparkle;
+    uint8_t chosen_two = midpoint - the_sparkle;
+    uint8_t b = F.vu_width;
+    leds[chosen_one] += CRGB(b,b, F.is_beat_1 ? b>>1 : b);
+    leds[chosen_two] = leds[chosen_one];
+}
+
+
+
  
 void render(uint8_t sample_ptr, uint16_t sample_sum) {
 
@@ -568,7 +589,7 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         render_fire(F.is_beat_1, F.vu_width);
         break;
       case 5:
-        render_sparkles();
+        render_sparkles_scattered_in_a_range();
         break;
       case 6:
         render_beat_line();
@@ -584,6 +605,7 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
           render_beat_bounce_flip__on_enter();
         }
         render_beat_bounce_flip(F.is_beat_2, F.vu_width, sample_ptr, F.min_vu, F.min_vu);
+        break;
     }
 }
 
