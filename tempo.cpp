@@ -22,8 +22,11 @@ void clear_tempo() {
   edge_index = 0;
   beat_gap_sum = 0;
   beat_gap_avg = 0;
+  rising_edge_times[0] = F.frame_counter;
+  next_on_frame = F.frame_counter;
+  next_off_frame = F.frame_counter;
   for(uint8_t i = 0; i < 16; i++) {
-    rising_edge_times[i] = 0;
+    // rising_edge_times[i] = 0;
     rising_edge_gap[i] = 0;
   }
 }
@@ -35,6 +38,10 @@ void record_rising_edge() {
 
   // 160ms is slightly less than a half beat at 180bpm ((60/180/2)*1000 == ~167ms)
   if(gap > (160 / FRAME_LENGTH_MILLIS)) { // don't record beats which are too close together
+
+    if(gap > MIN_BPM_FRAMES) {
+        gap = MIN_BPM_FRAMES;
+    }
 
     edge_index = (edge_index + 1) & 15; // range 0 to 15
 
@@ -68,7 +75,14 @@ void record_rising_edge() {
 //
 // bool is_tempo_output_high: if we were flashing an LED, was it on or off? (we only change this value at the on-off boundaries, otherwise leaving it the same)
 bool recalc_tempo(bool is_tempo_output_high) {
-    if (!cleared && (F.frame_counter - rising_edge_times[edge_index]) > (beat_gap_avg * 4) ) {
+    if (!cleared && (
+
+        // reset if the last beat was more than 4x the average ago
+        (F.frame_counter - rising_edge_times[edge_index]) > (beat_gap_avg * 4) ||
+
+        // reset if the last beat was more than 4x the frames of the minimum BPM
+        (F.frame_counter - rising_edge_times[edge_index]) > (MIN_BPM_FRAMES * 8)  // (about 5.6secs)
+    )) {
         // we will miss four beats before we get scared and stop the tempo
         clear_tempo();
         return false;
