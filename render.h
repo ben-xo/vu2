@@ -12,6 +12,7 @@
 
 void setup_render();
 void rainbowCycle(uint8_t);
+void render_entrypoint();
 void render(uint8_t sample_ptr, uint16_t sample_sum);
 void do_banner();
 void render_attract();

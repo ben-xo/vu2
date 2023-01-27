@@ -156,6 +156,7 @@ void loop() {
   F.vu_width = 0;
   F.mode = 0;
   F.last_mode = 0;
+  F.is_new_mode = true;
   F.auto_mode = true;
   F.is_silent = false;
   F.is_attract_mode = false;
@@ -180,8 +181,13 @@ void loop() {
         F.last_mode = F.mode;
         while(F.mode == F.last_mode) F.mode = random8(MAX_MODE+1); // max is exclusive
         // the mode indicator LED is changed by ledpwm_vu_1() below
+        F.is_new_mode = true;
       }
 
+      if(F.is_new_mode) {
+        render_entrypoint();
+        F.is_new_mode = false;
+      }
       render(my_current_sample, my_sample_sum);
     }
 
@@ -202,6 +208,7 @@ void loop() {
         F.mode++;
         if(F.mode > MAX_MODE) F.mode = 0;
         set_status_leds(seven_seg(F.mode));
+        F.is_new_mode = true;
         break;
 
       case LONG_PUSH:
@@ -211,18 +218,21 @@ void loop() {
         F.is_attract_mode = false;
         F.mode = 0;
         set_status_leds(seven_seg(F.mode));
+        F.is_new_mode = true;
         break;
 
       case TRIPLE_CLICK:
         clear_status_leds();
         demo_loop();
         clear_status_leds();
+        F.is_new_mode = true;
         break;
 
       case QUADRUPLE_CLICK:
         clear_status_leds();
         sober_loop();
         clear_status_leds();
+        F.is_new_mode = true;
         break;
 
       case REALLY_LONG_PUSH:

@@ -104,8 +104,12 @@ __attribute__((always_inline)) static void inline one_frame_sample_handler() {
 
     if (F.pushed || F.vu_width > ATTRACT_MODE_THRESHOLD) {
       // loudness: cancel attract mode, and so does a button press.
+      if(F.is_attract_mode) {
+          F.is_new_mode = true;
+      }
       F.is_silent = false;
       F.is_attract_mode = false;
+
     } else {
       // quiet: short or long?
       if(!F.is_silent) {

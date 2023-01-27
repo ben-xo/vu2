@@ -43,6 +43,11 @@ typedef struct {
   byte heat[STRIP_LENGTH];
 } fire_mode_type;
 
+typedef struct {
+  uint8_t random_table[STRIP_LENGTH];
+} sparkle_dash_type;
+
+
 typedef union renderheap_t {
   render_vu_with_beat_strobe_type     rvuwbs;
   render_vu_plus_beat_interleave_type rvupbi;
@@ -51,6 +56,7 @@ typedef union renderheap_t {
   render_beat_bounce_flip_type        rbbf;
   attract_mode_type                   am;
   fire_mode_type                      fm;
+  sparkle_dash_type                   sd;
 };
 
 extern renderheap_t r;
