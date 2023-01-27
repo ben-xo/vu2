@@ -479,8 +479,6 @@ void render_beat_bounce_flip__on_enter() {
 }
 
 
-static uint8_t current_pos = STRIP_LENGTH/2; // start in center
-#define HALF_CENTER = (STRIP_LENGTH/4) // one quarter of the way down the strip (which quarter flips on the beat)
 void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
   uint16_t hue = r.rbbf.hue; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
   
