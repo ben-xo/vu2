@@ -542,22 +542,12 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
   r.rbbf.current_pos = new_pos;
 }
 
-void render_entrypoint() {
-    switch(F.mode) {
-      case 3:
-        render_sparkle_dash__on_enter();
-        break;
 
-      case 9:
-        render_beat_bounce_flip__on_enter();
-        break;
-
-      default:
-        break;
-    }
-}
  
 void render(uint8_t sample_ptr, uint16_t sample_sum) {
+
+    bool was_new_mode = F.is_new_mode;
+    F.is_new_mode = false;
 
     switch(F.mode) {
       default:
@@ -571,6 +561,9 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         render_double_vu(F.vu_width, F.is_beat_1, F.is_beat_2);
         break;
       case 3:
+        if(was_new_mode) {
+          render_sparkle_dash__on_enter();
+        }
         render_sparkle_dash();
         break;
       case 4:
@@ -589,6 +582,9 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         render_combo_samples_with_beat(sample_ptr, sample_sum);
         break;
       case 9:
+        if(was_new_mode) {
+          render_beat_bounce_flip__on_enter();
+        }
         render_beat_bounce_flip(F.is_beat_2, F.vu_width, sample_ptr, F.min_vu, F.min_vu);
     }
 }

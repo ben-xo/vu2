@@ -184,10 +184,6 @@ void loop() {
         F.is_new_mode = true;
       }
 
-      if(F.is_new_mode) {
-        render_entrypoint();
-        F.is_new_mode = false;
-      }
       render(my_current_sample, my_sample_sum);
     }
 
