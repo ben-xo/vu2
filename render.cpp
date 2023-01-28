@@ -295,7 +295,13 @@ void render_beat_line() {
 
     uint32_t now = millis();
     uint32_t now2 = now;
-    uint8_t brightness = qadd8(F.vu_width,128);
+    // uint8_t brightness = qadd8(F.vu_width,128);
+
+    uint8_t my_current_sample = sampler.current_sample;
+    uint8_t avg = sample_sum/SAMP_BUFF_LEN;
+    uint8_t brightness = qsub8(avg, 96);
+    brightness = qadd8(brightness, brightness + 1);
+
 
     for(uint8_t p = 0; p < STRIP_LENGTH; p++)
     {
@@ -320,17 +326,20 @@ void render_beat_line() {
       uint8_t sine2 = frame_beatsin8 (beat1, k+phase);
       uint8_t sine3 = frame_beatsin8 (beat1, l+phase);
       uint8_t sine4 = frame_beatsin8 (beat2, phase);
-      leds[p].setRGB(scale8(sine1,sine4), scale8(sine2,sine4), scale8(sine3,sine4));
-      leds[p].nscale8(brightness);
+      // sine4 = scale8(sine4, sampler.samples[(my_current_sample + p) % SAMP_BUFF_LEN] / 2);
       if(F.is_beat_1) {
         j -= 7;
         k -= 13;
         l -= 17;
       } else {
+        sine4 = scale8(sine4, brightness);
         j += 1; // these offsets make the colours do interesting bands
         k += 3;
         l += 5;
       }
+      leds[p].r = scale8(sine1,sine4);
+      leds[p].g = scale8(sine2,sine4);
+      leds[p].b = scale8(sine3,sine4);
     }
     r.rbl.phase = phase;
 }
