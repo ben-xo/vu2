@@ -488,18 +488,17 @@ void render_beat_bounce_flip__on_enter() {
 }
 
 
-void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
+void render_beat_bounce_flip() {
   uint16_t hue = r.rbbf.hue; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
   
   bool top = r.rbbf.top;
+  bool is_beat = F.is_beat_1;
   bool was_beat = r.rbbf.was_beat;
   uint8_t target_pos;
   uint8_t new_pos;
 
-  // convert peakToPeak into 
-
   // target_pos is where the beat line is trying to get to (based on the current volume)
-  target_pos = scale8(peakToPeak, STRIP_LENGTH);
+  target_pos = map8(F.vu_width, STRIP_LENGTH/2, STRIP_LENGTH);
 
   // TODO: could easily make this interrupt driven too
   if(is_beat) {
@@ -613,7 +612,7 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         if(was_new_mode) {
           render_beat_bounce_flip__on_enter();
         }
-        render_beat_bounce_flip(F.is_beat_2, F.vu_width, sample_ptr, F.min_vu, F.min_vu);
+        render_beat_bounce_flip();
         break;
     }
 }
