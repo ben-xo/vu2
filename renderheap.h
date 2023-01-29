@@ -27,10 +27,13 @@ typedef struct {
 } render_double_vu_type;
 
 typedef struct {
-  bool was_beat;
-  bool top;
+  bool was_beat:1;
+  bool was_beat_2:1;
+  bool top:1;
+  bool split:1;
   uint16_t hue;
   uint8_t current_pos;
+  uint8_t current_pos_2;
 } render_beat_bounce_flip_type;
 
 typedef struct {

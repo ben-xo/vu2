@@ -483,8 +483,11 @@ void render_black() {
 
 void render_beat_bounce_flip__on_enter() {
     r.rbbf.was_beat = false;
+    r.rbbf.was_beat_2 = false;
     r.rbbf.top = false;
+    r.rbbf.split = false;
     r.rbbf.current_pos = STRIP_LENGTH/2;
+    r.rbbf.current_pos_2 = STRIP_LENGTH/2;
 }
 
 
@@ -543,11 +546,119 @@ void render_beat_bounce_flip() {
   hue = (hue + 1) % 2048;
 
   r.rbbf.was_beat = was_beat;
+  r.rbbf.was_beat_2 = false;
   r.rbbf.top = top;
+  r.rbbf.split = false;
   r.rbbf.hue = hue;
   r.rbbf.current_pos = new_pos;
 }
 
+
+void render_beat_bounce_flip_mitosis() {
+  uint16_t hue = r.rbbf.hue; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
+  
+  bool top = r.rbbf.top;
+  bool split = r.rbbf.split;
+  bool is_beat = F.is_beat_1;
+  bool is_beat_2 = F.is_beat_2;
+  bool was_beat = r.rbbf.was_beat;
+  bool was_beat_2 = r.rbbf.was_beat_2;
+  uint8_t mapped_vu_width;
+  uint8_t target_pos;
+  uint8_t target_pos_2;
+  uint8_t new_pos;
+  uint8_t new_pos_2;
+
+  // target_pos is where the beat line is trying to get to (based on the current volume)
+  mapped_vu_width = map8(F.vu_width, STRIP_LENGTH/2, STRIP_LENGTH);
+
+  // TODO: could easily make this interrupt driven too
+  if(is_beat) {
+    if(!was_beat) {
+      top = !top;
+    }
+    was_beat = true;
+  } else {
+    was_beat = false;
+  }
+
+  if(is_beat_2) {
+    if(!was_beat_2) {
+      split = !split;
+    }
+    was_beat_2 = true;
+  } else {
+    was_beat_2 = false;
+  }
+
+
+  // flip sides
+  if(top) {
+    target_pos = STRIP_LENGTH - mapped_vu_width;
+  } else {
+    target_pos = mapped_vu_width;
+  }
+
+  if(split) {
+    target_pos_2 = STRIP_LENGTH - target_pos;
+  } else { 
+    target_pos_2 = target_pos;
+  }
+
+
+  uint8_t current_pos = r.rbbf.current_pos;
+  uint8_t current_pos_2 = r.rbbf.current_pos_2;
+
+  // home in
+  if(target_pos > current_pos) {
+    new_pos = (target_pos - current_pos)/8 + current_pos + 1;
+  } else {
+    new_pos = qsub8(current_pos - (current_pos - target_pos)/8, 1);
+  }
+
+  if(target_pos_2 > current_pos_2) {
+    new_pos_2 = (target_pos_2 - current_pos_2)/8 + current_pos_2 + 1;
+  } else {
+    new_pos_2 = qsub8(current_pos_2 - (current_pos_2 - target_pos_2)/8, 1);
+  }
+
+  for(uint8_t i = 0; i < STRIP_LENGTH; i++)
+  {
+    if( i <= new_pos && i >= current_pos) {
+      leds[i] = CHSV(((uint8_t)hue)+i,255,255);
+    } else if (i >= new_pos && i <= current_pos) {
+      leds[i] = CHSV(((uint8_t)hue)-i,255,255);
+    } else if (i <= new_pos_2 && i >= current_pos_2) {
+      leds[i] = CHSV(((uint8_t)hue)+i,255,255);
+    } else if (i >= new_pos_2 && i <= current_pos_2) {
+      leds[i] = CHSV(((uint8_t)hue)+-i,255,255);
+    } else {
+      fade_pixel_fast(i);
+    }
+  }
+
+
+  // if(target_pos > current_pos) {
+  // } else {
+  //   for(uint8_t i = 0; i < STRIP_LENGTH; i++)
+  //   {
+  //     if( i >= new_pos && i <= current_pos ) {
+  //       leds[i] = CHSV(((uint8_t)hue)+i,255,255);
+  //     } else {
+  //       fade_pixel_fast(i);
+  //     }
+  //   }
+  // }
+  hue = (hue + 1) % 2048;
+
+  r.rbbf.was_beat = was_beat;
+  r.rbbf.was_beat_2 = was_beat_2;
+  r.rbbf.top = top;
+  r.rbbf.split = split;
+  r.rbbf.hue = hue;
+  r.rbbf.current_pos = new_pos;
+  r.rbbf.current_pos_2 = new_pos_2;
+}
 
 // void render_vu_scatter_density
 // * the one with lines of varying widths
@@ -612,7 +723,7 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         if(was_new_mode) {
           render_beat_bounce_flip__on_enter();
         }
-        render_beat_bounce_flip();
+        render_beat_bounce_flip_mitosis();
         break;
     }
 }
