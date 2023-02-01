@@ -295,7 +295,13 @@ void render_beat_line() {
 
     uint32_t now = millis();
     uint32_t now2 = now;
-    uint8_t brightness = qadd8(F.vu_width,128);
+    // uint8_t brightness = qadd8(F.vu_width,128);
+
+    uint8_t my_current_sample = sampler.current_sample;
+    uint8_t avg = sample_sum/SAMP_BUFF_LEN;
+    uint8_t brightness = qsub8(avg, 96);
+    brightness = qadd8(brightness, brightness + 1);
+
 
     for(uint8_t p = 0; p < STRIP_LENGTH; p++)
     {
@@ -320,17 +326,20 @@ void render_beat_line() {
       uint8_t sine2 = frame_beatsin8 (beat1, k+phase);
       uint8_t sine3 = frame_beatsin8 (beat1, l+phase);
       uint8_t sine4 = frame_beatsin8 (beat2, phase);
-      leds[p].setRGB(scale8(sine1,sine4), scale8(sine2,sine4), scale8(sine3,sine4));
-      leds[p].nscale8(brightness);
+      // sine4 = scale8(sine4, sampler.samples[(my_current_sample + p) % SAMP_BUFF_LEN] / 2);
       if(F.is_beat_1) {
         j -= 7;
         k -= 13;
         l -= 17;
       } else {
+        sine4 = scale8(sine4, brightness);
         j += 1; // these offsets make the colours do interesting bands
         k += 3;
         l += 5;
       }
+      leds[p].r = scale8(sine1,sine4);
+      leds[p].g = scale8(sine2,sine4);
+      leds[p].b = scale8(sine3,sine4);
     }
     r.rbl.phase = phase;
 }
@@ -474,23 +483,25 @@ void render_black() {
 
 void render_beat_bounce_flip__on_enter() {
     r.rbbf.was_beat = false;
+    r.rbbf.was_beat_2 = false;
     r.rbbf.top = false;
+    r.rbbf.split = false;
     r.rbbf.current_pos = STRIP_LENGTH/2;
+    r.rbbf.current_pos_2 = STRIP_LENGTH/2;
 }
 
 
-void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_ptr, uint8_t min_vu, uint8_t max_vu) {
+void render_beat_bounce_flip() {
   uint16_t hue = r.rbbf.hue; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
   
   bool top = r.rbbf.top;
+  bool is_beat = F.is_beat_1;
   bool was_beat = r.rbbf.was_beat;
   uint8_t target_pos;
   uint8_t new_pos;
 
-  // convert peakToPeak into 
-
   // target_pos is where the beat line is trying to get to (based on the current volume)
-  target_pos = scale8(peakToPeak, STRIP_LENGTH);
+  target_pos = map8(F.vu_width, STRIP_LENGTH/2, STRIP_LENGTH);
 
   // TODO: could easily make this interrupt driven too
   if(is_beat) {
@@ -535,11 +546,119 @@ void render_beat_bounce_flip(bool is_beat, uint8_t peakToPeak, uint8_t sample_pt
   hue = (hue + 1) % 2048;
 
   r.rbbf.was_beat = was_beat;
+  r.rbbf.was_beat_2 = false;
   r.rbbf.top = top;
+  r.rbbf.split = false;
   r.rbbf.hue = hue;
   r.rbbf.current_pos = new_pos;
 }
 
+
+void render_beat_bounce_flip_mitosis() {
+  uint16_t hue = r.rbbf.hue; // for colour cycle. It's a uint16 not 8 because the frame rate is so high. TODO: pass in the time and use the time
+  
+  bool top = r.rbbf.top;
+  bool split = r.rbbf.split;
+  bool is_beat = F.is_beat_1;
+  bool is_beat_2 = F.is_beat_2;
+  bool was_beat = r.rbbf.was_beat;
+  bool was_beat_2 = r.rbbf.was_beat_2;
+  uint8_t mapped_vu_width;
+  uint8_t target_pos;
+  uint8_t target_pos_2;
+  uint8_t new_pos;
+  uint8_t new_pos_2;
+
+  // target_pos is where the beat line is trying to get to (based on the current volume)
+  mapped_vu_width = map8(F.vu_width, STRIP_LENGTH/2, STRIP_LENGTH);
+
+  // TODO: could easily make this interrupt driven too
+  if(is_beat) {
+    if(!was_beat) {
+      top = !top;
+    }
+    was_beat = true;
+  } else {
+    was_beat = false;
+  }
+
+  if(is_beat_2) {
+    if(!was_beat_2) {
+      split = !split;
+    }
+    was_beat_2 = true;
+  } else {
+    was_beat_2 = false;
+  }
+
+
+  // flip sides
+  if(top) {
+    target_pos = STRIP_LENGTH - mapped_vu_width;
+  } else {
+    target_pos = mapped_vu_width;
+  }
+
+  if(split) {
+    target_pos_2 = STRIP_LENGTH - target_pos;
+  } else { 
+    target_pos_2 = target_pos;
+  }
+
+
+  uint8_t current_pos = r.rbbf.current_pos;
+  uint8_t current_pos_2 = r.rbbf.current_pos_2;
+
+  // home in
+  if(target_pos > current_pos) {
+    new_pos = (target_pos - current_pos)/8 + current_pos + 1;
+  } else {
+    new_pos = qsub8(current_pos - (current_pos - target_pos)/8, 1);
+  }
+
+  if(target_pos_2 > current_pos_2) {
+    new_pos_2 = (target_pos_2 - current_pos_2)/8 + current_pos_2 + 1;
+  } else {
+    new_pos_2 = qsub8(current_pos_2 - (current_pos_2 - target_pos_2)/8, 1);
+  }
+
+  for(uint8_t i = 0; i < STRIP_LENGTH; i++)
+  {
+    if( i <= new_pos && i >= current_pos) {
+      leds[i] = CHSV(((uint8_t)hue)+i,255,255);
+    } else if (i >= new_pos && i <= current_pos) {
+      leds[i] = CHSV(((uint8_t)hue)-i,255,255);
+    } else if (i <= new_pos_2 && i >= current_pos_2) {
+      leds[i] = CHSV(((uint8_t)hue)+i,255,255);
+    } else if (i >= new_pos_2 && i <= current_pos_2) {
+      leds[i] = CHSV(((uint8_t)hue)+-i,255,255);
+    } else {
+      fade_pixel_fast(i);
+    }
+  }
+
+
+  // if(target_pos > current_pos) {
+  // } else {
+  //   for(uint8_t i = 0; i < STRIP_LENGTH; i++)
+  //   {
+  //     if( i >= new_pos && i <= current_pos ) {
+  //       leds[i] = CHSV(((uint8_t)hue)+i,255,255);
+  //     } else {
+  //       fade_pixel_fast(i);
+  //     }
+  //   }
+  // }
+  hue = (hue + 1) % 2048;
+
+  r.rbbf.was_beat = was_beat;
+  r.rbbf.was_beat_2 = was_beat_2;
+  r.rbbf.top = top;
+  r.rbbf.split = split;
+  r.rbbf.hue = hue;
+  r.rbbf.current_pos = new_pos;
+  r.rbbf.current_pos_2 = new_pos_2;
+}
 
 // void render_vu_scatter_density
 // * the one with lines of varying widths
@@ -604,7 +723,7 @@ void render(uint8_t sample_ptr, uint16_t sample_sum) {
         if(was_new_mode) {
           render_beat_bounce_flip__on_enter();
         }
-        render_beat_bounce_flip(F.is_beat_2, F.vu_width, sample_ptr, F.min_vu, F.min_vu);
+        render_beat_bounce_flip_mitosis();
         break;
     }
 }
