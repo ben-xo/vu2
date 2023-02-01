@@ -23,6 +23,7 @@ void clear_tempo() {
   beat_gap_sum = 0;
   beat_gap_avg = 0;
   rising_edge_times[0] = F.frame_counter;
+  rising_edge_times[1] = F.frame_counter;
   next_on_frame = F.frame_counter;
   next_off_frame = F.frame_counter;
   for(uint8_t i = 0; i < 16; i++) {
@@ -75,6 +76,10 @@ void record_rising_edge() {
 //
 // bool is_tempo_output_high: if we were flashing an LED, was it on or off? (we only change this value at the on-off boundaries, otherwise leaving it the same)
 bool recalc_tempo(bool is_tempo_output_high) {
+    if(cleared) {
+      return false;
+    }
+
     if (!cleared && (
 
         // reset if the last beat was more than 4x the average ago
